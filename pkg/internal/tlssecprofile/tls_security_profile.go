@@ -29,10 +29,12 @@ func GetTLSSecurityProfile(fromHC *openshiftconfigv1.TLSSecurityProfile) *opensh
 	// this should never happen, because it is validated in the webhook for HCO, and set in Refresh() for the APIServer CR
 	if profile.Type == openshiftconfigv1.TLSProfileCustomType && profile.Custom == nil {
 		logf.Log.WithName("tls-security-profile-logger").Info(`WARNING: The provided TLS Security Profile is  wrong: the type is "Custom", but the custom field is not set`)
+		intermediateProfile := openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType]
 		profile.Custom = &openshiftconfigv1.CustomTLSProfile{
 			TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
-				Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
-				MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
+				Ciphers:       slices.Clone(intermediateProfile.Ciphers),
+				Groups:        slices.Clone(intermediateProfile.Groups),
+				MinTLSVersion: intermediateProfile.MinTLSVersion,
 			},
 		}
 	}
@@ -59,6 +61,34 @@ func GetCipherSuitesAndMinTLSVersionInGolangFormat(fromHC *openshiftconfigv1.TLS
 	return goCiphers, goMinTLSVersion
 }
 
+// GetGroups returns the TLS groups from the effective profile.
+// For Custom profiles, returns the custom groups (which may be nil/empty).
+// For named profiles (Old/Intermediate/Modern), returns groups from TLSProfiles.
+func GetGroups(fromHC *openshiftconfigv1.TLSSecurityProfile) []openshiftconfigv1.TLSGroup {
+	profile := GetTLSSecurityProfile(fromHC)
+
+	if profile.Type == openshiftconfigv1.TLSProfileCustomType {
+		return profile.Custom.Groups
+	}
+
+	return openshiftconfigv1.TLSProfiles[profile.Type].Groups
+}
+
+// GetGroupsInGolangFormat returns the TLS groups as Go tls.CurveID values.
+func GetGroupsInGolangFormat(fromHC *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
+	groups := GetGroups(fromHC)
+	if len(groups) == 0 {
+		return nil
+	}
+
+	curveIDs, unsupported := CurveIDsForTLSGroups(groups)
+	if len(unsupported) > 0 {
+		logf.Log.WithName("tls-security-profile-logger").Info("unsupported TLS groups ignored", "groups", unsupported)
+	}
+
+	return curveIDs
+}
+
 func SetHyperConvergedTLSSecurityProfile(fromHC *openshiftconfigv1.TLSSecurityProfile) {
 	setHyperConvergedProfile(fromHC)
 }
@@ -68,12 +98,17 @@ func MutateTLSConfig(cfg *tls.Config) {
 	// please be aware that the APIServer is using http keepalive so this is going to
 	// be executed only after a while for fresh connections and not on existing ones
 	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
-		cipherSuites, minVersion := GetCipherSuitesAndMinTLSVersionInGolangFormat(getHyperConvergedProfile())
+		hcProfile := getHyperConvergedProfile()
+		cipherSuites, minVersion := GetCipherSuitesAndMinTLSVersionInGolangFormat(hcProfile)
 		config := cfg.Clone()
 
 		config.MinVersion = minVersion
 		if minVersion < tls.VersionTLS13 {
 			config.CipherSuites = cipherSuites
+		}
+
+		if curvePrefs := GetGroupsInGolangFormat(hcProfile); len(curvePrefs) > 0 {
+			config.CurvePreferences = curvePrefs
 		}
 
 		return config, nil
@@ -118,12 +153,14 @@ func validateAPIServerTLSSecurityProfile(apiServerTLSSecurityProfile *openshiftc
 		return apiServerTLSSecurityProfile
 	}
 
+	intermediateProfile := openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType]
 	validatedAPIServerTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
 		Type: openshiftconfigv1.TLSProfileCustomType,
 		Custom: &openshiftconfigv1.CustomTLSProfile{
 			TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
-				Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
-				MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
+				Ciphers:       slices.Clone(intermediateProfile.Ciphers),
+				Groups:        slices.Clone(intermediateProfile.Groups),
+				MinTLSVersion: intermediateProfile.MinTLSVersion,
 			},
 		},
 	}
@@ -138,6 +175,15 @@ func validateAPIServerTLSSecurityProfile(apiServerTLSSecurityProfile *openshiftc
 				validatedAPIServerTLSSecurityProfile.Custom.Ciphers = append(validatedAPIServerTLSSecurityProfile.Custom.Ciphers, cipher)
 			} else {
 				logger.Error(nil, "invalid cipher name on the APIServer CR, ignoring it", "cipher", cipher)
+			}
+		}
+
+		validatedAPIServerTLSSecurityProfile.Custom.Groups = nil
+		for _, group := range apiServerTLSSecurityProfile.Custom.Groups {
+			if isValidGroupName(group) {
+				validatedAPIServerTLSSecurityProfile.Custom.Groups = append(validatedAPIServerTLSSecurityProfile.Custom.Groups, group)
+			} else {
+				logger.Error(nil, "invalid group name on the APIServer CR, ignoring it", "group", group)
 			}
 		}
 	}

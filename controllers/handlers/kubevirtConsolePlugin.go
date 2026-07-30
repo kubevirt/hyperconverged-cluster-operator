@@ -379,6 +379,7 @@ type nginxConfTemplateData struct {
 	Port         int32
 	SSLProtocols string
 	SSLCiphers   string
+	SSLECDHCurve string
 }
 
 func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
@@ -390,6 +391,14 @@ func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
 
 	if minTLS < openshiftconfigv1.VersionTLS13 {
 		data.SSLCiphers = strings.Join(ciphers, ":")
+	}
+
+	if groups := tlssecprofile.GetGroups(hc.Spec.Security.TLSSecurityProfile); len(groups) > 0 {
+		groupStrs := make([]string, len(groups))
+		for i, g := range groups {
+			groupStrs[i] = string(g)
+		}
+		data.SSLECDHCurve = strings.Join(groupStrs, ":")
 	}
 
 	var out bytes.Buffer
