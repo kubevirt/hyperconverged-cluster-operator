@@ -28,6 +28,8 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
 * [NodePlacements](#nodeplacements)
+* [ObservabilityConfig](#observabilityconfig)
+* [ObservabilityWorkloadsConfig](#observabilityworkloadsconfig)
 * [PciHostDevice](#pcihostdevice)
 * [PermittedHostDevices](#permittedhostdevices)
 * [PersistentReservationConfiguration](#persistentreservationconfiguration)
@@ -186,6 +188,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | workloadSources | WorkloadSources contains all the configurations for workload sources | [WorkloadSourcesConfig](#workloadsourcesconfig) |  | false |
 | security | Security contains all the security configurations | [SecurityConfig](#securityconfig) | {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}} | false |
 | deployment | Deployment contains all the configurations related to deployment of KubeVirt components | [DeploymentConfig](#deploymentconfig) | {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "deployNetworkResourcesInjector": true, "applicationAwareConfig": {"enable": false}} | false |
+| observability | Observability contains configurations for the observability controller | *[ObservabilityConfig](#observabilityconfig) |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -326,6 +329,28 @@ NodePlacements defines the node scheduling configuration for infrastructure or w
 | ----- | ----------- | ------ | ------- | -------- |
 | infra | Infra describes node scheduling configuration for infrastructure entities | *[sdkapi.NodePlacement](https://github.com/kubevirt/controller-lifecycle-operator-sdk/blob/bbf16167410b7a781c7b08a3f088fc39551c7a00/pkg/sdk/api/types.go#L49) |  | false |
 | workload | Workload describes node scheduling configuration for workload entities | *[sdkapi.NodePlacement](https://github.com/kubevirt/controller-lifecycle-operator-sdk/blob/bbf16167410b7a781c7b08a3f088fc39551c7a00/pkg/sdk/api/types.go#L49) |  | false |
+
+[Back to TOC](#table-of-contents)
+
+## ObservabilityConfig
+
+ObservabilityConfig contains configurations for the observability controller
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| workloads | Workloads defines filtering configuration for workload-related metrics | *[ObservabilityWorkloadsConfig](#observabilityworkloadsconfig) |  | false |
+| allowedAlerts | AllowedAlerts defines the list of alert rule names to include. When set, only alerts matching this list will be created. | []string |  | false |
+| allowedRecordingRules | AllowedRecordingRules defines the list of recording rule names to include. When set, only recording rules matching this list will be created. | []string |  | false |
+
+[Back to TOC](#table-of-contents)
+
+## ObservabilityWorkloadsConfig
+
+ObservabilityWorkloadsConfig defines filtering for workload metrics
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| allowedMetrics | AllowedMetrics defines the list of metric names to expose. When set, only metrics matching this list will be collected. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 

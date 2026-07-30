@@ -45,6 +45,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration":         schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedDevicesConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedHostDevice":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodeMediatedDeviceTypesConfig":        schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTypesConfig(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityConfig":                  schema_kubevirt_hyperconverged_cluster_operator_api_v1_ObservabilityConfig(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityWorkloadsConfig":         schema_kubevirt_hyperconverged_cluster_operator_api_v1_ObservabilityWorkloadsConfig(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PciHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1_PciHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1_PermittedHostDevices(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PersistentReservationConfiguration":   schema_kubevirt_hyperconverged_cluster_operator_api_v1_PersistentReservationConfiguration(ref),
@@ -291,11 +293,17 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig"),
 						},
 					},
+					"observability": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Observability contains configurations for the observability controller",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityConfig"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"},
 	}
 }
 
@@ -750,6 +758,97 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTy
 					},
 				},
 				Required: []string{"nodeSelector"},
+			},
+		},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1_ObservabilityConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ObservabilityConfig contains configurations for the observability controller",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"workloads": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Workloads defines filtering configuration for workload-related metrics",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityWorkloadsConfig"),
+						},
+					},
+					"allowedAlerts": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowedAlerts defines the list of alert rule names to include. When set, only alerts matching this list will be created.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"allowedRecordingRules": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowedRecordingRules defines the list of recording rule names to include. When set, only recording rules matching this list will be created.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityWorkloadsConfig"},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1_ObservabilityWorkloadsConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ObservabilityWorkloadsConfig defines filtering for workload metrics",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"allowedMetrics": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowedMetrics defines the list of metric names to expose. When set, only metrics matching this list will be collected.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}

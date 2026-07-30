@@ -260,6 +260,7 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 	// INFO: in.WorkloadSources opted out of conversion generation
 	// INFO: in.Security opted out of conversion generation
 	// INFO: in.Deployment opted out of conversion generation
+	// INFO: in.Observability opted out of conversion generation
 	return nil
 }
 

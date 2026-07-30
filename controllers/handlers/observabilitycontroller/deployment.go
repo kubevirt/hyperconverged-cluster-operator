@@ -73,6 +73,18 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 		}
 	}
 
+	if hc.Spec.Observability != nil {
+		if flag := observabilityAllowlistFlag("--metrics-allowlist", getMetricsAllowlist(hc)); flag != "" {
+			args = append(args, flag)
+		}
+		if flag := observabilityAllowlistFlag("--alerts-allowlist", hc.Spec.Observability.AllowedAlerts); flag != "" {
+			args = append(args, flag)
+		}
+		if flag := observabilityAllowlistFlag("--recording-rules-allowlist", hc.Spec.Observability.AllowedRecordingRules); flag != "" {
+			args = append(args, flag)
+		}
+	}
+
 	dep := NewDeploymentWithNameOnly()
 	dep.Spec = appsv1.DeploymentSpec{
 		Replicas: new(int32(1)),
@@ -183,4 +195,18 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	}
 
 	return dep
+}
+
+func getMetricsAllowlist(hc *hcov1.HyperConverged) []string {
+	if hc.Spec.Observability == nil || hc.Spec.Observability.Workloads == nil {
+		return nil
+	}
+	return hc.Spec.Observability.Workloads.AllowedMetrics
+}
+
+func observabilityAllowlistFlag(flagName string, values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	return flagName + "=" + strings.Join(values, ",")
 }

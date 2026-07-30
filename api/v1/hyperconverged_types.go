@@ -176,6 +176,44 @@ type HyperConvergedSpec struct {
 	// +optional
 	// +k8s:conversion-gen=false
 	Deployment DeploymentConfig `json:"deployment,omitempty"`
+
+	// Observability contains configurations for the observability controller
+	// +optional
+	// +k8s:conversion-gen=false
+	Observability *ObservabilityConfig `json:"observability,omitempty"`
+}
+
+// ObservabilityConfig contains configurations for the observability controller
+// +k8s:openapi-gen=true
+type ObservabilityConfig struct {
+	// Workloads defines filtering configuration for workload-related metrics
+	// +optional
+	Workloads *ObservabilityWorkloadsConfig `json:"workloads,omitempty"`
+
+	// AllowedAlerts defines the list of alert rule names to include.
+	// When set, only alerts matching this list will be created.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"
+	AllowedAlerts []string `json:"allowedAlerts,omitempty"`
+
+	// AllowedRecordingRules defines the list of recording rule names to include.
+	// When set, only recording rules matching this list will be created.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"
+	AllowedRecordingRules []string `json:"allowedRecordingRules,omitempty"`
+}
+
+// ObservabilityWorkloadsConfig defines filtering for workload metrics
+// +k8s:openapi-gen=true
+type ObservabilityWorkloadsConfig struct {
+	// AllowedMetrics defines the list of metric names to expose.
+	// When set, only metrics matching this list will be collected.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"
+	AllowedMetrics []string `json:"allowedMetrics,omitempty"`
 }
 
 // VirtualizationConfig contains all the virtualization configurations

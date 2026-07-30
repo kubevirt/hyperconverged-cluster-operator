@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -198,6 +199,77 @@ var _ = Describe("Observability Controller Deployment", func() {
 			for k, v := range expected.Labels {
 				Expect(reconciledDep.Labels).To(HaveKeyWithValue(k, v))
 			}
+		})
+	})
+
+	Context("Observability allowlist flags", func() {
+		It("should not add any allowlist flags when observability is nil (means all)", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.Observability = nil
+			dep := newDeployment(hco)
+			args := dep.Spec.Template.Spec.Containers[0].Args
+			Expect(args).ToNot(ContainElement(ContainSubstring("--metrics-allowlist")))
+			Expect(args).ToNot(ContainElement(ContainSubstring("--alerts-allowlist")))
+			Expect(args).ToNot(ContainElement(ContainSubstring("--recording-rules-allowlist")))
+		})
+
+		It("should not add flags when all lists are empty", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.Observability = &hcov1.ObservabilityConfig{
+				Workloads: &hcov1.ObservabilityWorkloadsConfig{
+					AllowedMetrics: []string{},
+				},
+				AllowedAlerts:         []string{},
+				AllowedRecordingRules: []string{},
+			}
+			dep := newDeployment(hco)
+			args := dep.Spec.Template.Spec.Containers[0].Args
+			Expect(args).ToNot(ContainElement(ContainSubstring("--metrics-allowlist")))
+			Expect(args).ToNot(ContainElement(ContainSubstring("--alerts-allowlist")))
+			Expect(args).ToNot(ContainElement(ContainSubstring("--recording-rules-allowlist")))
+		})
+
+		It("should pass 'none' flag when value is 'none' (means no metrics)", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.Observability = &hcov1.ObservabilityConfig{
+				Workloads: &hcov1.ObservabilityWorkloadsConfig{
+					AllowedMetrics: []string{"none"},
+				},
+				AllowedAlerts:         []string{"none"},
+				AllowedRecordingRules: []string{"none"},
+			}
+			dep := newDeployment(hco)
+			args := dep.Spec.Template.Spec.Containers[0].Args
+			Expect(args).To(ContainElement("--metrics-allowlist=none"))
+			Expect(args).To(ContainElement("--alerts-allowlist=none"))
+			Expect(args).To(ContainElement("--recording-rules-allowlist=none"))
+		})
+
+		It("should pass specific metrics when listed", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.Observability = &hcov1.ObservabilityConfig{
+				Workloads: &hcov1.ObservabilityWorkloadsConfig{
+					AllowedMetrics: []string{"kubevirt_vmi_memory_used_bytes", "kubevirt_vmi_cpu_usage_seconds_total"},
+				},
+				AllowedAlerts:         []string{"KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"},
+				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count:sum"},
+			}
+			dep := newDeployment(hco)
+			args := dep.Spec.Template.Spec.Containers[0].Args
+			Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_vmi_memory_used_bytes,kubevirt_vmi_cpu_usage_seconds_total"))
+			Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMDown,KubeVirtVMIExcessiveMigrations"))
+			Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count:sum"))
+		})
+
+		It("should not add metrics-allowlist when workloads is nil", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.Observability = &hcov1.ObservabilityConfig{
+				AllowedAlerts: []string{"none"},
+			}
+			dep := newDeployment(hco)
+			args := dep.Spec.Template.Spec.Containers[0].Args
+			Expect(args).ToNot(ContainElement(ContainSubstring("--metrics-allowlist")))
+			Expect(args).To(ContainElement("--alerts-allowlist=none"))
 		})
 	})
 })
