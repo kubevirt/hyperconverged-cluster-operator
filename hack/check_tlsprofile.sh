@@ -127,6 +127,15 @@ clean_nmap_output custom.txt
 diff -w custom.txt "hack/tlsprofiles/custom.expected${FIPS}"
 check_ssp_up
 
+# Custom TLS 1.2 with ciphers and post-quantum hybrid groups (X25519MLKEM768 preferred + X25519 fallback).
+# CDI requires ciphers for custom profiles, so we use TLS 1.2 with an explicit cipher set.
+# nmap does not support X25519MLKEM768 in its supported_groups so it negotiates X25519.
+./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch ${HCO_TYPE} -n ${INSTALLED_NAMESPACE} --type=json kubevirt-hyperconverged -p '[{\"op\": \"replace\", \"path\": \"${TLS_PATH}\", \"value\": {custom: {minTLSVersion: \"VersionTLS12\", ciphers: [\"ECDHE-ECDSA-AES256-GCM-SHA384\", \"ECDHE-RSA-AES128-GCM-SHA256\"], groups: [\"X25519MLKEM768\", \"X25519\"]}, type: \"Custom\"} }]'"
+run_nmap custom-pqc.txt
+clean_nmap_output custom-pqc.txt
+diff -w custom-pqc.txt "hack/tlsprofiles/custom-pqc.expected${FIPS}"
+check_ssp_up
+
 ./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch ${HCO_TYPE} -n ${INSTALLED_NAMESPACE} --type=json kubevirt-hyperconverged -p '[{\"op\": \"remove\", \"path\": \"${TLS_PATH}\" }]'"
 sleep 2
 run_nmap default.txt

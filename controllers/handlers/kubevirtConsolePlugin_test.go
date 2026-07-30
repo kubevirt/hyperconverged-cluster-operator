@@ -533,7 +533,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(nginxConf).To(ContainSubstring("listen"))
 				Expect(nginxConf).To(ContainSubstring("ssl_protocols"))
 				Expect(nginxConf).To(ContainSubstring("ssl_ciphers"))
-				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve SecP256r1MLKEM768:SecP384r1MLKEM1024:secp256r1:secp384r1;"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve      X25519MLKEM768:X25519:secp256r1:secp384r1;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
 			})
@@ -548,7 +548,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(cm.Data).To(HaveKey("nginx.conf"))
 				nginxConf := cm.Data["nginx.conf"]
 				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
-				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve SecP256r1MLKEM768:SecP384r1MLKEM1024:secp256r1:secp384r1;"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve      X25519MLKEM768:X25519:secp256r1:secp384r1;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
 			})
 
@@ -563,12 +563,12 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				nginxConf := cm.Data["nginx.conf"]
 				Expect(nginxConf).To(ContainSubstring("ssl_protocols"))
 				Expect(nginxConf).To(ContainSubstring("ssl_ciphers"))
-				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve SecP256r1MLKEM768:SecP384r1MLKEM1024:secp256r1:secp384r1;"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve      X25519MLKEM768:X25519:secp256r1:secp384r1;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
 			})
 
-			It("should create nginx ConfigMap with Custom TLS profile", func() {
+			It("should create nginx ConfigMap with Custom TLS profile without groups", func() {
 				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Type: openshiftconfigv1.TLSProfileCustomType,
 					Custom: &openshiftconfigv1.CustomTLSProfile{
@@ -584,8 +584,30 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(cm.Data).To(HaveKey("nginx.conf"))
 				nginxConf := cm.Data["nginx.conf"]
 				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
-				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve SecP256r1MLKEM768:SecP384r1MLKEM1024:secp256r1:secp384r1;"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_ecdh_curve"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers"))
+			})
+
+			It("should create nginx ConfigMap with Custom TLS profile with groups", func() {
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS12,
+							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+							Groups: []openshiftconfigv1.TLSGroup{
+								openshiftconfigv1.TLSGroupX25519,
+								openshiftconfigv1.TLSGroupSecP256r1,
+							},
+						},
+					},
+				}
+				cm, err := NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm).ToNot(BeNil())
+				Expect(cm.Data).To(HaveKey("nginx.conf"))
+				nginxConf := cm.Data["nginx.conf"]
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve      X25519:secp256r1;"))
 			})
 
 			It("should not emit empty ssl_protocols or ssl_ciphers directives", func() {
@@ -594,7 +616,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				nginxConf := cm.Data["nginx.conf"]
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
-				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve SecP256r1MLKEM768:SecP384r1MLKEM1024:secp256r1:secp384r1;"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve"))
 			})
 		})
 
