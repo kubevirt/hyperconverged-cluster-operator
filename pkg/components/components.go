@@ -400,7 +400,14 @@ func addVirtIOVolume(spec *appsv1.DeploymentSpec, params *DeploymentOperatorPara
 		Name:            "virtiowin-data-loader",
 		Image:           params.VirtIOWinContainer,
 		ImagePullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
-		Command:         []string{"cp", params.VirtIOWinDataFile, initContainerMount},
+		Command: []string{
+			"dd",
+			"if=" + params.VirtIOWinDataFile,
+			"of=" + path.Join(initContainerMount, path.Base(params.VirtIOWinDataFile)),
+			"bs=1M",
+			"iflag=direct",
+			"oflag=direct",
+		},
 		VolumeMounts: []corev1.VolumeMount{
 			{Name: artifactServerMountName, MountPath: initContainerMount},
 		},
@@ -409,11 +416,11 @@ func addVirtIOVolume(spec *appsv1.DeploymentSpec, params *DeploymentOperatorPara
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("10m"),
-				corev1.ResourceMemory: resource.MustParse("128Mi"),
+				corev1.ResourceMemory: resource.MustParse("32Mi"),
 			},
 			Limits: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("256Mi"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
 			},
 		},
 	})
