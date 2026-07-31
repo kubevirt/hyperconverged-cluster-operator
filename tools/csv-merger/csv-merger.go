@@ -107,7 +107,7 @@ var (
 	kvVirtIOWinMountPath          = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
 	waspAgentImage                = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
 	aieWebhookImage               = flag.String("aie-webhook-image-name", "", "AIE Webhook image")
-	iommufdDevicePluginImage      = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
+	_                             = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
 	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
 	smbiosFile                    = flag.String("smbios-file", "", "Custom SMBIOS file name, used by HCO to configure the SMBIOS in KubeVirt CR")
@@ -798,7 +798,6 @@ func getDeploymentParams() *manifests.DeploymentOperatorParams {
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		WaspAgentImage:                *waspAgentImage,
 		AIEWebhookImage:               *aieWebhookImage,
-		IOMMUFDDevicePluginImage:      *iommufdDevicePluginImage,
 		ObservabilityControllerImage:  *observabilityControllerImage,
 		Env:                           envVars,
 		AddNetworkPolicyLabels:        *dumpNetworkPolicies,

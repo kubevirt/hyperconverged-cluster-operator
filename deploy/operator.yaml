@@ -84,8 +84,6 @@ spec:
           value: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
         - name: AIE_WEBHOOK_IMAGE
           value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d5aafc2c9ea71fc03c92a5f73d1c612996a20cff59051e029f82774210ff457e
-        - name: IOMMUFD_DEVICE_PLUGIN_IMAGE
-          value: quay.io/kubevirt/iommufd-device-plugin@sha256:45b9a3e904b19e83592d4d9ee1029b04f4ed10013cce735cf03e42458eaf9db0
         - name: OBSERVABILITY_CONTROLLER_IMAGE
           value: quay.io/kubevirt/virt-observability-controller@sha256:8ad8a68093a2fa1312e51d9d6d97e2e6ac1e5112b76fc77df269b4d76e514bd9
         image: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
