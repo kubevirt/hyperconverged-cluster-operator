@@ -1,0 +1,206 @@
+[
+  {
+    "name": "AlignCPUs",
+    "state": "Alpha"
+  },
+  {
+    "name": "CPUManager",
+    "state": "Alpha"
+  },
+  {
+    "name": "ConfigurableHypervisor",
+    "state": "Alpha"
+  },
+  {
+    "name": "ContainerPathVolumes",
+    "state": "Alpha"
+  },
+  {
+    "name": "CrossArchitectureVirtualization",
+    "state": "Alpha"
+  },
+  {
+    "name": "DecentralizedLiveMigration",
+    "state": "Alpha"
+  },
+  {
+    "name": "DownwardMetrics",
+    "state": "Alpha"
+  },
+  {
+    "name": "EnableVirtioFsStorageVolumes",
+    "state": "Alpha"
+  },
+  {
+    "name": "ExperimentalIgnitionSupport",
+    "state": "Alpha"
+  },
+  {
+    "name": "FirmwareAutoSelection",
+    "state": "Alpha"
+  },
+  {
+    "name": "GraceIOVirtualization",
+    "state": "Alpha"
+  },
+  {
+    "name": "HostDevices",
+    "state": "Alpha"
+  },
+  {
+    "name": "HostDisk",
+    "state": "Alpha"
+  },
+  {
+    "name": "HypervStrictCheck",
+    "state": "Alpha"
+  },
+  {
+    "name": "IOMMUFD",
+    "state": "Alpha"
+  },
+  {
+    "name": "IncrementalBackup",
+    "state": "Alpha"
+  },
+  {
+    "name": "MigrationStallDetection",
+    "state": "Alpha"
+  },
+  {
+    "name": "NetworkDevicesWithDRA",
+    "state": "Alpha"
+  },
+  {
+    "name": "OCIExport",
+    "state": "Alpha"
+  },
+  {
+    "name": "ObjectGraph",
+    "state": "Alpha"
+  },
+  {
+    "name": "PCINUMAAwareTopology",
+    "state": "Alpha"
+  },
+  {
+    "name": "Plugins",
+    "state": "Alpha"
+  },
+  {
+    "name": "PortRangesSpec",
+    "state": "Alpha"
+  },
+  {
+    "name": "ReservedOverheadMemlock",
+    "state": "Alpha"
+  },
+  {
+    "name": "Root",
+    "state": "Alpha"
+  },
+  {
+    "name": "Sidecar",
+    "state": "Alpha"
+  },
+  {
+    "name": "UtilityVolumes",
+    "state": "Alpha"
+  },
+  {
+    "name": "VGPULiveMigration",
+    "state": "Alpha"
+  },
+  {
+    "name": "VMStatsCollector",
+    "state": "Alpha"
+  },
+  {
+    "name": "VSOCK",
+    "state": "Alpha"
+  },
+  {
+    "name": "WorkloadEncryptionTDX",
+    "state": "Alpha"
+  },
+  {
+    "name": "DeclarativeHotplugVolumes",
+    "state": "Beta"
+  },
+  {
+    "name": "ExternalNetResourceInjection",
+    "state": "Beta"
+  },
+  {
+    "name": "GPUsWithDRA",
+    "state": "Beta"
+  },
+  {
+    "name": "HostDevicesWithDRA",
+    "state": "Beta"
+  },
+  {
+    "name": "ImageVolume",
+    "state": "Beta"
+  },
+  {
+    "name": "KubevirtSeccompProfile",
+    "state": "Beta"
+  },
+  {
+    "name": "LibvirtHooksServerAndClient",
+    "state": "Beta"
+  },
+  {
+    "name": "NodeRestriction",
+    "state": "Beta"
+  },
+  {
+    "name": "OptOutRoleAggregation",
+    "state": "Beta"
+  },
+  {
+    "name": "PasstBinding",
+    "state": "Beta"
+  },
+  {
+    "name": "PodSecondaryInterfaceNamingUpgrade",
+    "state": "Beta"
+  },
+  {
+    "name": "RebootPolicy",
+    "state": "Beta"
+  },
+  {
+    "name": "Snapshot",
+    "state": "Beta"
+  },
+  {
+    "name": "Template",
+    "state": "Beta"
+  },
+  {
+    "name": "VmiMemoryOverheadReport",
+    "state": "Beta"
+  },
+  {
+    "name": "WorkloadEncryptionSEV",
+    "state": "Beta"
+  },
+  {
+    "name": "DisableMDEVConfiguration",
+    "state": "Deprecated"
+  },
+  {
+    "name": "DockerSELinuxMCSWorkaround",
+    "state": "Deprecated"
+  },
+  {
+    "name": "HotplugVolumes",
+    "state": "Deprecated"
+  },
+  {
+    "name": "MultiArchitecture",
+    "state": "Deprecated"
+  }
+]
