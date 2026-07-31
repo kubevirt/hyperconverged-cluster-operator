@@ -908,7 +908,7 @@ func hcoConfig2KvConfig(
 	}
 
 	if !controlPlaneMultiNode {
-		kvConfig.Replicas = ptr.To[uint8](1)
+		kvConfig.Replicas = new(uint8(1))
 	}
 
 	if nodePlacement == nil {
