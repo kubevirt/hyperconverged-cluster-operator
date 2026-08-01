@@ -71,6 +71,9 @@ func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 	newValue := cpNodeCount >= 3 || (cpNodeCount >= 2 && arbiterNodeCount >= 1)
 	changed := controlPlaneHighlyAvailable.Swap(newValue) != newValue
 
+	newValue = cpNodeCount >= 2
+	changed = controlPlaneMultiNode.Swap(newValue) != newValue || changed
+
 	newValue = cpNodeCount >= 1
 	changed = controlPlaneNodeExist.Swap(newValue) != newValue || changed
 
