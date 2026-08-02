@@ -3,6 +3,8 @@ set -ex
 
 source "hack/validate-kv-fg-file.sh"
 
+trap 'rm -f kv-beta-feature-gates.json' EXIT
+
 KV_VERSION=$(grep "KUBEVIRT_VERSION=" hack/config | sed -E 's|^KUBEVIRT_VERSION="(.*)"$|\1|')
 gh release download "${KV_VERSION}" \
    -R kubevirt/kubevirt \

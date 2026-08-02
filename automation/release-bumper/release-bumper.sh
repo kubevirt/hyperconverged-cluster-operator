@@ -288,12 +288,13 @@ function update_kv_json_file() {
 
   local kv_version
   kv_version="$(cat updated_version.txt)"
+  trap 'rm -f kv-beta-feature-gates.json' EXIT
 
   if gh release download "${kv_version}" -R kubevirt/kubevirt -O kv-beta-feature-gates.json --pattern=feature-gates.json --clobber; then
     if ! diff -q kv-beta-feature-gates.json pkg/internal/kvfeaturegates/kv-beta-feature-gates.json > /dev/null; then
       if declare -F validate-kv-fg-json-file &>/dev/null; then
         validate-kv-fg-json-file kv-beta-feature-gates.json
-        cp kv-beta-feature-gates.json pkg/internal/kvfeaturegates/kv-beta-feature-gates.json
+        mv kv-beta-feature-gates.json pkg/internal/kvfeaturegates/kv-beta-feature-gates.json
         echo "KubeVirt feature gates file was updated in pkg/internal/kvfeaturegates/kv-beta-feature-gates.json"
       fi
     fi
