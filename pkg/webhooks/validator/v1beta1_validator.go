@@ -13,7 +13,6 @@ import (
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	admissionv1 "k8s.io/api/admission/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -61,13 +60,15 @@ func (wh *WebhookV1Beta1Handler) Handle(ctx context.Context, req admission.Reque
 
 	dryRun := req.DryRun != nil && *req.DryRun
 
+	var warnings []string
+
 	switch req.Operation {
 	case admissionv1.Create:
 		if err = wh.decoder.Decode(req, obj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		err = wh.ValidateCreate(ctx, logger, dryRun, obj)
+		warnings, err = wh.ValidateCreate(ctx, logger, dryRun, obj)
 	case admissionv1.Update:
 		oldObj := &v1beta1.HyperConverged{}
 		if err = wh.decoder.DecodeRaw(req.Object, obj); err != nil {
@@ -77,7 +78,7 @@ func (wh *WebhookV1Beta1Handler) Handle(ctx context.Context, req admission.Reque
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		err = wh.ValidateUpdate(ctx, logger, dryRun, obj, oldObj)
+		warnings, err = wh.ValidateUpdate(ctx, logger, dryRun, obj, oldObj)
 	case admissionv1.Delete:
 		// In reference to PR: https://github.com/kubernetes/kubernetes/pull/76346
 		// OldObject contains the object being deleted
@@ -90,137 +91,117 @@ func (wh *WebhookV1Beta1Handler) Handle(ctx context.Context, req admission.Reque
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("unknown operation request %q", req.Operation))
 	}
 
-	// Check the error message first.
-	if err != nil {
-		var apiStatus apierrors.APIStatus
-		if errors.As(err, &apiStatus) {
-			return validationResponseFromStatus(false, apiStatus.Status())
-		}
-
-		var vw *ValidationWarning
-		if errors.As(err, &vw) {
-			return admission.Allowed("").WithWarnings(vw.Warnings()...)
-		}
-
-		return admission.Denied(err.Error())
-	}
-
-	// Return allowed if everything succeeded.
-	return admission.Allowed("")
+	return errToResponse(err, warnings)
 }
 
-func (wh *WebhookV1Beta1Handler) ValidateCreate(_ context.Context, logger logr.Logger, dryrun bool, hc *v1beta1.HyperConverged) error {
+func (wh *WebhookV1Beta1Handler) ValidateCreate(_ context.Context, logger logr.Logger, dryrun bool, hc *v1beta1.HyperConverged) ([]string, error) {
 	logger.Info("Validating create", "name", hc.Name, "namespace:", hc.Namespace)
 
-	if err := wh.validateCertConfig(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateDataImportCronTemplates(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateTLSSecurityProfiles(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateMediatedDeviceTypes(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateFeatureGatesOnCreate(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateTuningPolicy(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateAffinity(hc); err != nil {
-		return err
+	warnings, err := wh.validateCreateHyperConverged(hc)
+	if err != nil {
+		return warnings, err
 	}
 
 	v1hc := &hcov1.HyperConverged{}
-	if err := hc.ConvertTo(v1hc); err != nil {
-		return err
+	if err = hc.ConvertTo(v1hc); err != nil {
+		return warnings, err
 	}
 
-	if _, err := handlers.NewKubeVirt(v1hc); err != nil {
-		return err
+	if _, err = handlers.NewKubeVirt(v1hc); err != nil {
+		return warnings, err
 	}
 
-	if _, err := handlers.NewCDI(v1hc); err != nil {
-		return err
+	if _, err = handlers.NewCDI(v1hc); err != nil {
+		return warnings, err
 	}
 
-	if _, err := handlers.NewNetworkAddons(v1hc); err != nil {
-		return err
+	if _, err = handlers.NewNetworkAddons(v1hc); err != nil {
+		return warnings, err
 	}
 
-	if _, _, err := handlers.NewSSP(v1hc, true); err != nil {
-		return err
+	if _, _, err = handlers.NewSSP(v1hc, true); err != nil {
+		return warnings, err
 	}
 
 	if !dryrun {
 		tlssecprofile.SetHyperConvergedTLSSecurityProfile(hc.Spec.TLSSecurityProfile)
 	}
 
-	return nil
+	return warnings, nil
 }
 
 // ValidateUpdate is the ValidateUpdate webhook implementation. It calls all the resources in parallel, to dry-run the
 // upgrade.
-func (wh *WebhookV1Beta1Handler) ValidateUpdate(ctx context.Context, logger logr.Logger, dryrun bool, requested *v1beta1.HyperConverged, exists *v1beta1.HyperConverged) error {
+func (wh *WebhookV1Beta1Handler) ValidateUpdate(ctx context.Context, logger logr.Logger, dryrun bool, requested *v1beta1.HyperConverged, exists *v1beta1.HyperConverged) ([]string, error) {
 	logger.Info("Validating update", "name", requested.Name)
 
-	if err := wh.validateDataImportCronTemplates(requested); err != nil {
-		return err
-	}
-
-	if err := wh.validateTLSSecurityProfiles(requested); err != nil {
-		return err
-	}
-
-	if err := wh.validateMediatedDeviceTypes(requested); err != nil {
-		return err
-	}
-
-	if err := wh.validateFeatureGatesOnUpdate(requested, exists); err != nil {
-		return err
-	}
-
-	if err := wh.validateTuningPolicy(requested); err != nil {
-		return err
-	}
-
-	if err := wh.validateAffinity(requested); err != nil {
-		return err
+	warnings, err := wh.validateUpdateHyperConverged(requested, exists)
+	if err != nil {
+		return warnings, err
 	}
 
 	// If no change is detected in the spec nor the annotations - nothing to validate
 	if reflect.DeepEqual(exists.Spec, requested.Spec) &&
 		reflect.DeepEqual(exists.Annotations, requested.Annotations) {
-		return nil
-	}
-
-	if err := wh.validateCertConfig(requested); err != nil {
-		return err
+		return warnings, nil
 	}
 
 	v1hc := &hcov1.HyperConverged{}
-	if err := requested.ConvertTo(v1hc); err != nil {
-		return err
+	if err = requested.ConvertTo(v1hc); err != nil {
+		return warnings, err
 	}
 
-	if err := checkOperands(ctx, wh.cli, logger, v1hc, wh.isOpenshift); err != nil {
-		return err
+	if err = checkOperands(ctx, wh.cli, logger, v1hc, wh.isOpenshift); err != nil {
+		return warnings, err
 	}
 
 	if !dryrun {
 		tlssecprofile.SetHyperConvergedTLSSecurityProfile(requested.Spec.TLSSecurityProfile)
 	}
 
-	return nil
+	return warnings, nil
+}
+
+func (wh *WebhookV1Beta1Handler) validateHyperConverged(hc *v1beta1.HyperConverged) ([]string, error) {
+	if err := wh.validateCertConfig(hc); err != nil {
+		return nil, err
+	}
+
+	if err := wh.validateDataImportCronTemplates(hc); err != nil {
+		return nil, err
+	}
+
+	if err := wh.validateTLSSecurityProfiles(hc); err != nil {
+		return nil, err
+	}
+
+	if err := wh.validateMediatedDeviceTypes(hc); err != nil {
+		return nil, err
+	}
+
+	if err := wh.validateAffinity(hc); err != nil {
+		return nil, err
+	}
+
+	return wh.validateTuningPolicy(hc), nil
+}
+
+func (wh *WebhookV1Beta1Handler) validateCreateHyperConverged(hc *v1beta1.HyperConverged) ([]string, error) {
+	warnings, err := wh.validateHyperConverged(hc)
+	if fgWarn := wh.validateFeatureGatesOnCreate(hc); len(fgWarn) > 0 {
+		warnings = append(warnings, fgWarn...)
+	}
+
+	return warnings, err
+}
+
+func (wh *WebhookV1Beta1Handler) validateUpdateHyperConverged(requested, exists *v1beta1.HyperConverged) ([]string, error) {
+	warnings, err := wh.validateHyperConverged(requested)
+	if fgWarn := wh.validateFeatureGatesOnUpdate(requested, exists); len(fgWarn) > 0 {
+		warnings = append(warnings, fgWarn...)
+	}
+
+	return warnings, err
 }
 
 func (wh *WebhookV1Beta1Handler) ValidateDelete(ctx context.Context, logger logr.Logger, dryrun bool, hc *v1beta1.HyperConverged) error {
@@ -336,9 +317,9 @@ func (wh *WebhookV1Beta1Handler) validateMediatedDeviceTypes(hc *v1beta1.HyperCo
 	return nil
 }
 
-func (wh *WebhookV1Beta1Handler) validateTuningPolicy(hc *v1beta1.HyperConverged) error {
+func (wh *WebhookV1Beta1Handler) validateTuningPolicy(hc *v1beta1.HyperConverged) []string {
 	if hc.Spec.TuningPolicy == v1beta1.HyperConvergedHighBurstProfile { //nolint SA1019
-		return newValidationWarning([]string{"spec.tuningPolicy: the highBurst profile is deprecated as of v1.16.0 and will be removed in a future release"})
+		return []string{"spec.tuningPolicy: the highBurst profile is deprecated as of v1.16.0 and will be removed in a future release"}
 	}
 	return nil
 }
@@ -352,26 +333,14 @@ const (
 	prFGDeprecationWarning = "spec.featureGates.persistentReservation is deprecated. Use spec.storage.persistentReservationConfiguration.enabled in the v1 API instead; it will be removed in a future version."
 )
 
-func (wh *WebhookV1Beta1Handler) validateFeatureGatesOnCreate(hc *v1beta1.HyperConverged) error {
+func (wh *WebhookV1Beta1Handler) validateFeatureGatesOnCreate(hc *v1beta1.HyperConverged) []string {
 	warnings := wh.validateDeprecatedFeatureGates(hc)
-	warnings = validateOldFGOnCreate(warnings, hc)
-
-	if len(warnings) > 0 {
-		return newValidationWarning(warnings)
-	}
-
-	return nil
+	return validateOldFGOnCreate(warnings, hc)
 }
 
-func (wh *WebhookV1Beta1Handler) validateFeatureGatesOnUpdate(requested, exists *v1beta1.HyperConverged) error {
+func (wh *WebhookV1Beta1Handler) validateFeatureGatesOnUpdate(requested, exists *v1beta1.HyperConverged) []string {
 	warnings := wh.validateDeprecatedFeatureGates(requested)
-	warnings = validateOldFGOnUpdate(warnings, requested, exists)
-
-	if len(warnings) > 0 {
-		return newValidationWarning(warnings)
-	}
-
-	return nil
+	return validateOldFGOnUpdate(warnings, requested, exists)
 }
 
 func (wh *WebhookV1Beta1Handler) validateDeprecatedFeatureGates(hc *v1beta1.HyperConverged) []string {

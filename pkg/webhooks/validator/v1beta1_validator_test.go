@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -58,6 +57,13 @@ const (
 						"op": "add",
 						"path": "/spec/configuration/developerConfiguration/featureGates/-",
 						"value": "fg2"
+					}
+			]`
+	invalidKvJSONAnnotation = `[,
+					{
+						"op": "add",
+						"path": "/spec/configuration/cpuRequest",
+						"value": "12m"
 					}
 			]`
 	validCdiAnnotation = `[
@@ -182,13 +188,25 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			Expect(res.Result.Message).To(Equal("unknown operation request \"MALFORMED\""))
 		})
 
+		It("should not mask validation error by validation warning", func(ctx context.Context) {
+			cr.Annotations = map[string]string{common.JSONPatchKVAnnotationName: invalidKvJSONAnnotation}
+			cr.Spec.FeatureGates.DisableMDevConfiguration = new(false)
+			req := newRequest(admissionv1.Create, cr, v1beta1Codec, false)
+
+			res := wh.Handle(ctx, req)
+			Expect(res.Allowed).To(BeFalse())
+			Expect(res.Result.Code).To(Equal(int32(403)))
+			Expect(res.Warnings).ToNot(BeEmpty())
+		})
+
 		It("should accept creation of a resource with a valid namespace", func(ctx context.Context) {
-			Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+			Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 		})
 
 		DescribeTable("Validate annotations", func(ctx context.Context, annotations map[string]string, assertion types.GomegaMatcher) {
 			cr.Annotations = annotations
-			Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(assertion)
+			_, err := wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)
+			Expect(err).To(assertion)
 		},
 			Entry("should accept creation of a resource with a valid kv annotation",
 				map[string]string{common.JSONPatchKVAnnotationName: validKvAnnotation},
@@ -242,7 +260,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						},
 					},
 				}
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 
 			It("should allow unique Mediate Host Device", func(ctx context.Context) {
@@ -262,7 +280,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						},
 					},
 				}
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 		})
 
@@ -279,7 +297,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						Template: cdiv1beta1.DataVolume{
 							Spec: cdiv1beta1.DataVolumeSpec{
 								Source: &cdiv1beta1.DataVolumeSource{
-									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image1")},
+									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/image1")},
 								},
 							},
 						},
@@ -294,7 +312,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						Template: cdiv1beta1.DataVolume{
 							Spec: cdiv1beta1.DataVolumeSpec{
 								Source: &cdiv1beta1.DataVolumeSource{
-									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image2")},
+									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/image2")},
 								},
 							},
 						},
@@ -309,7 +327,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						Template: cdiv1beta1.DataVolume{
 							Spec: cdiv1beta1.DataVolumeSpec{
 								Source: &cdiv1beta1.DataVolumeSource{
-									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image3")},
+									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/image3")},
 								},
 							},
 						},
@@ -324,7 +342,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						Template: cdiv1beta1.DataVolume{
 							Spec: cdiv1beta1.DataVolumeSpec{
 								Source: &cdiv1beta1.DataVolumeSource{
-									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image4")},
+									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/image4")},
 								},
 							},
 						},
@@ -341,7 +359,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				cr.Spec.DataImportCronTemplates[2].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "TrUe"}
 				cr.Spec.DataImportCronTemplates[3].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "tRuE"}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 
 			It("should allow setting the annotation to false", func(ctx context.Context) {
@@ -350,25 +368,25 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				cr.Spec.DataImportCronTemplates[2].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "FaLsE"}
 				cr.Spec.DataImportCronTemplates[3].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "fAlSe"}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 
 			It("should allow setting no annotation", func(ctx context.Context) {
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 
 			It("should not allow empty annotation", func(ctx context.Context) {
 				cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: ""}
 				cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: ""}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).ToNot(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().ToNot(Succeed())
 			})
 
 			It("should not allow unknown annotation values", func(ctx context.Context) {
 				cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "wrong"}
 				cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "mistake"}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).ToNot(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().ToNot(Succeed())
 			})
 
 			Context("Empty DICT spec", func() {
@@ -379,7 +397,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					// no annotation map
 					cr.Spec.DataImportCronTemplates[1].Spec = nil
 
-					Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).ToNot(Succeed())
+					Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().ToNot(Succeed())
 				})
 
 				It("don't allow if the annotation is true", func(ctx context.Context) {
@@ -388,7 +406,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "true"}
 					cr.Spec.DataImportCronTemplates[1].Spec = nil
 
-					Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).ToNot(Succeed())
+					Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().ToNot(Succeed())
 				})
 
 				It("allow if the annotation is false", func(ctx context.Context) {
@@ -397,7 +415,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "false"}
 					cr.Spec.DataImportCronTemplates[1].Spec = nil
 
-					Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+					Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 				})
 			})
 		})
@@ -409,7 +427,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				dryRun = false
 			})
 
-			updateTLSSecurityProfile := func(ctx context.Context, minTLSVersion openshiftconfigv1.TLSProtocolVersion, ciphers []string) error {
+			updateTLSSecurityProfile := func(ctx context.Context, minTLSVersion openshiftconfigv1.TLSProtocolVersion, ciphers []string) ([]string, error) {
 				cr.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Custom: &openshiftconfigv1.CustomTLSProfile{
 						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
@@ -426,14 +444,14 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				func(ctx context.Context, cipher string) {
 					Expect(
 						updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS12, []string{"DHE-RSA-AES256-GCM-SHA384", cipher, "DHE-RSA-CHACHA20-POLY1305"}),
-					).To(Succeed())
+					).Error().To(Succeed())
 				},
 				Entry("ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256"),
 				Entry("ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES128-GCM-SHA256"),
 			)
 
 			It("should fail if does not have any of the HTTP/2-required ciphers", func(ctx context.Context) {
-				err := updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS12, []string{"DHE-RSA-AES256-GCM-SHA384", "DHE-RSA-CHACHA20-POLY1305"})
+				_, err := updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS12, []string{"DHE-RSA-AES256-GCM-SHA384", "DHE-RSA-CHACHA20-POLY1305"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("http2: TLSConfig.CipherSuites is missing an HTTP/2-required AES_128_GCM_SHA256 cipher (need at least one of ECDHE-RSA-AES128-GCM-SHA256 or ECDHE-ECDSA-AES128-GCM-SHA256)"))
 			})
@@ -441,17 +459,17 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			It("should succeed if does not have any of the HTTP/2-required ciphers but TLS version >= 1.3", func(ctx context.Context) {
 				Expect(
 					updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS13, []string{}),
-				).To(Succeed())
+				).Error().To(Succeed())
 			})
 
 			It("should fail if does have custom ciphers with TLS version >= 1.3", func(ctx context.Context) {
-				err := updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS13, []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
+				_, err := updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS13, []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("custom ciphers cannot be selected when minTLSVersion is VersionTLS13"))
 			})
 
 			It("should fail when minTLSVersion is invalid", func(ctx context.Context) {
-				err := updateTLSSecurityProfile(ctx, "invalidProtocolVersion", []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
+				_, err := updateTLSSecurityProfile(ctx, "invalidProtocolVersion", []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("invalid value for spec.tlsSecurityProfile.custom.minTLSVersion"))
 			})
@@ -462,47 +480,45 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					Custom: nil,
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(MatchError(ContainSubstring("missing required field spec.tlsSecurityProfile.custom when type is Custom")))
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(MatchError(ContainSubstring("missing required field spec.tlsSecurityProfile.custom when type is Custom")))
 			})
 		})
 
 		Context("validate deprecated FGs", func() {
 			DescribeTable("should return warning for deprecated feature gate", func(ctx context.Context, fgs v1beta1.HyperConvergedFeatureGates, fgNames ...string) {
 				cr.Spec.FeatureGates = fgs
-				err := wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)
-				Expect(err).To(HaveOccurred())
-				expected := &ValidationWarning{}
-				Expect(errors.As(err, &expected)).To(BeTrue())
+				warnings, err := wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)
+				Expect(err).ToNot(HaveOccurred())
 
-				Expect(expected.warnings).To(HaveLen(len(fgNames)))
+				Expect(warnings).To(HaveLen(len(fgNames)))
 				for _, fgName := range fgNames {
-					Expect(expected.warnings).To(ContainElements(ContainSubstring(fgName)))
+					Expect(warnings).To(ContainElements(ContainSubstring(fgName)))
 				}
 			},
 				Entry("should trigger a warning if the withHostPassthroughCPU=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: ptr.To(false)}, "withHostPassthroughCPU"),
+					v1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: new(false)}, "withHostPassthroughCPU"),
 				Entry("should trigger a warning if the withHostPassthroughCPU=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: ptr.To(true)}, "withHostPassthroughCPU"),
+					v1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: new(true)}, "withHostPassthroughCPU"),
 
 				Entry("should trigger a warning if the deployTektonTaskResources=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: ptr.To(false)}, "deployTektonTaskResources"),
+					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: new(false)}, "deployTektonTaskResources"),
 				Entry("should trigger a warning if the deployTektonTaskResources=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: ptr.To(true)}, "deployTektonTaskResources"),
+					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: new(true)}, "deployTektonTaskResources"),
 
 				Entry("should trigger a warning if the enableManagedTenantQuota=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: ptr.To(false)}, "enableManagedTenantQuota"),
+					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: new(false)}, "enableManagedTenantQuota"),
 				Entry("should trigger a warning if the enableManagedTenantQuota=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: ptr.To(true)}, "enableManagedTenantQuota"),
+					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: new(true)}, "enableManagedTenantQuota"),
 
 				Entry("should trigger a warning if the nonRoot=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{NonRoot: ptr.To(false)}, "nonRoot"),
+					v1beta1.HyperConvergedFeatureGates{NonRoot: new(false)}, "nonRoot"),
 				Entry("should trigger a warning if the nonRoot=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{NonRoot: ptr.To(true)}, "nonRoot"),
+					v1beta1.HyperConvergedFeatureGates{NonRoot: new(true)}, "nonRoot"),
 
 				Entry("should trigger a warning if the disableMDevConfiguration=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{DisableMDevConfiguration: ptr.To(false)}, "disableMDevConfiguration"),
+					v1beta1.HyperConvergedFeatureGates{DisableMDevConfiguration: new(false)}, "disableMDevConfiguration"),
 				Entry("should trigger a warning if the disableMDevConfiguration=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{DisableMDevConfiguration: ptr.To(true)}, "disableMDevConfiguration"),
+					v1beta1.HyperConvergedFeatureGates{DisableMDevConfiguration: new(true)}, "disableMDevConfiguration"),
 
 				Entry("should trigger a warning if the persistentReservation=false FG exists in the CR",
 					v1beta1.HyperConvergedFeatureGates{PersistentReservation: new(false)}, "persistentReservation"),
@@ -511,19 +527,19 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 				Entry("should trigger multiple warnings if several deprecated FG exist in the CR",
 					v1beta1.HyperConvergedFeatureGates{
-						NonRoot:                  ptr.To(true),
-						EnableManagedTenantQuota: ptr.To(true),
+						NonRoot:                  new(true),
+						EnableManagedTenantQuota: new(true),
 					}, "enableManagedTenantQuota", "nonRoot"),
 
 				Entry("should trigger multiple warnings if several deprecated FG exist in the CR, with some valid FGs",
 					v1beta1.HyperConvergedFeatureGates{
-						DownwardMetrics:             ptr.To(true),
-						NonRoot:                     ptr.To(false),
-						EnableCommonBootImageImport: ptr.To(true),
-						EnableApplicationAwareQuota: ptr.To(false),
-						EnableManagedTenantQuota:    ptr.To(false),
-						DeployVMConsoleProxy:        ptr.To(false),
-						DeployKubeSecondaryDNS:      ptr.To(false),
+						DownwardMetrics:             new(true),
+						NonRoot:                     new(false),
+						EnableCommonBootImageImport: new(true),
+						EnableApplicationAwareQuota: new(false),
+						EnableManagedTenantQuota:    new(false),
+						DeployVMConsoleProxy:        new(false),
+						DeployKubeSecondaryDNS:      new(false),
 					}, "enableManagedTenantQuota", "nonRoot", "enableApplicationAwareQuota", "enableCommonBootImageImport", "deployVmConsoleProxy"),
 			)
 		})
@@ -537,7 +553,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					Affinity: nil,
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 
 			It("should allow empty affinity", func(ctx context.Context) {
@@ -548,7 +564,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					Affinity: &corev1.Affinity{},
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 
 			It("should allow valid affinity", func(ctx context.Context) {
@@ -592,7 +608,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 
 			It("should reject invalid workloads affinity: unknown operator", func(ctx context.Context) {
@@ -636,7 +652,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(MatchError(
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(MatchError(
 					And(
 						ContainSubstring("invalid workloads node placement affinity:"),
 						ContainSubstring(`Unsupported value: "WrongOperator"`),
@@ -685,7 +701,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(MatchError(
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(MatchError(
 					And(
 						ContainSubstring("invalid workloads node placement affinity:"),
 						ContainSubstring("must have one element"),
@@ -734,7 +750,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(MatchError(
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(MatchError(
 					And(
 						ContainSubstring("invalid infra node placement affinity:"),
 						ContainSubstring(`Unsupported value: "WrongOperator"`),
@@ -783,7 +799,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(MatchError(
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(MatchError(
 					And(
 						ContainSubstring("invalid infra node placement affinity:"),
 						ContainSubstring("must have one element"),
@@ -795,18 +811,16 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		Context("validate tuning policy", func() {
 			It("should return warning for deprecated highBurst tuning policy", func(ctx context.Context) {
 				cr.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile //nolint SA1019
-				err := wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)
-				Expect(err).To(HaveOccurred())
-				expected := &ValidationWarning{}
-				Expect(errors.As(err, &expected)).To(BeTrue())
-				Expect(expected.warnings).To(HaveLen(1))
-				Expect(expected.warnings[0]).To(ContainSubstring("highBurst profile is deprecated"))
-				Expect(expected.warnings[0]).To(ContainSubstring("v1.16.0"))
+				warnings, err := wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(warnings).To(HaveLen(1))
+				Expect(warnings[0]).To(ContainSubstring("highBurst profile is deprecated"))
+				Expect(warnings[0]).To(ContainSubstring("v1.16.0"))
 			})
 
 			It("should not return warning when tuning policy is not set", func(ctx context.Context) {
 				cr.Spec.TuningPolicy = ""
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)).Error().To(Succeed())
 			})
 		})
 	})
@@ -877,7 +891,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 			Expect(err).To(MatchError(ContainSubstring("kubevirts.kubevirt.io")))
 		})
@@ -894,7 +908,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// change something in workloads to trigger dry-run update
 			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(ErrFakeKvError))
 		})
 
@@ -911,7 +925,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 			Expect(err).To(MatchError(ContainSubstring("cdis.cdi.kubevirt.io")))
 		})
@@ -926,7 +940,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// change something in workloads to trigger dry-run update
 			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(ErrFakeCdiError))
 		})
 
@@ -941,7 +955,8 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// change something in workloads to trigger dry-run update
 			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
 
-			Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			Expect(err).To(Succeed())
 		})
 
 		It("should return error if NetworkAddons CR is missing", func(ctx context.Context) {
@@ -956,7 +971,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 			Expect(err).To(MatchError(ContainSubstring("networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io")))
 		})
@@ -972,7 +987,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// change something in workloads to trigger dry-run update
 			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(ErrFakeNetworkError))
 		})
 
@@ -987,7 +1002,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 			Expect(err).To(MatchError(ContainSubstring("ssps.ssp.kubevirt.io")))
 		})
@@ -1002,7 +1017,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// change something in workloads to trigger dry-run update
 			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(ErrFakeSspError))
 
 		})
@@ -1018,7 +1033,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// change something in workloads to trigger dry-run update
 			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
 
-			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(context.DeadlineExceeded))
 		})
 
@@ -1031,7 +1046,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			newHco := &v1beta1.HyperConverged{}
 			hco.DeepCopyInto(newHco)
 
-			Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+			Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().To(Succeed())
 		})
 
 		Context("test permitted host devices update validation", func() {
@@ -1057,7 +1072,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						},
 					},
 				}
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().To(Succeed())
 			})
 
 			It("should allow unique Mediate Host Device", func(ctx context.Context) {
@@ -1082,7 +1097,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						},
 					},
 				}
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().To(Succeed())
 			})
 		})
 
@@ -1111,7 +1126,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 				Expect(
 					wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, oldHC),
-				).To(MatchError(apierrors.IsNotFound, "not found error"))
+				).Error().To(MatchError(apierrors.IsNotFound, "not found error"))
 			})
 		})
 
@@ -1131,7 +1146,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				newHco := &v1beta1.HyperConverged{}
 				hco.DeepCopyInto(newHco)
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().To(Succeed())
 			})
 
 			It("should allow updating of live migration", func(ctx context.Context) {
@@ -1143,9 +1158,9 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.DeepCopyInto(newHco)
 
 				// change something in the LiveMigrationConfig field
-				hco.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To[int64](200)
+				hco.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = new(int64(200))
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().To(Succeed())
 			})
 
 			It("should fail if live migration is wrong", func(ctx context.Context) {
@@ -1157,11 +1172,11 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.DeepCopyInto(newHco)
 
 				// change something in the LiveMigrationConfig field
-				newHco.Spec.LiveMigrationConfig.BandwidthPerMigration = ptr.To("Wrong Value")
+				newHco.Spec.LiveMigrationConfig.BandwidthPerMigration = new("Wrong Value")
 
 				Expect(
 					wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco),
-				).To(MatchError(ContainSubstring("failed to parse the LiveMigrationConfig.bandwidthPerMigration field")))
+				).Error().To(MatchError(ContainSubstring("failed to parse the LiveMigrationConfig.bandwidthPerMigration field")))
 			})
 		})
 
@@ -1181,7 +1196,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				newHco := &v1beta1.HyperConverged{}
 				hco.DeepCopyInto(newHco)
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().To(Succeed())
 			})
 
 			It("should allow updating of cert config", func(ctx context.Context) {
@@ -1198,7 +1213,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				newHco.Spec.CertConfig.Server.Duration.Duration = hco.Spec.CertConfig.Server.Duration.Duration * 2
 				newHco.Spec.CertConfig.Server.RenewBefore.Duration = hco.Spec.CertConfig.Server.RenewBefore.Duration * 2
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().To(Succeed())
 			})
 
 			DescribeTable("should fail if cert config is wrong",
@@ -1207,7 +1222,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 					wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
 
-					err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, &newHco, hco)
+					_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, &newHco, hco)
 					Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 				},
 				Entry("certConfig.ca.duration is too short",
@@ -1355,7 +1370,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		})
 
 		Context("validate tlsSecurityProfiles", func() {
-			updateTLSSecurityProfile := func(ctx context.Context, minTLSVersion openshiftconfigv1.TLSProtocolVersion, ciphers []string) error {
+			updateTLSSecurityProfile := func(ctx context.Context, minTLSVersion openshiftconfigv1.TLSProtocolVersion, ciphers []string) ([]string, error) {
 				cli := getFakeClient(hco)
 
 				wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
@@ -1379,14 +1394,14 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				func(ctx context.Context, cipher string) {
 					Expect(
 						updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS12, []string{"DHE-RSA-AES256-GCM-SHA384", cipher, "DHE-RSA-CHACHA20-POLY1305"}),
-					).To(Succeed())
+					).Error().To(Succeed())
 				},
 				Entry("ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256"),
 				Entry("ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES128-GCM-SHA256"),
 			)
 
 			It("should fail if does not have any of the HTTP/2-required ciphers", func(ctx context.Context) {
-				err := updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS12, []string{"DHE-RSA-AES256-GCM-SHA384", "DHE-RSA-CHACHA20-POLY1305"})
+				_, err := updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS12, []string{"DHE-RSA-AES256-GCM-SHA384", "DHE-RSA-CHACHA20-POLY1305"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("http2: TLSConfig.CipherSuites is missing an HTTP/2-required AES_128_GCM_SHA256 cipher (need at least one of ECDHE-RSA-AES128-GCM-SHA256 or ECDHE-ECDSA-AES128-GCM-SHA256)"))
 			})
@@ -1394,17 +1409,17 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			It("should succeed if does not have any of the HTTP/2-required ciphers but TLS version >= 1.3", func(ctx context.Context) {
 				Expect(
 					updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS13, []string{}),
-				).To(Succeed())
+				).Error().To(Succeed())
 			})
 
 			It("should fail if does have custom ciphers with TLS version >= 1.3", func(ctx context.Context) {
-				err := updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS13, []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
+				_, err := updateTLSSecurityProfile(ctx, openshiftconfigv1.VersionTLS13, []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("custom ciphers cannot be selected when minTLSVersion is VersionTLS13"))
 			})
 
 			It("should fail when minTLSVersion is invalid", func(ctx context.Context) {
-				err := updateTLSSecurityProfile(ctx, "invalidProtocolVersion", []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
+				_, err := updateTLSSecurityProfile(ctx, "invalidProtocolVersion", []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("invalid value for spec.tlsSecurityProfile.custom.minTLSVersion"))
 			})
@@ -1420,50 +1435,51 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					Custom: nil,
 				}
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(MatchError(ContainSubstring("missing required field spec.tlsSecurityProfile.custom when type is Custom")))
+				_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+				Expect(err).To(MatchError(ContainSubstring("missing required field spec.tlsSecurityProfile.custom when type is Custom")))
 			})
 		})
 
 		Context("validate deprecated FGs", func() {
+			BeforeEach(func() {
+				wh.cli = getFakeClient(hco)
+			})
 			DescribeTable("should return warning for deprecated feature gate", func(ctx context.Context, fgs v1beta1.HyperConvergedFeatureGates, fgNames ...string) {
 				newHCO := hco.DeepCopy()
 				newHCO.Spec.FeatureGates = fgs
 
-				err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
+				warnings, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
 
-				Expect(err).To(HaveOccurred())
-				expected := &ValidationWarning{}
-				Expect(errors.As(err, &expected)).To(BeTrue())
-
-				Expect(expected.warnings).To(HaveLen(len(fgNames)))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(warnings).To(HaveLen(len(fgNames)))
 				for _, fgName := range fgNames {
-					Expect(expected.warnings).To(ContainElements(ContainSubstring(fgName)))
+					Expect(warnings).To(ContainElements(ContainSubstring(fgName)))
 				}
 			},
 				Entry("should trigger a warning if the withHostPassthroughCPU=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: ptr.To(false)}, "withHostPassthroughCPU"),
+					v1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: new(false)}, "withHostPassthroughCPU"),
 				Entry("should trigger a warning if the withHostPassthroughCPU=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: ptr.To(true)}, "withHostPassthroughCPU"),
+					v1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: new(true)}, "withHostPassthroughCPU"),
 
 				Entry("should trigger a warning if the deployTektonTaskResources=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: ptr.To(false)}, "deployTektonTaskResources"),
+					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: new(false)}, "deployTektonTaskResources"),
 				Entry("should trigger a warning if the deployTektonTaskResources=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: ptr.To(true)}, "deployTektonTaskResources"),
+					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: new(true)}, "deployTektonTaskResources"),
 
 				Entry("should trigger a warning if the enableManagedTenantQuota=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: ptr.To(false)}, "enableManagedTenantQuota"),
+					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: new(false)}, "enableManagedTenantQuota"),
 				Entry("should trigger a warning if the enableManagedTenantQuota=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: ptr.To(true)}, "enableManagedTenantQuota"),
+					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: new(true)}, "enableManagedTenantQuota"),
 
 				Entry("should trigger a warning if the nonRoot=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{NonRoot: ptr.To(false)}, "nonRoot"),
+					v1beta1.HyperConvergedFeatureGates{NonRoot: new(false)}, "nonRoot"),
 				Entry("should trigger a warning if the nonRoot=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{NonRoot: ptr.To(true)}, "nonRoot"),
+					v1beta1.HyperConvergedFeatureGates{NonRoot: new(true)}, "nonRoot"),
 
 				Entry("should trigger a warning if the disableMDevConfiguration=false FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{DisableMDevConfiguration: ptr.To(false)}, "disableMDevConfiguration"),
+					v1beta1.HyperConvergedFeatureGates{DisableMDevConfiguration: new(false)}, "disableMDevConfiguration"),
 				Entry("should trigger a warning if the disableMDevConfiguration=true FG exists in the CR",
-					v1beta1.HyperConvergedFeatureGates{DisableMDevConfiguration: ptr.To(true)}, "disableMDevConfiguration"),
+					v1beta1.HyperConvergedFeatureGates{DisableMDevConfiguration: new(true)}, "disableMDevConfiguration"),
 
 				Entry("should trigger a warning if the persistentReservation=false FG exists in the CR",
 					v1beta1.HyperConvergedFeatureGates{PersistentReservation: new(false)}, "persistentReservation"),
@@ -1472,16 +1488,16 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 				Entry("should trigger multiple warnings if several deprecated FG exist in the CR",
 					v1beta1.HyperConvergedFeatureGates{
-						NonRoot:                  ptr.To(true),
-						EnableManagedTenantQuota: ptr.To(true),
+						NonRoot:                  new(true),
+						EnableManagedTenantQuota: new(true),
 					}, "enableManagedTenantQuota", "nonRoot"),
 
 				Entry("should trigger multiple warnings if several deprecated FG exist in the CR, with some valid FGs",
 					v1beta1.HyperConvergedFeatureGates{
-						DownwardMetrics:             ptr.To(true),
-						NonRoot:                     ptr.To(false),
-						EnableCommonBootImageImport: ptr.To(true),
-						EnableManagedTenantQuota:    ptr.To(false),
+						DownwardMetrics:             new(true),
+						NonRoot:                     new(false),
+						EnableCommonBootImageImport: new(true),
+						EnableManagedTenantQuota:    new(false),
 					}, "enableManagedTenantQuota", "nonRoot", "enableCommonBootImageImport"),
 			)
 		})
@@ -1493,19 +1509,16 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.Spec.FeatureGates.EnableApplicationAwareQuota = newFG
 				newHCO.Spec.FeatureGates.EnableApplicationAwareQuota = oldFG
 
-				err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
+				warnings, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
 
-				Expect(err).To(HaveOccurred())
-				expected := &ValidationWarning{}
-				Expect(errors.As(err, &expected)).To(BeTrue())
-
-				Expect(expected.warnings).To(HaveLen(1))
-				Expect(expected.warnings).To(ContainElements(ContainSubstring("enableApplicationAwareQuota")))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(warnings).To(HaveLen(1))
+				Expect(warnings).To(ContainElements(ContainSubstring("enableApplicationAwareQuota")))
 			},
-				Entry("should trigger warning if enableApplicationAwareQuota appeared as true", nil, ptr.To(true)),
-				Entry("should trigger warning if enableApplicationAwareQuota appeared as false", nil, ptr.To(false)),
-				Entry("should trigger warning if enableApplicationAwareQuota has changed from true to false", ptr.To(true), ptr.To(false)),
-				Entry("should trigger warning if enableApplicationAwareQuota has changed from false to true", ptr.To(false), ptr.To(true)),
+				Entry("should trigger warning if enableApplicationAwareQuota appeared as true", nil, new(true)),
+				Entry("should trigger warning if enableApplicationAwareQuota appeared as false", nil, new(false)),
+				Entry("should trigger warning if enableApplicationAwareQuota has changed from true to false", new(true), new(false)),
+				Entry("should trigger warning if enableApplicationAwareQuota has changed from false to true", new(false), new(true)),
 			)
 
 			//nolint:staticcheck
@@ -1516,12 +1529,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.Spec.FeatureGates.EnableApplicationAwareQuota = newFG
 				newHCO.Spec.FeatureGates.EnableApplicationAwareQuota = oldFG
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).Error().To(Succeed())
 			},
-				Entry("should not trigger warning if enableApplicationAwareQuota (true) disappeared", ptr.To(true), nil),
-				Entry("should not trigger warning if enableApplicationAwareQuota (false) disappeared", ptr.To(false), nil),
-				Entry("should not trigger warning if enableApplicationAwareQuota (true) wasn't changed", ptr.To(true), ptr.To(true)),
-				Entry("should not trigger warning if enableApplicationAwareQuota (false) wasn't changed", ptr.To(false), ptr.To(false)),
+				Entry("should not trigger warning if enableApplicationAwareQuota (true) disappeared", new(true), nil),
+				Entry("should not trigger warning if enableApplicationAwareQuota (false) disappeared", new(false), nil),
+				Entry("should not trigger warning if enableApplicationAwareQuota (true) wasn't changed", new(true), new(true)),
+				Entry("should not trigger warning if enableApplicationAwareQuota (false) wasn't changed", new(false), new(false)),
 			)
 
 			//nolint:staticcheck
@@ -1530,19 +1543,17 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.Spec.FeatureGates.EnableCommonBootImageImport = newFG
 				newHCO.Spec.FeatureGates.EnableCommonBootImageImport = oldFG
 
-				err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
+				warnings, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
 
-				Expect(err).To(HaveOccurred())
-				expected := &ValidationWarning{}
-				Expect(errors.As(err, &expected)).To(BeTrue())
+				Expect(err).ToNot(HaveOccurred())
 
-				Expect(expected.warnings).To(HaveLen(1))
-				Expect(expected.warnings).To(ContainElements(ContainSubstring("enableCommonBootImageImport")))
+				Expect(warnings).To(HaveLen(1))
+				Expect(warnings).To(ContainElements(ContainSubstring("enableCommonBootImageImport")))
 			},
-				Entry("should trigger warning if enableCommonBootImageImport appeared as true", nil, ptr.To(true)),
-				Entry("should trigger warning if enableCommonBootImageImport appeared as false", nil, ptr.To(false)),
-				Entry("should trigger warning if enableCommonBootImageImport has changed from true to false", ptr.To(true), ptr.To(false)),
-				Entry("should trigger warning if enableCommonBootImageImport has changed from false to true", ptr.To(false), ptr.To(true)),
+				Entry("should trigger warning if enableCommonBootImageImport appeared as true", nil, new(true)),
+				Entry("should trigger warning if enableCommonBootImageImport appeared as false", nil, new(false)),
+				Entry("should trigger warning if enableCommonBootImageImport has changed from true to false", new(true), new(false)),
+				Entry("should trigger warning if enableCommonBootImageImport has changed from false to true", new(false), new(true)),
 			)
 
 			//nolint:staticcheck
@@ -1553,12 +1564,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.Spec.FeatureGates.EnableCommonBootImageImport = newFG
 				newHCO.Spec.FeatureGates.EnableCommonBootImageImport = oldFG
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).Error().To(Succeed())
 			},
-				Entry("should not trigger warning if enableCommonBootImageImport (true) disappeared", ptr.To(true), nil),
-				Entry("should not trigger warning if enableCommonBootImageImport (false) disappeared", ptr.To(false), nil),
-				Entry("should not trigger warning if enableCommonBootImageImport (true) wasn't changed", ptr.To(true), ptr.To(true)),
-				Entry("should not trigger warning if enableCommonBootImageImport (false) wasn't changed", ptr.To(false), ptr.To(false)),
+				Entry("should not trigger warning if enableCommonBootImageImport (true) disappeared", new(true), nil),
+				Entry("should not trigger warning if enableCommonBootImageImport (false) disappeared", new(false), nil),
+				Entry("should not trigger warning if enableCommonBootImageImport (true) wasn't changed", new(true), new(true)),
+				Entry("should not trigger warning if enableCommonBootImageImport (false) wasn't changed", new(false), new(false)),
 			)
 
 			//nolint:staticcheck
@@ -1567,19 +1578,17 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.Spec.FeatureGates.DeployVMConsoleProxy = newFG
 				newHCO.Spec.FeatureGates.DeployVMConsoleProxy = oldFG
 
-				err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
+				warnings, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
 
-				Expect(err).To(HaveOccurred())
-				expected := &ValidationWarning{}
-				Expect(errors.As(err, &expected)).To(BeTrue())
+				Expect(err).ToNot(HaveOccurred())
 
-				Expect(expected.warnings).To(HaveLen(1))
-				Expect(expected.warnings).To(ContainElements(ContainSubstring("deployVmConsoleProxy")))
+				Expect(warnings).To(HaveLen(1))
+				Expect(warnings).To(ContainElements(ContainSubstring("deployVmConsoleProxy")))
 			},
-				Entry("should trigger warning if deployVmConsoleProxy appeared as true", nil, ptr.To(true)),
-				Entry("should trigger warning if deployVmConsoleProxy appeared as false", nil, ptr.To(false)),
-				Entry("should trigger warning if deployVmConsoleProxy has changed from true to false", ptr.To(true), ptr.To(false)),
-				Entry("should trigger warning if deployVmConsoleProxy has changed from false to true", ptr.To(false), ptr.To(true)),
+				Entry("should trigger warning if deployVmConsoleProxy appeared as true", nil, new(true)),
+				Entry("should trigger warning if deployVmConsoleProxy appeared as false", nil, new(false)),
+				Entry("should trigger warning if deployVmConsoleProxy has changed from true to false", new(true), new(false)),
+				Entry("should trigger warning if deployVmConsoleProxy has changed from false to true", new(false), new(true)),
 			)
 
 			//nolint:staticcheck
@@ -1590,12 +1599,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.Spec.FeatureGates.DeployVMConsoleProxy = newFG
 				newHCO.Spec.FeatureGates.DeployVMConsoleProxy = oldFG
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).Error().To(Succeed())
 			},
-				Entry("should not trigger warning if deployVmConsoleProxy (true) disappeared", ptr.To(true), nil),
-				Entry("should not trigger warning if deployVmConsoleProxy (false) disappeared", ptr.To(false), nil),
-				Entry("should not trigger warning if deployVmConsoleProxy (true) wasn't changed", ptr.To(true), ptr.To(true)),
-				Entry("should not trigger warning if deployVmConsoleProxy (false) wasn't changed", ptr.To(false), ptr.To(false)),
+				Entry("should not trigger warning if deployVmConsoleProxy (true) disappeared", new(true), nil),
+				Entry("should not trigger warning if deployVmConsoleProxy (false) disappeared", new(false), nil),
+				Entry("should not trigger warning if deployVmConsoleProxy (true) wasn't changed", new(true), new(true)),
+				Entry("should not trigger warning if deployVmConsoleProxy (false) wasn't changed", new(false), new(false)),
 			)
 
 			//nolint:staticcheck
@@ -1606,12 +1615,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.Spec.FeatureGates.DeployKubeSecondaryDNS = newFG
 				newHCO.Spec.FeatureGates.DeployKubeSecondaryDNS = oldFG
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).Error().To(Succeed())
 			},
-				Entry("should not trigger warning if deployKubeSecondaryDNS (true) disappeared", ptr.To(true), nil),
-				Entry("should not trigger warning if deployKubeSecondaryDNS (false) disappeared", ptr.To(false), nil),
-				Entry("should not trigger warning if deployKubeSecondaryDNS (true) wasn't changed", ptr.To(true), ptr.To(true)),
-				Entry("should not trigger warning if deployKubeSecondaryDNS (false) wasn't changed", ptr.To(false), ptr.To(false)),
+				Entry("should not trigger warning if deployKubeSecondaryDNS (true) disappeared", new(true), nil),
+				Entry("should not trigger warning if deployKubeSecondaryDNS (false) disappeared", new(false), nil),
+				Entry("should not trigger warning if deployKubeSecondaryDNS (true) wasn't changed", new(true), new(true)),
+				Entry("should not trigger warning if deployKubeSecondaryDNS (false) wasn't changed", new(false), new(false)),
 			)
 		})
 
@@ -1619,19 +1628,17 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			It("should return warning for deprecated highBurst tuning policy", func(ctx context.Context) {
 				newHCO := hco.DeepCopy()
 				newHCO.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile //nolint SA1019
-				err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
-				Expect(err).To(HaveOccurred())
-				expected := &ValidationWarning{}
-				Expect(errors.As(err, &expected)).To(BeTrue())
-				Expect(expected.warnings).To(HaveLen(1))
-				Expect(expected.warnings[0]).To(ContainSubstring("highBurst profile is deprecated"))
-				Expect(expected.warnings[0]).To(ContainSubstring("v1.16.0"))
+				warnings, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(warnings).To(HaveLen(1))
+				Expect(warnings[0]).To(ContainSubstring("highBurst profile is deprecated"))
+				Expect(warnings[0]).To(ContainSubstring("v1.16.0"))
 			})
 
 			It("should not return warning when tuning policy is not set", func(ctx context.Context) {
 				newHCO := hco.DeepCopy()
 				newHCO.Spec.TuningPolicy = ""
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).Error().To(Succeed())
 			})
 		})
 	})
@@ -1805,7 +1812,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.DeepCopyInto(newHco)
 				hco.Annotations = map[string]string{annotationName: annotation}
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().To(Succeed())
 			},
 			Entry("should accept if kv annotation is valid", common.JSONPatchKVAnnotationName, validKvAnnotation),
 			Entry("should accept if cdi annotation is valid", common.JSONPatchCDIAnnotationName, validCdiAnnotation),
@@ -1824,7 +1831,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				hco.DeepCopyInto(newHco)
 				newHco.Annotations = map[string]string{annotationName: annotation}
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, false, newHco, hco)).To(MatchError(ContainSubstring("invalid jsonPatch in the %s", annotationName)))
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, false, newHco, hco)).Error().To(MatchError(ContainSubstring("invalid jsonPatch in the %s", annotationName)))
 			},
 			Entry("should reject if kv annotation is invalid", common.JSONPatchKVAnnotationName, invalidKvAnnotation),
 			Entry("should reject if cdi annotation is invalid", common.JSONPatchCDIAnnotationName, invalidCdiAnnotation),
@@ -1874,14 +1881,14 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			It("should update hcoTLSConfigCache creating a resource not in dry run mode", func(ctx context.Context) {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
 				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, false, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, false, cr)).Error().To(Succeed())
 				Expect(hcoTLSConfigCache).To(Equal(&modernTLSSecurityProfile))
 			})
 
 			It("should not update hcoTLSConfigCache creating a resource in dry run mode", func(ctx context.Context) {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
 				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, true, cr)).To(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, true, cr)).Error().To(Succeed())
 				Expect(hcoTLSConfigCache).ToNot(Equal(&modernTLSSecurityProfile))
 			})
 
@@ -1900,7 +1907,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				Expect(wh.ValidateCreate(ctx, GinkgoLogr, false, cr)).ToNot(Succeed())
+				Expect(wh.ValidateCreate(ctx, GinkgoLogr, false, cr)).Error().ToNot(Succeed())
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
 			})
 		})
@@ -1918,7 +1925,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				cr.DeepCopyInto(newCr)
 				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, false, newCr, cr)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, false, newCr, cr)).Error().To(Succeed())
 				Expect(hcoTLSConfigCache).To(Equal(&oldTLSSecurityProfile))
 			})
 
@@ -1933,7 +1940,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				cr.DeepCopyInto(newCr)
 				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
 
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, true, newCr, cr)).To(Succeed())
+				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, true, newCr, cr)).Error().To(Succeed())
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
 			})
 
@@ -1947,7 +1954,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				cr.DeepCopyInto(newCr)
 				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
 
-				err := wh.ValidateUpdate(ctx, GinkgoLogr, false, newCr, cr)
+				_, err := wh.ValidateUpdate(ctx, GinkgoLogr, false, newCr, cr)
 				Expect(err).To(MatchError(ErrFakeCdiError))
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
 			})
@@ -2015,13 +2022,13 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		DescribeTable("Check mediatedDevicesTypes -> mediatedDeviceTypes transition", func(ctx context.Context, mDConfiguration *v1beta1.MediatedDevicesConfiguration, expected types.GomegaMatcher) {
 			// create
 			newCr.Spec.MediatedDevicesConfiguration = mDConfiguration
-			Expect(wh.ValidateCreate(ctx, GinkgoLogr, false, newCr)).To(expected)
+			Expect(wh.ValidateCreate(ctx, GinkgoLogr, false, newCr)).Error().To(expected)
 
 			// update
 			cli := getFakeClient(cr)
 			cli.InitiateUpdateErrors(getUpdateError(noFailure))
 			whU := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
-			Expect(whU.ValidateUpdate(ctx, GinkgoLogr, false, newCr, cr)).To(expected)
+			Expect(whU.ValidateUpdate(ctx, GinkgoLogr, false, newCr, cr)).Error().To(expected)
 		},
 			Entry("should not fail with no configuration",
 				nil,
@@ -2198,8 +2205,8 @@ func newHyperConvergedConfig() *sdkapi.NodePlacement {
 			},
 		},
 		Tolerations: []corev1.Toleration{
-			{Key: "key1", Operator: "In", Value: "value1", Effect: "effect1", TolerationSeconds: ptr.To[int64](1)},
-			{Key: "key2", Operator: "In", Value: "value2", Effect: "effect2", TolerationSeconds: ptr.To[int64](2)},
+			{Key: "key1", Operator: "In", Value: "value1", Effect: "effect1", TolerationSeconds: new(int64(1))},
+			{Key: "key2", Operator: "In", Value: "value2", Effect: "effect2", TolerationSeconds: new(int64(2))},
 		},
 	}
 }
@@ -2267,7 +2274,7 @@ func initiateTimeout(_ client.Object) error {
 func newRequest(operation admissionv1.Operation, cr runtime.Object, encoder runtime.Encoder, dryrun bool) admission.Request {
 	req := admission.Request{
 		AdmissionRequest: admissionv1.AdmissionRequest{
-			DryRun:    ptr.To(dryrun),
+			DryRun:    new(dryrun),
 			Operation: operation,
 			Resource: metav1.GroupVersionResource{
 				Group:    v1beta1.SchemeGroupVersion.Group,

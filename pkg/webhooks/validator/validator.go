@@ -43,24 +43,6 @@ const (
 	validatorV1Name = "hyperConverged v1 validator"
 )
 
-type ValidationWarning struct {
-	warnings []string
-}
-
-func newValidationWarning(warnings []string) *ValidationWarning {
-	return &ValidationWarning{
-		warnings: warnings,
-	}
-}
-
-func (v *ValidationWarning) Error() string {
-	return ""
-}
-
-func (v *ValidationWarning) Warnings() []string {
-	return v.warnings
-}
-
 type WebhookHandler struct {
 	logger      logr.Logger
 	cli         client.Client
@@ -128,20 +110,21 @@ func (wh *WebhookHandler) Handle(ctx context.Context, req admission.Request) adm
 func (wh *WebhookHandler) validateCreate(logger logr.Logger, dryrun bool, hc *hcov1.HyperConverged) admission.Response {
 	logger.Info("Validating create", "name", hc.Name, "namespace:", hc.Namespace)
 
-	if err := wh.validateCreateHyperConverged(hc); err != nil {
-		return errToResponse(err)
+	warnings, err := wh.validateCreateHyperConverged(hc)
+	if err != nil {
+		return errToResponse(err, warnings)
 	}
 
-	err := wh.validateCreateComponents(hc)
+	err = wh.validateCreateComponents(hc)
 	if err != nil {
-		return errToResponse(err)
+		return errToResponse(err, warnings)
 	}
 
 	if !dryrun {
 		tlssecprofile.SetHyperConvergedTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile)
 	}
 
-	return admission.Allowed("")
+	return errToResponse(nil, warnings)
 }
 
 func (wh *WebhookHandler) validateUpdate(ctx context.Context, logger logr.Logger, dryrun bool, requested *hcov1.HyperConverged, exists *hcov1.HyperConverged) admission.Response {
@@ -153,19 +136,20 @@ func (wh *WebhookHandler) validateUpdate(ctx context.Context, logger logr.Logger
 		return admission.Allowed("")
 	}
 
-	if err := wh.validateUpdateHyperConverged(requested, exists); err != nil {
-		return errToResponse(err)
+	warnings, err := wh.validateUpdateHyperConverged(requested, exists)
+	if err != nil {
+		return errToResponse(err, warnings)
 	}
 
-	if err := checkOperands(ctx, wh.cli, logger, requested, wh.isOpenshift); err != nil {
-		return errToResponse(err)
+	if err = checkOperands(ctx, wh.cli, logger, requested, wh.isOpenshift); err != nil {
+		return errToResponse(err, warnings)
 	}
 
 	if !dryrun {
 		tlssecprofile.SetHyperConvergedTLSSecurityProfile(requested.Spec.Security.TLSSecurityProfile)
 	}
 
-	return admission.Allowed("")
+	return errToResponse(nil, warnings)
 }
 
 func (wh *WebhookHandler) validateDelete(ctx context.Context, logger logr.Logger, dryrun bool, hc *hcov1.HyperConverged) admission.Response {
@@ -187,55 +171,62 @@ func (wh *WebhookHandler) validateDelete(ctx context.Context, logger logr.Logger
 		tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
 	}
 
-	return errToResponse(err)
+	return errToResponse(err, nil)
 }
 
-func (wh *WebhookHandler) validateHyperConverged(hc *hcov1.HyperConverged) error {
+func (wh *WebhookHandler) validateHyperConverged(hc *hcov1.HyperConverged) ([]string, error) {
+	var warnings []string
 	if err := wh.validateCertConfig(hc); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := wh.validateDataImportCronTemplates(hc); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := wh.validateTLSSecurityProfiles(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateTuningPolicy(hc); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := wh.validateAffinity(hc); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	if warn := wh.validateTuningPolicy(hc); len(warn) > 0 {
+		warnings = append(warnings, warn...)
+	}
+
+	return warnings, nil
 }
 
-func (wh *WebhookHandler) validateCreateHyperConverged(hc *hcov1.HyperConverged) error {
-	if err := wh.validateHyperConverged(hc); err != nil {
-		return err
+func (wh *WebhookHandler) validateCreateHyperConverged(hc *hcov1.HyperConverged) ([]string, error) {
+	var warnings []string
+
+	warn, err := wh.validateHyperConverged(hc)
+	if len(warn) > 0 {
+		warnings = append(warnings, warn...)
 	}
 
-	if err := wh.validateFeatureGatesOnCreate(hc); err != nil {
-		return err
+	if warn = wh.validateFeatureGatesOnCreate(hc); len(warn) > 0 {
+		warnings = append(warnings, warn...)
 	}
 
-	return nil
+	return warnings, err
 }
 
-func (wh *WebhookHandler) validateUpdateHyperConverged(hc, oldHC *hcov1.HyperConverged) error {
-	if err := wh.validateHyperConverged(hc); err != nil {
-		return err
+func (wh *WebhookHandler) validateUpdateHyperConverged(hc, oldHC *hcov1.HyperConverged) ([]string, error) {
+	var warnings []string
+
+	warn, err := wh.validateHyperConverged(hc)
+	if len(warn) > 0 {
+		warnings = append(warnings, warn...)
 	}
 
-	if err := wh.validateFeatureGatesOnUpdate(hc, oldHC); err != nil {
-		return err
+	if warn = wh.validateFeatureGatesOnUpdate(hc, oldHC); len(warn) > 0 {
+		warnings = append(warnings, warn...)
 	}
 
-	return nil
+	return warnings, err
 }
 
 func (wh *WebhookHandler) validateCreateComponents(hc *hcov1.HyperConverged) error {
@@ -334,36 +325,25 @@ func (wh *WebhookHandler) validateTLSSecurityProfiles(hc *hcov1.HyperConverged) 
 	return nil
 }
 
-func (wh *WebhookHandler) validateTuningPolicy(hc *hcov1.HyperConverged) error {
+func (wh *WebhookHandler) validateTuningPolicy(hc *hcov1.HyperConverged) []string {
 	if hc.Spec.Virtualization.TuningPolicy == hcov1beta1.HyperConvergedHighBurstProfile { //nolint SA1019
-		return newValidationWarning([]string{"spec.virtualization.tuningPolicy: the highBurst profile is not supported and ignored"})
+		return []string{"spec.virtualization.tuningPolicy: the highBurst profile is not supported and ignored"}
 	}
+
 	return nil
 }
 
-func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *hcov1.HyperConverged) error {
+func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *hcov1.HyperConverged) []string {
 	fgMap := v1FGsToMap(hc.Spec.FeatureGates)
 
-	warnings := wh.validateDeprecatedFeatureGates(fgMap, nil)
-
-	if len(warnings) > 0 {
-		return newValidationWarning(warnings)
-	}
-
-	return nil
+	return wh.validateDeprecatedFeatureGates(fgMap, nil)
 }
 
-func (wh *WebhookHandler) validateFeatureGatesOnUpdate(requested, exists *hcov1.HyperConverged) error {
+func (wh *WebhookHandler) validateFeatureGatesOnUpdate(requested, exists *hcov1.HyperConverged) []string {
 	reqFGMap := v1FGsToMap(requested.Spec.FeatureGates)
 	oldFGMap := v1FGsToMap(exists.Spec.FeatureGates)
 
-	warnings := wh.validateDeprecatedFeatureGates(reqFGMap, oldFGMap)
-
-	if len(warnings) > 0 {
-		return newValidationWarning(warnings)
-	}
-
-	return nil
+	return wh.validateDeprecatedFeatureGates(reqFGMap, oldFGMap)
 }
 
 func (wh *WebhookHandler) validateAffinity(hc *hcov1.HyperConverged) error {
@@ -426,13 +406,18 @@ func hasRequiredHTTP2Ciphers(ciphers []string) bool {
 }
 
 // validationResponseFromStatus returns a response for admitting a request with provided Status object.
-func validationResponseFromStatus(allowed bool, status metav1.Status) admission.Response {
+func validationResponseFromStatus(status metav1.Status, warnings []string) admission.Response {
 	resp := admission.Response{
 		AdmissionResponse: admissionv1.AdmissionResponse{
-			Allowed: allowed,
+			Allowed: false,
 			Result:  &status,
 		},
 	}
+
+	if len(warnings) > 0 {
+		resp = resp.WithWarnings(warnings...)
+	}
+
 	return resp
 }
 
@@ -458,22 +443,24 @@ func validateAffinity(affinity *corev1.Affinity) error {
 	return err
 }
 
-func errToResponse(err error) admission.Response {
+func errToResponse(err error, warnings []string) admission.Response {
 	if err == nil {
-		// Return allowed if everything succeeded.
-		return admission.Allowed("")
+		return withWarnings(admission.Allowed(""), warnings)
 	}
 
-	var apiStatus apierrors.APIStatus
-	if errors.As(err, &apiStatus) {
-		return validationResponseFromStatus(false, apiStatus.Status())
+	if apiStatus, ok := errors.AsType[*apierrors.StatusError](err); ok {
+		return validationResponseFromStatus(apiStatus.Status(), warnings)
 	}
 
-	if vw, ok := errors.AsType[*ValidationWarning](err); ok {
-		return admission.Allowed("").WithWarnings(vw.Warnings()...)
+	return withWarnings(admission.Denied(err.Error()), warnings)
+}
+
+func withWarnings(resp admission.Response, warnings []string) admission.Response {
+	if len(warnings) > 0 {
+		return resp.WithWarnings(warnings...)
 	}
 
-	return admission.Denied(err.Error())
+	return resp
 }
 
 func v1FGsToMap(fgs hcov1fg.HyperConvergedFeatureGates) map[string]bool {
