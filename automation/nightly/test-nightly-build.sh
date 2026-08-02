@@ -57,7 +57,7 @@ git clone https://github.com/kubevirt/kubevirt.git
 )
 
 validate-kv-fg-json-file kv-beta-feature-gates.json
-cp kv-beta-feature-gates.json pkg/internal/kvfeaturegates/kv-beta-feature-gates.json
+mv kv-beta-feature-gates.json pkg/internal/kvfeaturegates/kv-beta-feature-gates.json
 
 # Get latest CDI
 git clone https://github.com/kubevirt/containerized-data-importer.git cdi
