@@ -524,6 +524,10 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					v1beta1.HyperConvergedFeatureGates{PersistentReservation: new(false)}, "persistentReservation"),
 				Entry("should trigger a warning if the persistentReservation=true FG exists in the CR",
 					v1beta1.HyperConvergedFeatureGates{PersistentReservation: new(true)}, "persistentReservation"),
+				Entry("should trigger a warning if the enableMultiArchBootImageImport=false FG exists in the CR",
+					v1beta1.HyperConvergedFeatureGates{EnableMultiArchBootImageImport: new(false)}, "enableMultiArchBootImageImport"),
+				Entry("should trigger a warning if the enableMultiArchBootImageImport=true FG exists in the CR",
+					v1beta1.HyperConvergedFeatureGates{EnableMultiArchBootImageImport: new(true)}, "enableMultiArchBootImageImport"),
 
 				Entry("should trigger multiple warnings if several deprecated FG exist in the CR",
 					v1beta1.HyperConvergedFeatureGates{
@@ -1485,6 +1489,11 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					v1beta1.HyperConvergedFeatureGates{PersistentReservation: new(false)}, "persistentReservation"),
 				Entry("should trigger a warning if the persistentReservation=true FG exists in the CR",
 					v1beta1.HyperConvergedFeatureGates{PersistentReservation: new(true)}, "persistentReservation"),
+
+				Entry("should trigger a warning if the enableMultiArchBootImageImport=false FG exists in the CR",
+					v1beta1.HyperConvergedFeatureGates{EnableMultiArchBootImageImport: new(false)}, "enableMultiArchBootImageImport"),
+				Entry("should trigger a warning if the enableMultiArchBootImageImport=true FG exists in the CR",
+					v1beta1.HyperConvergedFeatureGates{EnableMultiArchBootImageImport: new(true)}, "enableMultiArchBootImageImport"),
 
 				Entry("should trigger multiple warnings if several deprecated FG exist in the CR",
 					v1beta1.HyperConvergedFeatureGates{

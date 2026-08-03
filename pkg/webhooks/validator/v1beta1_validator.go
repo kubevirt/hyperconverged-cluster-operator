@@ -331,6 +331,8 @@ const (
 	mDevFGDeprecationWarning = "spec.featureGates.disableMDevConfiguration is deprecated. Use spec.virtualization.mediatedDevicesConfiguration.enabled in the v1 API instead; it will be removed in a future version."
 
 	prFGDeprecationWarning = "spec.featureGates.persistentReservation is deprecated. Use spec.storage.persistentReservationConfiguration.enabled in the v1 API instead; it will be removed in a future version."
+
+	multiArchFGDeprecationWarning = "spec.featureGates.enableMultiArchBootImageImport is deprecated. Use spec.workloadSources.enableMultiArchBootImageImport in the v1 API instead; it will be removed in a future version."
 )
 
 func (wh *WebhookV1Beta1Handler) validateFeatureGatesOnCreate(hc *v1beta1.HyperConverged) []string {
@@ -372,6 +374,10 @@ func (wh *WebhookV1Beta1Handler) validateDeprecatedFeatureGates(hc *v1beta1.Hype
 
 	if hc.Spec.FeatureGates.PersistentReservation != nil {
 		warnings = append(warnings, prFGDeprecationWarning)
+	}
+
+	if hc.Spec.FeatureGates.EnableMultiArchBootImageImport != nil {
+		warnings = append(warnings, multiArchFGDeprecationWarning)
 	}
 
 	return warnings
