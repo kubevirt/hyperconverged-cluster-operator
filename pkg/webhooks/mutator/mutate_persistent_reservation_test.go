@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -52,7 +51,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 
 				if warning {
 					Expect(res.Warnings).To(HaveLen(1))
-					Expect(res.Warnings).To(ContainElement(fmt.Sprintf(prFGDeprecationMsg, persistentReservationFGName)))
+					Expect(res.Warnings).To(ContainElement(prFGDeprecationMsg))
 				} else {
 					Expect(res.Warnings).To(BeEmpty())
 				}
@@ -1676,7 +1675,7 @@ type prExpectedResponse struct {
 func (response *prExpectedResponse) WithPRWarning() *prExpectedResponse {
 	response.checkWarning = And(
 		Not(BeEmpty()),
-		ContainElement(fmt.Sprintf(prFGDeprecationMsg, persistentReservationFGName)),
+		ContainElement(prFGDeprecationMsg),
 	)
 	return response
 }
