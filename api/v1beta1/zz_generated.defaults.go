@@ -52,10 +52,6 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 bool = false
 		in.Spec.FeatureGates.AlignCPUs = &ptrVar1
 	}
-	if in.Spec.FeatureGates.EnableMultiArchBootImageImport == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.EnableMultiArchBootImageImport = &ptrVar1
-	}
 	if in.Spec.FeatureGates.DecentralizedLiveMigration == nil {
 		var ptrVar1 bool = true
 		in.Spec.FeatureGates.DecentralizedLiveMigration = &ptrVar1
