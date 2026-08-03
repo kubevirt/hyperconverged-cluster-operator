@@ -156,6 +156,10 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 	}
 
 	if r.IntN(2) == 1 {
+		hc.Spec.FeatureGates.EnableMultiArchBootImageImport = randPtr(r, r.IntN(2) == 1)
+	}
+
+	if r.IntN(2) == 1 {
 		hc.Spec.ObsoleteCPUs = &HyperConvergedObsoleteCPUs{
 			CPUModels: randStringSlice(r),
 		}
@@ -486,6 +490,7 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	hc.Spec.WorkloadSources.CommonTemplatesNamespace = randPtr(r, randString(r))
 	hc.Spec.WorkloadSources.CommonBootImageNamespace = randPtr(r, randString(r))
 	hc.Spec.WorkloadSources.EnableCommonBootImageImport = randPtr(r, r.IntN(2) == 1)
+	hc.Spec.WorkloadSources.EnableMultiArchBootImageImport = randPtr(r, r.IntN(2) == 1)
 
 	if r.IntN(2) == 1 {
 		hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
