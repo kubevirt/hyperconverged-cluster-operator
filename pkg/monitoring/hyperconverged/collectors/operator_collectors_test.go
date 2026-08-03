@@ -9,7 +9,6 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 )
 
@@ -55,7 +54,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 				})
 
 				It("should be set and enabled, if multi-arch dict enabled", func() {
-					hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 					cli := commontestutils.InitClient([]client.Object{hco})
 					isSet, isEnabled := isMultiArchBootImagesFeatureEnabled(cli)
@@ -64,7 +63,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 				})
 
 				It("should be set and disabled, if multi-arch dict disabled", func() {
-					hco.Spec.FeatureGates.Disable(goldenimages.EnableMultiArchFeatureGate)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(false)
 
 					cli := commontestutils.InitClient([]client.Object{hco})
 					isSet, isEnabled := isMultiArchBootImagesFeatureEnabled(cli)
@@ -88,7 +87,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 				})
 
 				It("should not be set, if multi-arch dict enabled", func() {
-					hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 					cli := commontestutils.InitClient([]client.Object{hco})
 					isSet, isEnabled := isMultiArchBootImagesFeatureEnabled(cli)
@@ -97,7 +96,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 				})
 
 				It("should not be set, if multi-arch dict disabled", func() {
-					hco.Spec.FeatureGates.Disable(goldenimages.EnableMultiArchFeatureGate)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(false)
 
 					cli := commontestutils.InitClient([]client.Object{hco})
 					isSet, isEnabled := isMultiArchBootImagesFeatureEnabled(cli)
@@ -135,7 +134,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 				})
 
 				It("should not be set, if multi-arch dict enabled", func() {
-					hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 					cli := commontestutils.InitClient([]client.Object{hco})
 					isSet, isEnabled := isMultiArchBootImagesFeatureEnabled(cli)
@@ -144,7 +143,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 				})
 
 				It("should not be set, if multi-arch dict disabled", func() {
-					hco.Spec.FeatureGates.Disable(goldenimages.EnableMultiArchFeatureGate)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(false)
 
 					cli := commontestutils.InitClient([]client.Object{hco})
 					isSet, isEnabled := isMultiArchBootImagesFeatureEnabled(cli)
@@ -170,7 +169,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 				})
 
 				It("should not be set, if multi-arch dict enabled", func() {
-					hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 					cli := commontestutils.InitClient([]client.Object{hco})
 					isSet, isEnabled := isMultiArchBootImagesFeatureEnabled(cli)
@@ -180,7 +179,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 				})
 
 				It("should not be set, if multi-arch dict disabled", func() {
-					hco.Spec.FeatureGates.Disable(goldenimages.EnableMultiArchFeatureGate)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(false)
 
 					cli := commontestutils.InitClient([]client.Object{hco})
 					isSet, isEnabled := isMultiArchBootImagesFeatureEnabled(cli)

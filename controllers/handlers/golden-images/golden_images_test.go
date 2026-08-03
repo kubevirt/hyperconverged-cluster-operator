@@ -10,14 +10,15 @@ import (
 	gomegatypes "github.com/onsi/gomega/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
+
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 )
 
 func TestGoldenImages(t *testing.T) {
@@ -165,7 +166,7 @@ var _ = Describe("Test data import cron template", func() {
 
 	Context("test GetDataImportCronTemplates", func() {
 		It("should not return the hard coded list dataImportCron FeatureGate is false", func() {
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(false)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(false)
 			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
@@ -184,10 +185,10 @@ var _ = Describe("Test data import cron template", func() {
 
 		It("should return an empty list if both the hard-coded list and the list from HC are empty", func() {
 			hcoWithEmptyList := commontestutils.NewHco()
-			hcoWithEmptyList.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hcoWithEmptyList.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 			hcoWithEmptyList.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
 			hcoWithNilList := commontestutils.NewHco()
-			hcoWithNilList.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hcoWithNilList.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 			hcoWithNilList.Spec.WorkloadSources.DataImportCronTemplates = nil
 
 			dataImportCronTemplateHardCodedMap = nil
@@ -203,7 +204,7 @@ var _ = Describe("Test data import cron template", func() {
 				image1.Name: image1,
 				image2.Name: image2,
 			}
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -217,7 +218,7 @@ var _ = Describe("Test data import cron template", func() {
 				image1.Name: image1,
 				image2.Name: image2,
 			}
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			disabledImage1, _ := makeDICT(1, true)
 			disableDict(&disabledImage1)
@@ -239,7 +240,7 @@ var _ = Describe("Test data import cron template", func() {
 
 		It("should not add user DIC template if it is disabled", func() {
 			dataImportCronTemplateHardCodedMap = nil
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			disableDict(&image1)
 			enableDict(&image2, &statusImage2)
@@ -262,7 +263,7 @@ var _ = Describe("Test data import cron template", func() {
 				image1.Name: image1,
 				image2.Name: image2,
 			}
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			image3.Name = image4.Name
 
@@ -272,7 +273,7 @@ var _ = Describe("Test data import cron template", func() {
 		})
 
 		It("Should reject if the CR list contain DIC templates with the same name", func() {
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			image3.Name = image4.Name
 
@@ -288,7 +289,7 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 			hco.Spec.WorkloadSources.DataImportCronTemplates = nil
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -305,7 +306,7 @@ var _ = Describe("Test data import cron template", func() {
 		})
 
 		It("Should return only the CR list, if the hard-coded list is empty", func() {
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 
 			By("when dataImportCronTemplateHardCodedList is nil")
@@ -332,7 +333,7 @@ var _ = Describe("Test data import cron template", func() {
 			)
 
 			image1.Spec.Template.Spec.Source = &cdiv1beta1.DataVolumeSource{
-				Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To(modifiedURL)},
+				Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new(modifiedURL)},
 			}
 
 			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
@@ -340,11 +341,11 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			modifiedImage1, _ := makeDICT(1, true)
 			modifiedImage1.Spec.Template.Spec.Source = &cdiv1beta1.DataVolumeSource{
-				Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To(anotherURL)},
+				Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new(anotherURL)},
 			}
 
 			By("check that if the CR schedule is empty, HCO adds it from the common dict")
@@ -375,7 +376,7 @@ var _ = Describe("Test data import cron template", func() {
 		It("Should replace the common DICT storage field if the CR list includes it", func() {
 			image1.Spec.Template.Spec.Storage = &cdiv1beta1.StorageSpec{
 				VolumeName:       "volume-name",
-				StorageClassName: ptr.To("testName"),
+				StorageClassName: new("testName"),
 			}
 
 			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
@@ -383,7 +384,7 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			storageFromCr := &cdiv1beta1.StorageSpec{
 				VolumeName: "another-class-name",
@@ -425,12 +426,12 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			modifiedImage1 := image1.DeepCopy()
-			modifiedImage1.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainAll)
-			modifiedImage1.Spec.GarbageCollect = ptr.To(cdiv1beta1.DataImportCronGarbageCollectOutdated)
-			modifiedImage1.Spec.ImportsToKeep = ptr.To[int32](5)
+			modifiedImage1.Spec.RetentionPolicy = new(cdiv1beta1.DataImportCronRetainAll)
+			modifiedImage1.Spec.GarbageCollect = new(cdiv1beta1.DataImportCronGarbageCollectOutdated)
+			modifiedImage1.Spec.ImportsToKeep = new(int32(5))
 
 			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*modifiedImage1, image3, image4}
 
@@ -469,7 +470,7 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 
@@ -516,7 +517,7 @@ var _ = Describe("Test data import cron template", func() {
 				image4.Name: image4,
 			}
 
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*annotationModified, *annotationMissingInCR, *annotationExistsInCR, *annotationMissingInBoth}
 
@@ -552,8 +553,8 @@ var _ = Describe("Test data import cron template", func() {
 			withModifiedNS := image2.DeepCopy()
 			withModifiedNS.Namespace = modifiedNS
 
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-			hco.Spec.WorkloadSources.CommonBootImageNamespace = ptr.To(customNS)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+			hco.Spec.WorkloadSources.CommonBootImageNamespace = new(customNS)
 
 			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*withModifiedNS, image3}
 
@@ -644,7 +645,14 @@ var _ = Describe("Test data import cron template", func() {
 	})
 
 	Context("heterogeneous cluster", func() {
-		Context("the EnableMultiArchBootImageImport FG", func() {
+		BeforeEach(func() {
+			origFunc := nodeinfo.GetWorkloadsArchitectures
+			DeferCleanup(func() {
+				nodeinfo.GetWorkloadsArchitectures = origFunc
+			})
+		})
+
+		Context("the EnableMultiArchBootImageImport Field", func() {
 			BeforeEach(func() {
 				image1.Annotations = map[string]string{
 					"testing.kubevirt.io/fake.annotation": "true",
@@ -675,9 +683,32 @@ var _ = Describe("Test data import cron template", func() {
 				}
 			})
 
-			It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.Disable(EnableMultiArchFeatureGate)
+			It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the field is not set", func() {
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+
+				dictsStatuses, err := GetDataImportCronTemplates(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(dictsStatuses).To(HaveLen(4))
+
+				for _, status := range dictsStatuses {
+					Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+					Expect(status.Status.Conditions).To(BeEmpty())
+				}
+
+				sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
+				Expect(sspDicts).To(HaveLen(4))
+
+				for _, dict := range sspDicts {
+					Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+					Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+				}
+			})
+
+			It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the field is false", func() {
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(false)
 
 				dictsStatuses, err := GetDataImportCronTemplates(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -700,8 +731,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 				dictsStatuses, err := GetDataImportCronTemplates(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -724,8 +755,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should remove unsupported architectures from the annotation", func() {
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 				nodeinfo.GetWorkloadsArchitectures = func() []string {
 					return []string{"amd64", "arm64"}
@@ -757,8 +788,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should drop a DICT with no supported architectures", func() {
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 				nodeinfo.GetWorkloadsArchitectures = func() []string {
 					return []string{"amd64", "s390x"}
@@ -800,8 +831,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should not add the multi-arch annotation if wasn't already exist in the original DICT", func() {
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 				nodeinfo.GetWorkloadsArchitectures = func() []string {
 					return []string{"amd64", "s390x", "other-arch"}
@@ -838,6 +869,223 @@ var _ = Describe("Test data import cron template", func() {
 						Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
 					}
 				}
+			})
+
+			Context("when using the feature gate", func() {
+				It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
+					hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+					hco.Spec.FeatureGates.Disable(EnableMultiArchFeatureGate)
+
+					dictsStatuses, err := GetDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for _, status := range dictsStatuses {
+						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						Expect(status.Status.Conditions).To(BeEmpty())
+					}
+
+					sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+					}
+				})
+
+				It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
+					hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+					hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+
+					dictsStatuses, err := GetDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for _, status := range dictsStatuses {
+						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						Expect(status.Status.Conditions).To(BeEmpty())
+					}
+
+					sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+					}
+				})
+
+				It("should remove unsupported architectures from the annotation", func() {
+					hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+					hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"amd64", "arm64"}
+					}
+
+					image1.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+					image2.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+					image3.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+					image4.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+
+					dictsStatuses, err := GetDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for _, status := range dictsStatuses {
+						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64"))
+						Expect(status.Status.Conditions).To(BeEmpty())
+					}
+
+					sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64"))
+					}
+				})
+
+				It("should drop a DICT with no supported architectures", func() {
+					hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+					hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"amd64", "s390x"}
+					}
+
+					image2.Annotations[MultiArchDICTAnnotation] = "arm64"
+					image4.Annotations[MultiArchDICTAnnotation] = "arm64"
+
+					dictsStatuses, err := GetDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					Expect(dictsStatuses[0].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dictsStatuses[0].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+					Expect(dictsStatuses[0].Status.Conditions).To(BeEmpty())
+
+					Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
+					Expect(dictsStatuses[1].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
+					Expect(meta.IsStatusConditionFalse(dictsStatuses[1].Status.Conditions, DictConditionDeployedType)).To(BeTrue())
+
+					Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+					Expect(dictsStatuses[2].Status.Conditions).To(BeEmpty())
+
+					Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
+					Expect(dictsStatuses[3].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
+					Expect(meta.IsStatusConditionFalse(dictsStatuses[3].Status.Conditions, DictConditionDeployedType)).To(BeTrue())
+
+					sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(2))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+					}
+				})
+
+				It("should not add the multi-arch annotation if wasn't already exist in the original DICT", func() {
+					hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+					hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"amd64", "s390x", "other-arch"}
+					}
+
+					delete(image2.Annotations, MultiArchDICTAnnotation)
+					delete(image4.Annotations, MultiArchDICTAnnotation)
+
+					dictsStatuses, err := GetDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for i, dictStatus := range dictsStatuses {
+						if i%2 == 0 {
+							Expect(dictStatus.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+							Expect(dictStatus.Status.OriginalSupportedArchitectures).To(Equal("amd64,arm64,s390x"))
+							Expect(dictStatus.Status.Conditions).To(BeEmpty())
+						} else {
+							Expect(dictStatus.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+							Expect(dictStatus.Status.OriginalSupportedArchitectures).To(Equal(""))
+							Expect(dictStatus.Status.Conditions).To(BeEmpty())
+						}
+					}
+
+					sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for i, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						if i%2 == 0 {
+							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+						} else {
+							Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+						}
+					}
+				})
+
+				It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the field is disabled and the FG is enabled", func() {
+					hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(false)
+					hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
+
+					dictsStatuses, err := GetDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for _, status := range dictsStatuses {
+						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						Expect(status.Status.Conditions).To(BeEmpty())
+					}
+
+					sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+					}
+				})
+
+				It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the field is enabled and the FG is disabled", func() {
+					hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+					hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+					hco.Spec.FeatureGates.Disable(EnableMultiArchFeatureGate)
+
+					dictsStatuses, err := GetDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for _, status := range dictsStatuses {
+						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						Expect(status.Status.Conditions).To(BeEmpty())
+					}
+
+					sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+					}
+				})
 			})
 		})
 
@@ -971,7 +1219,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
@@ -982,7 +1230,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
@@ -993,7 +1241,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
@@ -1004,7 +1252,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
@@ -1015,7 +1263,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
@@ -1026,7 +1274,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					Not(HaveKey(MultiArchDICTAnnotation)),
@@ -1037,7 +1285,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					Not(HaveKey(MultiArchDICTAnnotation)),
@@ -1048,7 +1296,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = nil
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					Not(HaveKey(MultiArchDICTAnnotation)),
@@ -1059,7 +1307,7 @@ var _ = Describe("Test data import cron template", func() {
 					},
 					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = nil
-						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/customized-image")}
 					},
 					true,
 					Not(HaveKey(MultiArchDICTAnnotation)),
@@ -1067,6 +1315,48 @@ var _ = Describe("Test data import cron template", func() {
 			)
 		})
 	})
+
+	DescribeTable("test IsMultiArchEnabled", func(hc *hcov1.HyperConverged, expectedResult gomegatypes.GomegaMatcher) {
+		Expect(IsMultiArchEnabled(hc)).To(expectedResult)
+	},
+		Entry("should return false when both field and FG are not set", &hcov1.HyperConverged{Spec: hcov1.HyperConvergedSpec{}}, BeFalse()),
+		Entry("should return true when the field is enabled", &hcov1.HyperConverged{Spec: hcov1.HyperConvergedSpec{
+			WorkloadSources: hcov1.WorkloadSourcesConfig{
+				EnableMultiArchBootImageImport: new(true),
+			},
+		}}, BeTrue()),
+		Entry("should return true when the field is enabled and the FG is disabled", &hcov1.HyperConverged{Spec: hcov1.HyperConvergedSpec{
+			FeatureGates: []featuregates.FeatureGate{
+				{Name: EnableMultiArchFeatureGate, State: new(featuregates.Disabled)},
+			},
+			WorkloadSources: hcov1.WorkloadSourcesConfig{
+				EnableMultiArchBootImageImport: new(true),
+			},
+		}}, BeTrue()),
+		Entry("should return false when the field is disabled", &hcov1.HyperConverged{Spec: hcov1.HyperConvergedSpec{
+			WorkloadSources: hcov1.WorkloadSourcesConfig{
+				EnableMultiArchBootImageImport: new(false),
+			},
+		}}, BeFalse()),
+		Entry("should return false when the field is disabled and the FG is enabled", &hcov1.HyperConverged{Spec: hcov1.HyperConvergedSpec{
+			FeatureGates: []featuregates.FeatureGate{
+				{Name: EnableMultiArchFeatureGate, State: new(featuregates.Enabled)},
+			},
+			WorkloadSources: hcov1.WorkloadSourcesConfig{
+				EnableMultiArchBootImageImport: new(false),
+			},
+		}}, BeFalse()),
+		Entry("should return true when the field is not set and the FG is enabled", &hcov1.HyperConverged{Spec: hcov1.HyperConvergedSpec{
+			FeatureGates: []featuregates.FeatureGate{
+				{Name: EnableMultiArchFeatureGate, State: new(featuregates.Enabled)},
+			},
+		}}, BeTrue()),
+		Entry("should return false when the field is not set and the FG is disabled", &hcov1.HyperConverged{Spec: hcov1.HyperConvergedSpec{
+			FeatureGates: []featuregates.FeatureGate{
+				{Name: EnableMultiArchFeatureGate, State: new(featuregates.Disabled)},
+			},
+		}}, BeFalse()),
+	)
 })
 
 func enableDict(dict *hcov1.DataImportCronTemplate, status *hcov1.DataImportCronTemplateStatus) {
@@ -1100,7 +1390,7 @@ func makeDICT(num int, CommonTemplate bool) (hcov1.DataImportCronTemplate, hcov1
 			Template: cdiv1beta1.DataVolume{
 				Spec: cdiv1beta1.DataVolumeSpec{
 					Source: &cdiv1beta1.DataVolumeSource{
-						Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To(fmt.Sprintf("docker://someregistry/%s", name))},
+						Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new(fmt.Sprintf("docker://someregistry/%s", name))},
 					},
 				},
 			},
