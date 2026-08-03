@@ -69,7 +69,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 
 				if warning {
 					Expect(res.Warnings).To(HaveLen(1))
-					Expect(res.Warnings).To(ContainElement(fgDeprecationMsg))
+					Expect(res.Warnings).To(ContainElement(mdevDeprecationMsg))
 				} else {
 					Expect(res.Warnings).To(BeEmpty())
 				}
@@ -1744,7 +1744,7 @@ type expectedResponse struct {
 func (response *expectedResponse) WithWarning() *expectedResponse {
 	response.checkWarning = And(
 		Not(BeEmpty()),
-		ContainElement(fgDeprecationMsg),
+		ContainElement(mdevDeprecationMsg),
 	)
 	return response
 }

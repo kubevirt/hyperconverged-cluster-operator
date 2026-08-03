@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"gomodules.xyz/jsonpatch/v2"
@@ -21,7 +23,10 @@ import (
 )
 
 const (
-	mutatorV1Name = "hyperConverged v1 mutator"
+	mutatorV1Name           = "hyperConverged v1 mutator"
+	featureGatesPath        = "/spec/featureGates"
+	singleFeatureGatePrefix = featureGatesPath + "/"
+	featureGatePathTmpt     = singleFeatureGatePrefix + "%d"
 )
 
 var (
@@ -110,13 +115,15 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, lo
 		}
 	}
 
-	return createResponse(patches, warnings)
+	return createResponse(patches, warnings, len(hc.Spec.FeatureGates))
 }
 
-func createResponse(patches []jsonpatch.JsonPatchOperation, warnings []string) admission.Response {
+func createResponse(patches []jsonpatch.JsonPatchOperation, warnings []string, numFGs int) admission.Response {
 	var response admission.Response
 
 	if len(patches) > 0 {
+		patches = finalizePatches(patches, numFGs)
+
 		response = admission.Patched("mutated", patches...)
 	} else {
 		response = admission.Allowed("")
@@ -225,9 +232,9 @@ func dropFeatureGate(fgName string, fgs hcov1fg.HyperConvergedFeatureGates, patc
 		return patches
 	}
 
-	path := "/spec/featureGates"
+	path := featureGatesPath
 	if len(fgs) > 1 {
-		path = fmt.Sprintf(path+"/%d", idx)
+		path = fmt.Sprintf(featureGatePathTmpt, idx)
 	}
 
 	return append(patches, jsonpatch.JsonPatchOperation{
@@ -245,15 +252,13 @@ func mutateFieldAndFGOnCreate(hc *hcov1.HyperConverged, fieldAndFG fieldFGDetail
 	enabled, found := fieldAndFG.getFieldValue(hc)
 	if found {
 		if (fgEnabled == enabled) != fieldAndFG.fgShouldEqualField {
-			//nolint:staticcheck
-			// this is a bug in the staticcheck linter. fmt.Errorf may be used with no parameters
 			return false, nil, nil
 		}
 		return true, []string{fieldAndFG.deprecationWarning}, patches
 	}
 
 	val := fgEnabled == fieldAndFG.fgShouldEqualField
-	return true, []string{fieldAndFG.deprecationWarning}, fieldAndFG.mutateFiled(hc.Spec, val, patches)
+	return true, []string{fieldAndFG.deprecationWarning}, fieldAndFG.mutateField(hc.Spec, val, patches)
 }
 
 func mutateFieldAndFGOnUpdate(hc, oldHC *hcov1.HyperConverged, fieldAndFG fieldFGDetailsType, patches []jsonpatch.JsonPatchOperation) (allow bool, warningList []string, newPatches []jsonpatch.JsonPatchOperation) {
@@ -284,7 +289,7 @@ func mutateFieldAndFGOnUpdate(hc, oldHC *hcov1.HyperConverged, fieldAndFG fieldF
 				enabled = newFGEnabled == fieldAndFG.fgShouldEqualField
 			}
 
-			patches = fieldAndFG.mutateFiled(hc.Spec, enabled, patches)
+			patches = fieldAndFG.mutateField(hc.Spec, enabled, patches)
 		}
 
 		return true, []string{fieldAndFG.deprecationWarning}, patches
@@ -298,7 +303,7 @@ func mutateFieldAndFGOnUpdate(hc, oldHC *hcov1.HyperConverged, fieldAndFG fieldF
 	// from here, enabled was not changed
 	if !newEnabledFound {
 		// set enabled = !FG
-		return true, nil, fieldAndFG.mutateFiled(hc.Spec, newFGEnabled == fieldAndFG.fgShouldEqualField, patches)
+		return true, nil, fieldAndFG.mutateField(hc.Spec, newFGEnabled == fieldAndFG.fgShouldEqualField, patches)
 	}
 
 	if fgChangesLogic {
@@ -306,4 +311,51 @@ func mutateFieldAndFGOnUpdate(hc, oldHC *hcov1.HyperConverged, fieldAndFG fieldF
 	}
 
 	return true, nil, patches
+}
+
+func finalizePatches(patches []jsonpatch.JsonPatchOperation, numFGs int) []jsonpatch.JsonPatchOperation {
+	sortedPatches := make([]jsonpatch.JsonPatchOperation, 0, len(patches))
+	var fgPatches []jsonpatch.JsonPatchOperation
+
+	for _, patch := range patches {
+		if strings.HasPrefix(patch.Path, singleFeatureGatePrefix) {
+			fgPatches = append(fgPatches, patch)
+		} else {
+			sortedPatches = append(sortedPatches, patch)
+		}
+	}
+
+	if len(fgPatches) == 0 {
+		return sortedPatches
+	}
+
+	if numFGs == len(fgPatches) {
+		sortedPatches = append(sortedPatches, jsonpatch.JsonPatchOperation{
+			Operation: "remove",
+			Path:      featureGatesPath,
+		})
+	} else {
+
+		slices.SortFunc(fgPatches, compareFGPatches)
+
+		sortedPatches = append(sortedPatches, fgPatches...)
+	}
+
+	return sortedPatches
+}
+
+func compareFGPatches(a, b jsonpatch.JsonPatchOperation) int {
+	var aIdx, bIdx int
+	_, err := fmt.Sscanf(a.Path, featureGatePathTmpt, &aIdx)
+	if err != nil {
+		// should never happen. No code in this package produces such path
+		return -1
+	}
+	_, err = fmt.Sscanf(b.Path, featureGatePathTmpt, &bIdx)
+	if err != nil {
+		// should never happen. No code in this package produces such path
+		return -1
+	}
+
+	return bIdx - aIdx
 }
