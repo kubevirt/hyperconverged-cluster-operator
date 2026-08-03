@@ -226,12 +226,13 @@ workload identity.
 
 **Graduation Status**: Alpha
 
-### enableMultiArchBootImageImport Feature Gate
-See more details [below](#golden-images-in-heterogeneous-clusters).
+### enableMultiArchBootImageImport Feature Gate (Deprecated)
+This feature is GA now, and the feature gate is deprecated. It will be removed in a future version.
 
-**Default**: `Disabled`
+Use the `spec.workloadSources.enableMultiArchBootImageImport` field instead.
+See [Golden Images in Heterogeneous Clusters](`#golden-images-in-heterogeneous-clusters`) for more details.
 
-**Graduation Status**: Alpha
+**Graduation Status**: GA
 
 ### deployObservabilityController Feature Gate
 Add the `deployObservabilityController` feature gate to deploy the
@@ -1525,10 +1526,8 @@ In heterogeneous clusters, where nodes have different CPU architectures, it is p
 the boot image supports the the CPU architecture of the cluster nodes. For example, a golden image that supports both
 `arm64` and `amd64` CPU architectures can be used on both types of nodes.
 
-Notice that this feature is on `Alpha` stage, and is not fully supported yet. Also, it is disabled by default. To
-activate the golden images support in heterogeneous clusters, enable the `enableMultiArchBootImageImport` feature gate
-in the HyperConverged CR. See the [feature gate documentation](#featuregates)
-for more details.
+Notice that this feature is disabled by default. To activate the golden images support in heterogeneous clusters, set
+the `spec.workloadSources.enableMultiArchBootImageImport` field in the HyperConverged CR, to `true`.
 
 However, not activating this feature gate may cause virtual machine to fail to start on a node with a different CPU
 architecture than the one of the golden image. If activating this feature is not an option, it is possible to use the
@@ -1547,9 +1546,8 @@ list of CPU architectures that the image supports.
 For example, assume the following custom image support amd64 and arm64
 ```yaml
 spec:
-  featureGates:
-    name: enableMultiArchBootImageImport
   workloadSources:
+    enableMultiArchBootImageImport: true
     dataImportCronTemplates:
     - metadata:
         name: kubevirt-hyperconverged

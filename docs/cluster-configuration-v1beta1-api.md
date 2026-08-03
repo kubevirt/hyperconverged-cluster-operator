@@ -227,15 +227,17 @@ Set the `decentralizedLiveMigration` feature gate to true in order to enable dec
 
 **Graduation Status**: Beta
 
-### enableMultiArchBootImageImport Feature Gates
+### enableMultiArchBootImageImport Feature Gates (Deprecated)
 Set the `enableMultiArchBootImageImport` feature gate to true in order to enable the golden images support in
 heterogeneous clusters. See [Golden Images](#golden-images-in-heterogeneous-clusters) for more information.
 
-**Note**: this feature is in Developer Preview.
+**Note**: this feature is GA, and the feature gate is deprecated. Use the 
+`spec.workloadSources.enableMultiArchBootImageImport` field in the **`v1`** API version, instead.
+See the [v1 golden images in heterogeneous clusters documentation](./cluster-configuration.md#golden-images-in-heterogeneous-clusters).
 
 **Default**: `false`
 
-**Graduation Status**: Alpha
+**Graduation Status**: GA
 
 ### declarativeHotplugVolumes Feature Gate
 Set the `declarativeHotplugVolumes` feature gate to true to enable the declarative volume hotplug API in KubeVirt. By default, volume hotplug operations are performed using KubeVirt's subresource API. Changes made directly to the VirtualMachine spec require a VM restart to take effect. When enabled, volume hotplug operations can be performed declaratively by modifying the VirtualMachine spec directly. These changes are applied immediately without requiring a VM restart.
