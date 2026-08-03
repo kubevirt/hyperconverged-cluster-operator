@@ -357,7 +357,6 @@ ${TOOLS}/manifest-templator \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
-  --iommufd-device-plugin-image-name="${IOMMUFD_DEVICE_PLUGIN_IMAGE}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}"
 
 if [[ "${UNIQUE}" == "true"  ]]; then
@@ -422,7 +421,6 @@ ${TOOLS}/csv-merger \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
-  --iommufd-device-plugin-image-name="${IOMMUFD_DEVICE_PLUGIN_IMAGE}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
   ${NETWORK_POLICIES_PARAMS} \
   > temp_manifests.yaml

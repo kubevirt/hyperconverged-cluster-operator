@@ -29,7 +29,6 @@ const (
 	aieWebhookName          = "kubevirt-aie-webhook"
 	aieWebhookTLSSecretName = "kubevirt-aie-webhook-tls"
 	aieWebhookConfigMapName = "kubevirt-aie-launcher-config"
-	iommufdDevicePluginName = "iommufd-device-plugin"
 	deployAIEAnnotationKey  = "hco.kubevirt.io/deployAIE"
 )
 
@@ -56,8 +55,6 @@ var _ = Describe("Test AIE", Label("AIE"), Serial, Ordered, func() {
 		validateAIEDeleted(ctx, cli, getAIEWebhookClusterRoleErr)
 		validateAIEDeleted(ctx, cli, getAIEWebhookClusterRoleBindingErr)
 		validateAIEDeleted(ctx, cli, getAIEWebhookMutatingWebhookConfigurationErr)
-		validateAIEDeleted(ctx, cli, getIOMMUFDDevicePluginDaemonSetErr)
-		validateAIEDeleted(ctx, cli, getIOMMUFDDevicePluginServiceAccountErr)
 	})
 
 	When("deployAIE annotation is set to true", func() {
@@ -128,26 +125,6 @@ var _ = Describe("Test AIE", Label("AIE"), Serial, Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("should deploy iommufd-device-plugin DaemonSet", func(ctx context.Context) {
-			enableAIEAnnotation(ctx, cli)
-
-			By("check the iommufd-device-plugin ServiceAccount")
-			Eventually(func(ctx context.Context) error {
-				return getIOMMUFDDevicePluginServiceAccountErr(ctx, cli)
-			}).WithTimeout(1 * time.Minute).
-				WithPolling(100 * time.Millisecond).
-				WithContext(ctx).
-				Should(Succeed())
-
-			By("check the iommufd-device-plugin DaemonSet")
-			Eventually(func(ctx context.Context) error {
-				return getIOMMUFDDevicePluginDaemonSetErr(ctx, cli)
-			}).WithTimeout(1 * time.Minute).
-				WithPolling(100 * time.Millisecond).
-				WithContext(ctx).
-				Should(Succeed())
-		})
-
 		It("should preserve user edits to the ConfigMap across reconciliation", func(ctx context.Context) {
 			enableAIEAnnotation(ctx, cli)
 			ensureAIEWebhookTLSSecret(ctx, cli)
@@ -204,14 +181,6 @@ var _ = Describe("Test AIE", Label("AIE"), Serial, Ordered, func() {
 				WithContext(ctx).
 				Should(Succeed())
 
-			By("waiting for the DaemonSet to be created")
-			Eventually(func(ctx context.Context) error {
-				return getIOMMUFDDevicePluginDaemonSetErr(ctx, cli)
-			}).WithTimeout(2 * time.Minute).
-				WithPolling(time.Second).
-				WithContext(ctx).
-				Should(Succeed())
-
 			By("disabling the AIE feature gate")
 			disableAIEAnnotation(ctx, cli)
 
@@ -223,8 +192,6 @@ var _ = Describe("Test AIE", Label("AIE"), Serial, Ordered, func() {
 			validateAIEDeleted(ctx, cli, getAIEWebhookClusterRoleErr)
 			validateAIEDeleted(ctx, cli, getAIEWebhookClusterRoleBindingErr)
 			validateAIEDeleted(ctx, cli, getAIEWebhookMutatingWebhookConfigurationErr)
-			validateAIEDeleted(ctx, cli, getIOMMUFDDevicePluginDaemonSetErr)
-			validateAIEDeleted(ctx, cli, getIOMMUFDDevicePluginServiceAccountErr)
 		})
 	})
 })
@@ -320,26 +287,6 @@ func getAIEWebhookMutatingWebhookConfigurationErr(ctx context.Context, cli clien
 		},
 	}
 	return cli.Get(ctx, client.ObjectKeyFromObject(mwc), mwc)
-}
-
-func getIOMMUFDDevicePluginDaemonSetErr(ctx context.Context, cli client.Client) error {
-	ds := &appsv1.DaemonSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      iommufdDevicePluginName,
-			Namespace: tests.InstallNamespace,
-		},
-	}
-	return cli.Get(ctx, client.ObjectKeyFromObject(ds), ds)
-}
-
-func getIOMMUFDDevicePluginServiceAccountErr(ctx context.Context, cli client.Client) error {
-	sa := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      iommufdDevicePluginName,
-			Namespace: tests.InstallNamespace,
-		},
-	}
-	return cli.Get(ctx, client.ObjectKeyFromObject(sa), sa)
 }
 
 func ensureAIEWebhookTLSSecret(ctx context.Context, cli client.Client) {

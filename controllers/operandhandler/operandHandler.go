@@ -64,8 +64,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		aie.NewAIEWebhookClusterRoleHandler(client, scheme),
 		aie.NewAIEWebhookClusterRoleBindingHandler(client, scheme),
 		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
-		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
-		aie.NewIOMMUFDDevicePluginDaemonSetHandler(client, scheme),
 		netresinjector.NewClusterRoleHandler(client, scheme),
 		netresinjector.NewClusterRoleBindingHandler(client, scheme),
 		netresinjector.NewServiceAccountHandler(client, scheme),
@@ -97,7 +95,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			waspagent.NewWaspAgentClusterRoleBindingHandler(client, scheme),
 			handlers.NewVirtioWinCmReaderRoleHandler(client, scheme),
 			handlers.NewVirtioWinCmReaderRoleBindingHandler(client, scheme),
-			aie.NewIOMMUFDDevicePluginSCCHandler(client, scheme),
 		}...)
 
 		virtioWinCMHandler, err := handlers.NewVirtioWinCmHandler(client, scheme)
