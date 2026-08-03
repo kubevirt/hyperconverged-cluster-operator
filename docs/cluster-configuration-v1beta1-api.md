@@ -221,11 +221,11 @@ a UAT namespace to the production namespace.
 
 Set the `decentralizedLiveMigration` feature gate to true in order to enable decentralized live migration.
 
-**Note**: this feature is in Developer Preview.
+**Note**: this feature is in Tech Preview.
 
 **Default**: `false`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
 ### enableMultiArchBootImageImport Feature Gates
 Set the `enableMultiArchBootImageImport` feature gate to true in order to enable the golden images support in
@@ -264,7 +264,7 @@ Set the `objectGraph` feature gate to true in order to enable the ObjectGraph VM
 Set the `incrementalBackup` feature gate to true in order to enable changed block tracking and incremental backups using QEMU capabilities in KubeVirt. Enabling changed block tracking is mandatory for performing storage-agnostic backups and incremental backups.
 When enabled, this also enables the `UtilityVolumes` feature gate in the KubeVirt CR, which allows utility volumes to be mounted to the VMI virt-launcher pod without having a matching disk in the domain. This is required to collect the backup output or to store changes performed during the backup operation, depending on the backup mode.
 
-**Note**: This feature is in Tech Preview.
+**Note**: This feature is in Developer Preview.
 
 **Default**: `false`
 

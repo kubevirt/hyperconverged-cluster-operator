@@ -465,7 +465,7 @@ type HyperConvergedFeatureGates struct {
 
 	// DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature.
 	// This feature allows live migration of VirtualMachineInstances between different clusters.
-	// This feature is in Developer Preview.
+	// This feature is in Tech Preview.
 	//
 	// +optional
 	// +kubebuilder:default=true
@@ -497,7 +497,7 @@ type HyperConvergedFeatureGates struct {
 
 	// IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt.
 	// When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR.
-	// Note: This feature is in Tech Preview.
+	// Note: This feature is in Developer Preview.
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
