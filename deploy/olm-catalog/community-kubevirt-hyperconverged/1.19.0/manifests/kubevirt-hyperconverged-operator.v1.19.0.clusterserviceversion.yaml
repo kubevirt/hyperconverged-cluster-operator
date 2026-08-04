@@ -3,13 +3,13 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"hco.kubevirt.io/v1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{}},{"apiVersion":"networkaddonsoperator.network.kubevirt.io/v1","kind":"NetworkAddonsConfig","metadata":{"name":"cluster"},"spec":{"imagePullPolicy":"IfNotPresent","kubeMacPool":{"rangeEnd":"FD:FF:FF:FF:FF:FF","rangeStart":"02:00:00:00:00:00"},"linuxBridge":{},"macvtap":{},"multus":{},"ovs":{}}},{"apiVersion":"kubevirt.io/v1","kind":"KubeVirt","metadata":{"name":"kubevirt","namespace":"kubevirt"},"spec":{"imagePullPolicy":"Always"}},{"apiVersion":"ssp.kubevirt.io/v1beta2","kind":"SSP","metadata":{"name":"ssp-sample","namespace":"kubevirt"},"spec":{"commonTemplates":{"namespace":"kubevirt"},"featureGates":{"deployVmConsoleProxy":true},"templateValidator":{"replicas":2}}},{"apiVersion":"ssp.kubevirt.io/v1beta3","kind":"SSP","metadata":{"name":"ssp-sample","namespace":"kubevirt"},"spec":{"commonTemplates":{"namespace":"kubevirt"},"templateValidator":{"replicas":2}}},{"apiVersion":"cdi.kubevirt.io/v1beta1","kind":"CDI","metadata":{"name":"cdi","namespace":"cdi"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"hostpathprovisioner.kubevirt.io/v1beta1","kind":"HostPathProvisioner","metadata":{"name":"hostpath-provisioner"},"spec":{"imagePullPolicy":"IfNotPresent","storagePools":[{"name":"local","path":"/var/hpvolumes","pvcTemplate":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"50Gi"}}}}],"workload":{"nodeSelector":{"kubernetes.io/os":"linux"}}}},{"apiVersion":"aaq.kubevirt.io/v1alpha1","kind":"AAQ","metadata":{"name":"aaq","namespace":"aaq"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"migrations.kubevirt.io/v1alpha1","kind":"MigController","metadata":{"name":"migcontroller"},"spec":{"imagePullPolicy":"IfNotPresent"}}]'
+    alm-examples: '[{"apiVersion":"hco.kubevirt.io/v1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{}},{"apiVersion":"networkaddonsoperator.network.kubevirt.io/v1","kind":"NetworkAddonsConfig","metadata":{"name":"cluster"},"spec":{"imagePullPolicy":"IfNotPresent","kubeMacPool":{"rangeEnd":"FD:FF:FF:FF:FF:FF","rangeStart":"02:00:00:00:00:00"},"linuxBridge":{},"macvtap":{},"multus":{},"ovs":{}}},{"apiVersion":"kubevirt.io/v1","kind":"KubeVirt","metadata":{"name":"kubevirt","namespace":"kubevirt"},"spec":{"imagePullPolicy":"Always"}},{"apiVersion":"ssp.kubevirt.io/v1beta2","kind":"SSP","metadata":{"name":"ssp-sample","namespace":"kubevirt"},"spec":{"commonTemplates":{"namespace":"kubevirt"},"featureGates":{"deployVmConsoleProxy":true},"templateValidator":{"replicas":2}}},{"apiVersion":"ssp.kubevirt.io/v1beta3","kind":"SSP","metadata":{"name":"ssp-sample","namespace":"kubevirt"},"spec":{"commonTemplates":{"namespace":"kubevirt"},"templateValidator":{"replicas":2}}},{"apiVersion":"cdi.kubevirt.io/v1beta1","kind":"CDI","metadata":{"name":"cdi","namespace":"cdi"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"hostpathprovisioner.kubevirt.io/v1beta1","kind":"HostPathProvisioner","metadata":{"name":"hostpath-provisioner"},"spec":{"imagePullPolicy":"IfNotPresent","storagePools":[{"name":"local","path":"/var/hpvolumes","pvcTemplate":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"50Gi"}}}}],"workload":{"nodeSelector":{"kubernetes.io/os":"linux"}}}},{"apiVersion":"aaq.kubevirt.io/v1alpha1","kind":"AAQ","metadata":{"name":"aaq","namespace":"aaq"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"migrations.kubevirt.io/v1alpha1","kind":"MigController","metadata":{"name":"migcontroller"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"filerestore.kubevirt.io/v1alpha1","kind":"FileRestoreOperator","metadata":{"name":"vm-file-restore-operator","namespace":"file-restore"},"spec":{"imagePullPolicy":"IfNotPresent"}}]'
     capabilities: Deep Insights
     categories: OpenShift Optional
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
-    createdAt: "2026-08-04 05:59:41"
+    createdAt: "2026-08-04 16:26:08"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -27,7 +27,7 @@ metadata:
     operatorframework.io/suggested-namespace: kubevirt-hyperconverged
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
     operators.openshift.io/must-gather-image: quay.io/kubevirt/must-gather
-    operators.operatorframework.io/internal-objects: '["networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io","kubevirts.kubevirt.io","ssps.ssp.kubevirt.io","ssps.ssp.kubevirt.io","cdis.cdi.kubevirt.io","aaqs.aaq.kubevirt.io","migcontrollers.migrations.kubevirt.io","inflightoperations.ifo.kubevirt.io","operationrulesets.ifo.kubevirt.io"]'
+    operators.operatorframework.io/internal-objects: '["networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io","kubevirts.kubevirt.io","ssps.ssp.kubevirt.io","ssps.ssp.kubevirt.io","cdis.cdi.kubevirt.io","aaqs.aaq.kubevirt.io","migcontrollers.migrations.kubevirt.io","inflightoperations.ifo.kubevirt.io","operationrulesets.ifo.kubevirt.io","filerestoreoperators.filerestore.kubevirt.io","virtualmachinefilerestores.filerestore.kubevirt.io"]'
     repository: https://github.com/kubevirt/hyperconverged-cluster-operator
     support: "false"
   labels:
@@ -131,6 +131,16 @@ spec:
       version: v1alpha1
     - kind: OperationRuleSet
       name: operationrulesets.ifo.kubevirt.io
+      version: v1alpha1
+    - description: Represents the deployment of the VM File Restore Operator
+      displayName: File Restore Operator
+      kind: FileRestoreOperator
+      name: filerestoreoperators.filerestore.kubevirt.io
+      version: v1alpha1
+    - description: Represents a file-level restore operation from a VM snapshot
+      displayName: Virtual Machine File Restore
+      kind: VirtualMachineFileRestore
+      name: virtualmachinefilerestores.filerestore.kubevirt.io
       version: v1alpha1
   description: |-
     **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
@@ -4172,6 +4182,121 @@ spec:
           - update
           - watch
         serviceAccountName: virt-platform-autopilot
+      - rules:
+        - apiGroups:
+          - filerestore.kubevirt.io
+          resources:
+          - filerestoreoperators
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - filerestore.kubevirt.io
+          resources:
+          - filerestoreoperators/status
+          verbs:
+          - get
+          - update
+          - patch
+        - apiGroups:
+          - filerestore.kubevirt.io
+          resources:
+          - filerestoreoperators/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - filerestore.kubevirt.io
+          resources:
+          - virtualmachinefilerestores
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - filerestore.kubevirt.io
+          resources:
+          - virtualmachinefilerestores/status
+          verbs:
+          - get
+          - update
+          - patch
+        - apiGroups:
+          - filerestore.kubevirt.io
+          resources:
+          - virtualmachinefilerestores/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachines
+          verbs:
+          - get
+          - list
+          - watch
+          - patch
+          - update
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachineinstances
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - datavolumes
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+        - apiGroups:
+          - snapshot.storage.k8s.io
+          resources:
+          - volumesnapshots
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - persistentvolumeclaims
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - pods/exec
+          verbs:
+          - create
+        serviceAccountName: vm-file-restore-operator-controller-manager
       deployments:
       - label:
           app.kubernetes.io/component: deployment
@@ -4247,6 +4372,8 @@ spec:
                   value: v0.2.0
                 - name: AUTOPILOT_VERSION
                   value: v0.0.10
+                - name: VM_FILE_RESTORE_OPERATOR_VERSION
+                  value: v0.0.4
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5355,6 +5482,72 @@ spec:
                   type: RuntimeDefault
               serviceAccountName: virt-platform-autopilot
               terminationGracePeriodSeconds: 30
+      - label:
+          app.kubernetes.io/component: vm-file-restore
+          app.kubernetes.io/managed-by: olm
+          app.kubernetes.io/part-of: hyperconverged-cluster
+          app.kubernetes.io/version: 1.19.0
+        name: vm-file-restore-operator-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: vm-file-restore-operator-controller-manager
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                app.kubernetes.io/component: vm-file-restore
+                app.kubernetes.io/managed-by: olm
+                app.kubernetes.io/part-of: hyperconverged-cluster
+                app.kubernetes.io/version: 1.19.0
+                name: vm-file-restore-operator-controller-manager
+            spec:
+              containers:
+              - args:
+                - --leader-elect
+                - --health-probe-bind-address=:8081
+                command:
+                - /manager
+                env:
+                - name: OPERATOR_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: OPERATOR_VERSION
+                  value: v0.0.4
+                - name: VERBOSITY
+                  value: "1"
+                image: quay.io/kubevirt/vm-file-restore-operator@sha256:26417301a23e89b82cf10ea18036ad38cb6852cd8f1fe088e50af2e0957822b7
+                imagePullPolicy: IfNotPresent
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 96Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                terminationMessagePolicy: FallbackToLogsOnError
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
+              serviceAccountName: vm-file-restore-operator-controller-manager
       permissions:
       - rules:
         - apiGroups:
@@ -6179,6 +6372,48 @@ spec:
           - create
           - patch
         serviceAccountName: inflightoperations-controller-manager
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - create
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: vm-file-restore-operator-controller-manager
     strategy: deployment
   installModes:
   - supported: false
@@ -6322,6 +6557,8 @@ spec:
     name: virt-template-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838
     name: virtio-container-disk
+  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:26417301a23e89b82cf10ea18036ad38cb6852cd8f1fe088e50af2e0957822b7
+    name: vm-file-restore-operator
   - image: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
     name: wasp-agent
   replaces: kubevirt-hyperconverged-operator.v1.18.0
