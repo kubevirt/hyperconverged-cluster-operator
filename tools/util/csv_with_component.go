@@ -108,7 +108,7 @@ func GetInitialCsvList() ([]CsvWithComponent, error) {
 		components = append(components, CsvWithComponent{
 			Name:      "VmFileRestoreOperator",
 			Csv:       *vmFileRestoreOperatorCsv,
-			Component: hcoutil.AppComponentVmFileRestore,
+			Component: hcoutil.AppComponentVMFileRestore,
 		})
 	}
 

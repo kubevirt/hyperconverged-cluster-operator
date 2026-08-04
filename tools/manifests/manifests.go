@@ -61,7 +61,7 @@ type DeploymentOperatorParams struct {
 	AaqVersion                    string
 	MigrationOperatorVersion      string
 	AutopilotVersion              string
-	VmFileRestoreOperatorVersion  string
+	VMFileRestoreOperatorVersion  string
 	InFlightOperationsVersion     string
 	Env                           []corev1.EnvVar
 	AddNetworkPolicyLabels        bool
@@ -209,8 +209,8 @@ func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 			Value: params.AutopilotVersion,
 		},
 		{
-			Name:  util.VmFileRestoreOperatorVersionEnvV,
-			Value: params.VmFileRestoreOperatorVersion,
+			Name:  util.VMFileRestoreOperatorVersionEnvV,
+			Value: params.VMFileRestoreOperatorVersion,
 		},
 		{
 			Name:  util.InFlightOperationsVersionEnvV,

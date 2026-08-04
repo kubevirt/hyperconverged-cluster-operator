@@ -467,7 +467,7 @@ func getOperatorParameters() *manifests.DeploymentOperatorParams {
 		AaqVersion:                    *aaqVersion,
 		MigrationOperatorVersion:      *migrationOperatorVersion,
 		AutopilotVersion:              *autopilotVersion,
-		VmFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
+		VMFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		Env:                           []corev1.EnvVar{},
 	}

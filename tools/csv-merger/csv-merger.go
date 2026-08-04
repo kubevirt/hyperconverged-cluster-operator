@@ -796,7 +796,7 @@ func getDeploymentParams() *manifests.DeploymentOperatorParams {
 		AaqVersion:                    *aaqVersion,
 		MigrationOperatorVersion:      *migrationOperatorVersion,
 		AutopilotVersion:              *autopilotVersion,
-		VmFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
+		VMFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		WaspAgentImage:                *waspAgentImage,
 		AIEWebhookImage:               *aieWebhookImage,
