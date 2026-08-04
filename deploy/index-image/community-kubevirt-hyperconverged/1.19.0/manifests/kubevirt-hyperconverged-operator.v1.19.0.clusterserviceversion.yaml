@@ -4260,7 +4260,7 @@ spec:
                 - name: AIE_WEBHOOK_IMAGE
                   value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d5aafc2c9ea71fc03c92a5f73d1c612996a20cff59051e029f82774210ff457e
                 - name: OBSERVABILITY_CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/virt-observability-controller@sha256:8ad8a68093a2fa1312e51d9d6d97e2e6ac1e5112b76fc77df269b4d76e514bd9
+                  value: quay.io/kubevirt/virt-observability-controller@sha256:487818526c1e2e7165b832f5e4e4f242d34f54eb2bfb72eedf5f23c61538483b
                 image: +IMAGE_TO_REPLACE+
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -6308,7 +6308,7 @@ spec:
     name: virt-handler
   - image: quay.io/kubevirt/virt-launcher@sha256:f23102ca00bf12f7962021adfdfdad63c873b01a03001a6d20d5813950254b9c
     name: virt-launcher
-  - image: quay.io/kubevirt/virt-observability-controller@sha256:8ad8a68093a2fa1312e51d9d6d97e2e6ac1e5112b76fc77df269b4d76e514bd9
+  - image: quay.io/kubevirt/virt-observability-controller@sha256:487818526c1e2e7165b832f5e4e4f242d34f54eb2bfb72eedf5f23c61538483b
     name: virt-observability-controller
   - image: quay.io/kubevirt/virt-operator@sha256:d08b5b5ad1c0d694fad13279e44b44b6fad961aa7508acd53b87ce6ef468cbae
     name: virt-operator
