@@ -75,7 +75,7 @@ spec:
         - name: AUTOPILOT_VERSION
           value: v0.0.10
         - name: VM_FILE_RESTORE_OPERATOR_VERSION
-          value: v0.0.3
+          value: v0.0.4
         - name: INFLIGHT_OPERATIONS_VERSION
           value: v0.0.6
         - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -1246,7 +1246,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      control-plane: controller-manager
+      name: vm-file-restore-operator-controller-manager
   strategy: {}
   template:
     metadata:
@@ -1254,13 +1254,12 @@ spec:
         app.kubernetes.io/component: vm-file-restore
         app.kubernetes.io/part-of: hyperconverged-cluster
         app.kubernetes.io/version: 1.19.0
-        control-plane: controller-manager
+        name: vm-file-restore-operator-controller-manager
     spec:
       containers:
       - args:
         - --leader-elect
         - --health-probe-bind-address=:8081
-        - --webhook-cert-path=/apiserver.local.config/certificates
         command:
         - /manager
         env:
@@ -1269,10 +1268,10 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: OPERATOR_VERSION
-          value: v0.0.3
+          value: v0.0.4
         - name: VERBOSITY
           value: "1"
-        image: quay.io/kubevirt/vm-file-restore-operator@sha256:c5ef0da404cbd638e66f88a75f9a63d2238bb251e3bac41de66f832d62fd1f7d
+        image: quay.io/kubevirt/vm-file-restore-operator@sha256:26417301a23e89b82cf10ea18036ad38cb6852cd8f1fe088e50af2e0957822b7
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
