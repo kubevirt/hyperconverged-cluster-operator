@@ -140,12 +140,19 @@ func getAllCSVs() error {
 }
 
 func fileOrString(str *string, fileName, csvName string) error {
-	if (*str == "") == (fileName == "") {
+	bothEmpty := *str == "" && fileName == ""
+	bothSet := *str != "" && fileName != ""
+
+	if bothEmpty {
+		// Optional components may omit both flags.
 		switch csvName {
 		case "migration-operator-csv", "inflight-operations-csv", "vm-file-restore-operator-csv":
 			return nil
 		}
+		return fmt.Errorf(`one and only one of the "--%[1]s" and the "--%[1]s-file" flags must be used`, csvName)
+	}
 
+	if bothSet {
 		return fmt.Errorf(`one and only one of the "--%[1]s" and the "--%[1]s-file" flags must be used`, csvName)
 	}
 
