@@ -306,7 +306,7 @@ higher completionTimeoutPerGiB to let workload with spikes in its memory dirty
 rate to converge.
 The format is a number.
 
-**default**: 150
+**default**: 20
 
 #### parallelMigrationsPerCluster
 
@@ -316,9 +316,9 @@ Number of migrations running in parallel in the cluster. The format is an intege
 
 #### parallelOutboundMigrationsPerNode
 
-Maximum number of outbound migrations per node. The format is a number.
+Maximum number of outbound migrations per node. Available network bandwidth is shared between concurrent migrations, lower number makes single migration more likely to converge. For idle VMs and when bandwidth is not a concern higher value speeds up mass migrations and node drains. The format is a number.
 
-**default**: 2
+**default**: 1
 
 #### progressTimeout:
 
@@ -377,10 +377,10 @@ metadata:
 spec:
   virtualization:
     liveMigrationConfig:
-      completionTimeoutPerGiB: 150
+      completionTimeoutPerGiB: 20
       network: migration-network
       parallelMigrationsPerCluster: 5
-      parallelOutboundMigrationsPerNode: 2
+      parallelOutboundMigrationsPerNode: 1
       progressTimeout: 150
       allowAutoConverge: false
       allowPostCopy: false

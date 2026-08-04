@@ -601,6 +601,32 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(requeue).To(BeFalse())
 			Expect(foundResource.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeTrue()))
 		})
+
+		It("should update completionTimeoutPerGiB from old default on upgrade", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.5")
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To[int64](150)
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeTrue())
+			_, _, requeue = doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB).To(HaveValue(BeEquivalentTo(20)))
+		})
+
+		It("should not update completionTimeoutPerGiB when user customized the value", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.5")
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To[int64](800)
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB).To(HaveValue(BeEquivalentTo(800)))
+		})
 	})
 
 	Context("remove old quickstart guides", func() {

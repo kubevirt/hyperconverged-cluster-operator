@@ -521,8 +521,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_LiveMigrationConfigu
 					},
 					"parallelOutboundMigrationsPerNode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Maximum number of outbound migrations per node.",
-							Default:     2,
+							Description: "The maximum number of outbound migrations allowed simultaneously per node. Setting this to 1 (default) ensures maximum available bandwidth per migration. Higher values accelerate node drains through parallel operations, but increase the risk of busy VMs failing due to network congestion.",
+							Default:     1,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -537,7 +537,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_LiveMigrationConfigu
 					"completionTimeoutPerGiB": {
 						SchemaProps: spec.SchemaProps{
 							Description: "If a migrating VM is big and busy, while the connection to the destination node is slow, migration may never converge. The completion timeout is calculated based on completionTimeoutPerGiB times the size of the guest (both RAM and migrated disks, if any). For example, with completionTimeoutPerGiB set to 800, a virtual machine instance with 6GiB memory will timeout if it has not completed migration in 1h20m. Use a lower completionTimeoutPerGiB to induce quicker failure, so that another destination or post-copy is attempted. Use a higher completionTimeoutPerGiB to let workload with spikes in its memory dirty rate to converge. The format is a number.",
-							Default:     150,
+							Default:     20,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
