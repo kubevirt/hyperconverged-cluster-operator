@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	gomegatypes "github.com/onsi/gomega/types"
 	"gomodules.xyz/jsonpatch/v2"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -17,7 +16,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 )
 
-var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() {
+var _ = Describe("test HyperConverged v1 multiArch mutator", func() {
 	var (
 		cr      *hcov1.HyperConverged
 		mutator *HyperConvergedMutator
@@ -30,7 +29,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 		mutator = initHCMutator(mutatorScheme, cli)
 	})
 
-	Context("PersistentReservation mutation on creation", func() {
+	Context("multiArch mutation on creation", func() {
 		var (
 			ksmPatch = jsonpatch.JsonPatchOperation{
 				Operation: "add",
@@ -39,10 +38,10 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 			}
 		)
 
-		DescribeTable("migrate persistentReservation FG to persistentReservationConfiguration.enabled on create",
-			func(ctx context.Context, featureGates hcov1fg.HyperConvergedFeatureGates, storage *hcov1.StorageConfig, allowed bool, warning bool, extraPatches []jsonpatch.JsonPatchOperation) {
+		DescribeTable("migrate multiArch FG to enableMultiArchBootImageImport on create",
+			func(ctx context.Context, featureGates hcov1fg.HyperConvergedFeatureGates, enabler *bool, allowed bool, warning bool, extraPatches []jsonpatch.JsonPatchOperation) {
 				cr.Spec.FeatureGates = featureGates
-				cr.Spec.Storage = storage
+				cr.Spec.WorkloadSources.EnableMultiArchBootImageImport = enabler
 
 				req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
 
@@ -51,7 +50,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 
 				if warning {
 					Expect(res.Warnings).To(HaveLen(1))
-					Expect(res.Warnings).To(ContainElement(prFGDeprecationMsg))
+					Expect(res.Warnings).To(ContainElement(multiArchFGDeprecationMsg))
 				} else {
 					Expect(res.Warnings).To(BeEmpty())
 				}
@@ -62,125 +61,73 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				}
 				Expect(res.Patches).To(Equal(expectedPatches))
 			},
-			Entry("should set enabled=true when the FG is enabled and storage is nil",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName}},
+			Entry("should set enabled=true when the FG is enabled and enabled is unset",
+				hcov1fg.HyperConvergedFeatureGates{{Name: multiArchFGName}},
 				nil,
 				true,
 				true,
 				[]jsonpatch.JsonPatchOperation{{
 					Operation: "add",
-					Path:      v1HyperConvergedStoragePath,
-					Value:     map[string]any{"persistentReservationConfiguration": map[string]any{"enabled": true}},
-				}},
-			),
-			Entry("should set enabled=true when the FG is enabled and PRC is nil",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName}},
-				&hcov1.StorageConfig{},
-				true,
-				true,
-				[]jsonpatch.JsonPatchOperation{{
-					Operation: "add",
-					Path:      v1HyperConvergedPRConfigPath,
-					Value:     map[string]any{"enabled": true},
-				}},
-			),
-			Entry("should set enabled=true when the FG is enabled and enabled is unset",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName}},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{},
-				},
-				true,
-				true,
-				[]jsonpatch.JsonPatchOperation{{
-					Operation: "add",
-					Path:      v1PRConfigEnabledPath,
+					Path:      v1MultiArchEnabledPath,
 					Value:     true,
 				}},
 			),
-			Entry("should set enabled=false when the FG is explicitly disabled",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: ptr.To(hcov1fg.Disabled)}},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{},
-				},
+			Entry("should set enabled=false when the FG is explicitly disabled and enabled is unset",
+				hcov1fg.HyperConvergedFeatureGates{{Name: multiArchFGName, State: new(hcov1fg.Disabled)}},
+				nil,
 				true,
 				true,
 				[]jsonpatch.JsonPatchOperation{{
 					Operation: "add",
-					Path:      v1PRConfigEnabledPath,
+					Path:      v1MultiArchEnabledPath,
 					Value:     false,
 				}},
 			),
-			Entry("should do nothing when the FG is not set",
+			Entry("should do nothing when the FG is not set and enabled is unset",
 				hcov1fg.HyperConvergedFeatureGates{},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{},
-				},
+				nil,
 				true,
 				false,
 				nil,
 			),
 			Entry("should do nothing when the field is enabled and the FG is not set",
 				hcov1fg.HyperConvergedFeatureGates{},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(true),
-					},
-				},
+				new(true),
 				true,
 				false,
 				nil,
 			),
 			Entry("should do nothing when the field is disabled and the FG is not set",
 				hcov1fg.HyperConvergedFeatureGates{},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(false),
-					},
-				},
+				new(false),
 				true,
 				false,
 				nil,
 			),
 			Entry("should warn if the FG is enabled and the enabled field is true (agree)",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName}},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(true),
-					},
-				},
+				hcov1fg.HyperConvergedFeatureGates{{Name: multiArchFGName}},
+				new(true),
 				true,
 				true,
 				nil,
 			),
 			Entry("should reject if the FG is enabled and the enabled field is false (contradict)",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName}},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(false),
-					},
-				},
+				hcov1fg.HyperConvergedFeatureGates{{Name: multiArchFGName}},
+				new(false),
 				false,
 				false,
 				nil,
 			),
 			Entry("should reject if the FG is disabled and the enabled field is true (contradict)",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: ptr.To(hcov1fg.Disabled)}},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(true),
-					},
-				},
+				hcov1fg.HyperConvergedFeatureGates{{Name: multiArchFGName, State: new(hcov1fg.Disabled)}},
+				new(true),
 				false,
 				false,
 				nil,
 			),
 			Entry("should warn if the FG is disabled and the enabled field is false (agree)",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: ptr.To(hcov1fg.Disabled)}},
-				&hcov1.StorageConfig{
-					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(false),
-					},
-				},
+				hcov1fg.HyperConvergedFeatureGates{{Name: multiArchFGName, State: new(hcov1fg.Disabled)}},
+				new(false),
 				true,
 				true,
 				nil,
@@ -188,7 +135,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 		)
 	})
 
-	Context("sync the persistentReservation FG and persistentReservationConfiguration.enabled field on update", func() {
+	Context("sync the multiArch FG and enableMultiArchBootImageImport field on update", func() {
 		/*
 			Same 81-case matrix as MDev, but with same-direction semantics:
 			- Agreement: FG Enabled + field=true, or FG Disabled + field=false
@@ -197,27 +144,21 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 
 		nilFG := hcov1fg.HyperConvergedFeatureGates{}
 		enabledFG := hcov1fg.HyperConvergedFeatureGates{
-			{Name: persistentReservationFGName},
+			{Name: multiArchFGName},
 		}
 		disabledFG := hcov1fg.HyperConvergedFeatureGates{
-			{Name: persistentReservationFGName, State: ptr.To(hcov1fg.Disabled)},
+			{Name: multiArchFGName, State: new(hcov1fg.Disabled)},
 		}
 
-		nilField := &hcov1.StorageConfig{
-			PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{},
+		nilField := hcov1.WorkloadSourcesConfig{}
+		enabledField := hcov1.WorkloadSourcesConfig{
+			EnableMultiArchBootImageImport: new(true),
 		}
-		enabledField := &hcov1.StorageConfig{
-			PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-				Enabled: ptr.To(true),
-			},
-		}
-		disabledField := &hcov1.StorageConfig{
-			PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-				Enabled: ptr.To(false),
-			},
+		disabledField := hcov1.WorkloadSourcesConfig{
+			EnableMultiArchBootImageImport: new(false),
 		}
 
-		testSyncPREnabledAndFG := func(ctx context.Context, origCR, newCR *hcov1.HyperConverged, expectedRes *prExpectedResponse) {
+		testSyncMultiArchEnabledAndFG := func(ctx context.Context, origCR, newCR *hcov1.HyperConverged, expectedRes *multiArchExpectedResponse) {
 			req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, newCR, testCodec)}
 
 			res := mutator.Handle(ctx, req)
@@ -226,1267 +167,1267 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 			Expect(res.Warnings).To(expectedRes.checkWarning)
 		}
 
-		DescribeTable("1st table row: when Enabled field is nil (no change)", testSyncPREnabledAndFG,
+		DescribeTable("1st table row: when Enabled field is nil (no change)", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning + set field = True, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedSetEnabledTrue().WithPRWarning(),
+				multiArchExpectedSetEnabledTrue().WithWarning(),
 			),
 			Entry("should trigger a warning + set field = False, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedSetEnabledFalse().WithPRWarning(),
+				multiArchExpectedSetEnabledFalse().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should set field = True, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedSetEnabledTrue(),
+				multiArchExpectedSetEnabledTrue(),
 			),
 			Entry("should trigger a warning + set field = False, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedSetEnabledFalse().WithPRWarning(),
+				multiArchExpectedSetEnabledFalse().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning + set field = True, if FG is changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedSetEnabledTrue().WithPRWarning(),
+				multiArchExpectedSetEnabledTrue().WithWarning(),
 			),
 			Entry("should set field = False, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedSetEnabledFalse(),
+				multiArchExpectedSetEnabledFalse(),
 			),
 		)
 
-		DescribeTable("2nd table row: when Enabled field is changed: nil -> True", testSyncPREnabledAndFG,
+		DescribeTable("2nd table row: when Enabled field is changed: nil -> True", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should reject, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should remove FG, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 			Entry("should reject, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning, if FG is changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should remove FG, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 		)
 
-		DescribeTable("3rd table row: when Enabled field is changed: nil -> False", testSyncPREnabledAndFG,
+		DescribeTable("3rd table row: when Enabled field is changed: nil -> False", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should reject, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should trigger a warning, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should remove FG, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 			Entry("should trigger a warning, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should reject, if FG is changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should remove FG, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 		)
 
-		DescribeTable("4th table row: when Enabled field is changed: True -> nil", testSyncPREnabledAndFG,
+		DescribeTable("4th table row: when Enabled field is changed: True -> nil", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should reject, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should trigger a warning, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should remove FG, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 			Entry("should trigger a warning, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should reject, if FG is changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should remove FG, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 		)
 
-		DescribeTable("5th table row: when Enabled field is True (no change)", testSyncPREnabledAndFG,
+		DescribeTable("5th table row: when Enabled field is True (no change)", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should trigger a warning + set field = False, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedSetEnabledFalse().WithPRWarning(),
+				multiArchExpectedSetEnabledFalse().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should do nothing, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning + set field = False, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedSetEnabledFalse().WithPRWarning(),
+				multiArchExpectedSetEnabledFalse().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning, if FG is changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should remove FG, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 		)
 
-		DescribeTable("6th table row: when Enabled field is changed: True -> False", testSyncPREnabledAndFG,
+		DescribeTable("6th table row: when Enabled field is changed: True -> False", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should reject, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should trigger a warning, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should remove FG, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 			Entry("should trigger a warning, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should reject, if FG is changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should remove FG, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 		)
 
-		DescribeTable("7th table row: when Enabled field is changed: False -> nil", testSyncPREnabledAndFG,
+		DescribeTable("7th table row: when Enabled field is changed: False -> nil", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should reject, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should trigger a warning, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should remove FG, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 			Entry("should trigger a warning, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      nilField,
+						FeatureGates:    nilFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should reject, if FG is changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      nilField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should remove FG, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      nilField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: nilField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 		)
 
-		DescribeTable("8th table row: when Enabled field is changed: False -> True", testSyncPREnabledAndFG,
+		DescribeTable("8th table row: when Enabled field is changed: False -> True", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should reject, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should remove FG, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 			Entry("should reject, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedReject(),
+				multiArchExpectedReject(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      enabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning, if FG changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      enabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should remove FG, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      enabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: enabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
 		)
 
-		DescribeTable("9th table row: when Enabled field is False (no change)", testSyncPREnabledAndFG,
+		DescribeTable("9th table row: when Enabled field is False (no change)", testSyncMultiArchEnabledAndFG,
 			Entry("should do nothing, if FG is nil (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning + set field = True, if FG is changed nil -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedSetEnabledTrue().WithPRWarning(),
+				multiArchExpectedSetEnabledTrue().WithWarning(),
 			),
 			Entry("should trigger a warning, if FG is changed nil -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Enabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should remove FG, if FG is Enabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedRemoveFG(),
+				multiArchExpectedRemoveFG(),
 			),
-			Entry("should trigger a warning + set field = True, if FG is changed Enabled -> Disabled",
+			Entry("should trigger a warning, if FG is changed Enabled -> Disabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing().WithPRWarning(),
+				multiArchExpectedDoNothing().WithWarning(),
 			),
 			Entry("should do nothing, if FG is changed Disabled -> nil",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: nilFG,
-						Storage:      disabledField,
+						FeatureGates:    nilFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 			Entry("should trigger a warning + set field = True, if FG is changed Disabled -> Enabled",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      disabledField,
+						FeatureGates:    enabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedSetEnabledTrue().WithPRWarning(),
+				multiArchExpectedSetEnabledTrue().WithWarning(),
 			),
 			Entry("should do nothing, if FG is Disabled (no change)",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: disabledFG,
-						Storage:      disabledField,
+						FeatureGates:    disabledFG,
+						WorkloadSources: disabledField,
 					},
 				},
-				prExpectedDoNothing(),
+				multiArchExpectedDoNothing(),
 			),
 		)
 
-		DescribeTable("drop FG: check special jsonpatch paths", testSyncPREnabledAndFG,
-			Entry("should remove the whole FG array, if only the persistentReservation FG is set",
+		DescribeTable("drop FG: check special jsonpatch paths", testSyncMultiArchEnabledAndFG,
+			Entry("should remove the whole FG array, if only the multiArch FG is set",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
-							{Name: persistentReservationFGName},
+							{Name: multiArchFGName},
 						},
-						Storage: nilField,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
-							{Name: persistentReservationFGName},
+							{Name: multiArchFGName},
 						},
-						Storage: enabledField,
+						WorkloadSources: enabledField,
 					},
 				},
-				&prExpectedResponse{
+				&multiArchExpectedResponse{
 					patches: []jsonpatch.JsonPatchOperation{{
 						Operation: "remove",
 						Path:      "/spec/featureGates",
@@ -1496,28 +1437,28 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				},
 			),
 
-			Entry("should remove only the persistentReservation FG, if it's the first FG",
+			Entry("should remove only the multiArch FG, if it's the first FG",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
-							{Name: persistentReservationFGName},
+							{Name: multiArchFGName},
 							{Name: "someEnabledFG"},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
-						Storage: nilField,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
-							{Name: persistentReservationFGName},
+							{Name: multiArchFGName},
 							{Name: "someEnabledFG"},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
-						Storage: enabledField,
+						WorkloadSources: enabledField,
 					},
 				},
-				&prExpectedResponse{
+				&multiArchExpectedResponse{
 					patches: []jsonpatch.JsonPatchOperation{{
 						Operation: "remove",
 						Path:      "/spec/featureGates/0",
@@ -1527,28 +1468,28 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				},
 			),
 
-			Entry("should remove only the persistentReservation FG, if it's not the first FG",
+			Entry("should remove only the multiArch FG, if it's not the first FG",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
-							{Name: persistentReservationFGName},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: multiArchFGName},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
-						Storage: nilField,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
-							{Name: persistentReservationFGName},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: multiArchFGName},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
-						Storage: enabledField,
+						WorkloadSources: enabledField,
 					},
 				},
-				&prExpectedResponse{
+				&multiArchExpectedResponse{
 					patches: []jsonpatch.JsonPatchOperation{{
 						Operation: "remove",
 						Path:      "/spec/featureGates/1",
@@ -1557,29 +1498,28 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 					checkWarning: BeEmpty(),
 				},
 			),
-
-			Entry("should remove only the persistentReservation FG, if it's the last FG",
+			Entry("should remove only the multiArch FG, if it's the last FG",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
-							{Name: persistentReservationFGName},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
+							{Name: multiArchFGName},
 						},
-						Storage: nilField,
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
-							{Name: persistentReservationFGName},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
+							{Name: multiArchFGName},
 						},
-						Storage: enabledField,
+						WorkloadSources: enabledField,
 					},
 				},
-				&prExpectedResponse{
+				&multiArchExpectedResponse{
 					patches: []jsonpatch.JsonPatchOperation{{
 						Operation: "remove",
 						Path:      "/spec/featureGates/2",
@@ -1588,76 +1528,220 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 					checkWarning: BeEmpty(),
 				},
 			),
-		)
-
-		DescribeTable("set Enabled = true: check special jsonpatch paths", testSyncPREnabledAndFG,
-			Entry("should set only the Enabled field, if the PersistentReservationConfiguration is not nil",
+			Entry("should remove several FGs",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage: &hcov1.StorageConfig{
-							PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{},
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: "someEnabledFG"},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
+							{Name: multiArchFGName},
+							{Name: persistentReservationFGName},
+							{Name: disableMDevConfigurationFGName},
 						},
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: "someEnabledFG"},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
+							{Name: multiArchFGName},
+							{Name: persistentReservationFGName},
+							{Name: disableMDevConfigurationFGName},
+						},
+						WorkloadSources: enabledField,
 						Storage: &hcov1.StorageConfig{
-							PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{},
+							PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
+								Enabled: new(true),
+							},
+						},
+						Virtualization: hcov1.VirtualizationConfig{
+							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+								Enabled: new(true),
+							},
 						},
 					},
 				},
-				&prExpectedResponse{
-					patches: []jsonpatch.JsonPatchOperation{{
-						Operation: "add",
-						Path:      v1PRConfigEnabledPath,
-						Value:     true,
-					}},
+				&multiArchExpectedResponse{
+					patches: []jsonpatch.JsonPatchOperation{
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/4",
+						},
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/3",
+						},
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/2",
+						},
+					},
 					checkAllowed: BeTrue(),
 					checkWarning: BeEmpty(),
 				},
 			),
-			Entry("should set the PersistentReservationConfiguration, if it's nil but Storage exists",
+			Entry("should remove several FGs - different order",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      &hcov1.StorageConfig{},
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: "someEnabledFG"},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
+							{Name: disableMDevConfigurationFGName},
+							{Name: persistentReservationFGName},
+							{Name: multiArchFGName},
+						},
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
-						Storage:      &hcov1.StorageConfig{},
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: "someEnabledFG"},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
+							{Name: disableMDevConfigurationFGName},
+							{Name: persistentReservationFGName},
+							{Name: multiArchFGName},
+						},
+						WorkloadSources: enabledField,
+						Storage: &hcov1.StorageConfig{
+							PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
+								Enabled: new(true),
+							},
+						},
+						Virtualization: hcov1.VirtualizationConfig{
+							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+								Enabled: new(true),
+							},
+						},
 					},
 				},
-				&prExpectedResponse{
-					patches: []jsonpatch.JsonPatchOperation{{
-						Operation: "add",
-						Path:      v1HyperConvergedPRConfigPath,
-						Value:     map[string]any{"enabled": true},
-					}},
+				&multiArchExpectedResponse{
+					patches: []jsonpatch.JsonPatchOperation{
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/4",
+						},
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/3",
+						},
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/2",
+						},
+					},
 					checkAllowed: BeTrue(),
 					checkWarning: BeEmpty(),
 				},
 			),
-			Entry("should set the Storage, if it's nil",
+			Entry("should sort patches by numeric index, not by string",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: "0000"},
+							{Name: "1111", State: new(hcov1fg.Disabled)},
+							{Name: disableMDevConfigurationFGName},
+							{Name: "3333"},
+							{Name: "4444", State: new(hcov1fg.Disabled)},
+							{Name: "5555"},
+							{Name: "6666", State: new(hcov1fg.Disabled)},
+							{Name: persistentReservationFGName},
+							{Name: "8888"},
+							{Name: "9999", State: new(hcov1fg.Disabled)},
+							{Name: "1010"},
+							{Name: multiArchFGName},
+						},
+						WorkloadSources: nilField,
 					},
 				},
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
-						FeatureGates: enabledFG,
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: "0000"},
+							{Name: "1111", State: new(hcov1fg.Disabled)},
+							{Name: disableMDevConfigurationFGName},
+							{Name: "3333"},
+							{Name: "4444", State: new(hcov1fg.Disabled)},
+							{Name: "5555"},
+							{Name: "6666", State: new(hcov1fg.Disabled)},
+							{Name: persistentReservationFGName},
+							{Name: "8888"},
+							{Name: "9999", State: new(hcov1fg.Disabled)},
+							{Name: "1010"},
+							{Name: multiArchFGName},
+						},
+						WorkloadSources: enabledField,
+						Storage: &hcov1.StorageConfig{
+							PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
+								Enabled: new(true),
+							},
+						},
+						Virtualization: hcov1.VirtualizationConfig{
+							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+								Enabled: new(true),
+							},
+						},
 					},
 				},
-				&prExpectedResponse{
-					patches: []jsonpatch.JsonPatchOperation{{
-						Operation: "add",
-						Path:      v1HyperConvergedStoragePath,
-						Value:     map[string]any{"persistentReservationConfiguration": map[string]any{"enabled": true}},
-					}},
+				&multiArchExpectedResponse{
+					patches: []jsonpatch.JsonPatchOperation{
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/11",
+						},
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/7",
+						},
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates/2",
+						},
+					},
+					checkAllowed: BeTrue(),
+					checkWarning: BeEmpty(),
+				},
+			),
+			Entry("should remove all FGs",
+				&hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: disableMDevConfigurationFGName},
+							{Name: persistentReservationFGName},
+							{Name: multiArchFGName},
+						},
+						WorkloadSources: nilField,
+					},
+				},
+				&hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: disableMDevConfigurationFGName},
+							{Name: persistentReservationFGName},
+							{Name: multiArchFGName},
+						},
+						WorkloadSources: enabledField,
+						Storage: &hcov1.StorageConfig{
+							PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
+								Enabled: new(true),
+							},
+						},
+						Virtualization: hcov1.VirtualizationConfig{
+							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+								Enabled: new(true),
+							},
+						},
+					},
+				},
+				&multiArchExpectedResponse{
+					patches: []jsonpatch.JsonPatchOperation{
+						{
+							Operation: "remove",
+							Path:      "/spec/featureGates",
+						},
+					},
 					checkAllowed: BeTrue(),
 					checkWarning: BeEmpty(),
 				},
@@ -1666,25 +1750,25 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 	})
 })
 
-type prExpectedResponse struct {
+type multiArchExpectedResponse struct {
 	checkAllowed gomegatypes.GomegaMatcher
 	checkWarning gomegatypes.GomegaMatcher
 	patches      []jsonpatch.JsonPatchOperation
 }
 
-func (response *prExpectedResponse) WithPRWarning() *prExpectedResponse {
+func (response *multiArchExpectedResponse) WithWarning() *multiArchExpectedResponse {
 	response.checkWarning = And(
 		Not(BeEmpty()),
-		ContainElement(prFGDeprecationMsg),
+		ContainElement(multiArchFGDeprecationMsg),
 	)
 	return response
 }
 
-func prExpectedSetEnabledTrue() *prExpectedResponse {
-	return &prExpectedResponse{
+func multiArchExpectedSetEnabledTrue() *multiArchExpectedResponse {
+	return &multiArchExpectedResponse{
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "add",
-			Path:      v1PRConfigEnabledPath,
+			Path:      v1MultiArchEnabledPath,
 			Value:     true,
 		}},
 		checkAllowed: BeTrue(),
@@ -1692,11 +1776,11 @@ func prExpectedSetEnabledTrue() *prExpectedResponse {
 	}
 }
 
-func prExpectedSetEnabledFalse() *prExpectedResponse {
-	return &prExpectedResponse{
+func multiArchExpectedSetEnabledFalse() *multiArchExpectedResponse {
+	return &multiArchExpectedResponse{
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "add",
-			Path:      v1PRConfigEnabledPath,
+			Path:      v1MultiArchEnabledPath,
 			Value:     false,
 		}},
 		checkAllowed: BeTrue(),
@@ -1704,8 +1788,8 @@ func prExpectedSetEnabledFalse() *prExpectedResponse {
 	}
 }
 
-func prExpectedRemoveFG() *prExpectedResponse {
-	return &prExpectedResponse{
+func multiArchExpectedRemoveFG() *multiArchExpectedResponse {
+	return &multiArchExpectedResponse{
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "remove",
 			Path:      "/spec/featureGates",
@@ -1715,16 +1799,16 @@ func prExpectedRemoveFG() *prExpectedResponse {
 	}
 }
 
-func prExpectedDoNothing() *prExpectedResponse {
-	return &prExpectedResponse{
+func multiArchExpectedDoNothing() *multiArchExpectedResponse {
+	return &multiArchExpectedResponse{
 		checkAllowed: BeTrue(),
 		checkWarning: BeEmpty(),
 		patches:      noPatches,
 	}
 }
 
-func prExpectedReject() *prExpectedResponse {
-	return &prExpectedResponse{
+func multiArchExpectedReject() *multiArchExpectedResponse {
+	return &multiArchExpectedResponse{
 		checkAllowed: BeFalse(),
 		checkWarning: BeEmpty(),
 		patches:      noPatches,

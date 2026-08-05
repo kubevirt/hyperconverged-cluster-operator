@@ -379,7 +379,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			Expect(err).ToNot(HaveOccurred(), "failed to get worker nodes architectures")
 
 			GinkgoWriter.Printf("Worker nodes architectures: %v\n", archs)
-			Expect(tests.EnableFG(ctx, cli, goldenimages.EnableMultiArchFeatureGate)).To(Succeed())
+			const enableMultiArchPatch = `{"spec":{"workloadSources":{"enableMultiArchBootImageImport": true}}}`
+			tests.PatchMergeHCO(ctx, cli, []byte(enableMultiArchPatch))
 
 			removeCustomDICTFromHC(ctx, cli)
 
@@ -396,7 +397,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				Should(Succeed(), tests.PrintHyperConvergedBecause(origHC, "the dictStatus.Status.OriginalSupportedArchitectures field should not be empty"))
 
 			DeferCleanup(func(ctx context.Context) {
-				Expect(tests.DisableFG(ctx, cli, goldenimages.EnableMultiArchFeatureGate)).To(Succeed())
+				const disableMultiArchPatch = `[{"op":"remove", "path":"/spec/workloadSources/enableMultiArchBootImageImport"}]`
+				tests.PatchHCO(ctx, cli, []byte(disableMultiArchPatch))
 
 				removeCustomDICTFromHC(ctx, cli)
 			})

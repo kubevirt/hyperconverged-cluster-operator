@@ -2275,13 +2275,6 @@ spec:
                     Allow to expose a limited set of host metrics to guests.
                     Phase: alpha
 
-                  * enableMultiArchBootImageImport:
-                    EnableMultiArchBootImageImport allows the HCO to run on heterogeneous
-                    clusters with different CPU architectures. Setting this field to true will
-                    allow the HCO to create Golden Images for different CPU architectures.
-                    This feature is in Developer Preview.
-                    Phase: alpha
-
                   * incrementalBackup:
                     IncrementalBackup enables changed block tracking backups and incremental
                     backups using QEMU capabilities in KubeVirt. When enabled, this also
@@ -2297,9 +2290,16 @@ spec:
                     Phase: alpha
 
                   * disableMDevConfiguration:
-                    Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled
+                    Deprecated: This feature gate has graduated to a dedicated configuration
+                    field; use spec.virtualization.mediatedDevicesConfiguration.enabled
                     instead. This feature gate is deprecated and will be removed in a future
                     release.
+                    Phase: deprecated
+
+                  * enableMultiArchBootImageImport:
+                    Deprecated: This feature gate has graduated to a dedicated configuration
+                    field; use spec.workloadSources.enableMultiArchBootImageImport instead.
+                    This feature gate is deprecated and will be removed in a future release.
                     Phase: deprecated
 
                   * persistentReservation:
@@ -4340,6 +4340,12 @@ spec:
                       defined) templates that can be added to the dataImportCronTemplates field. This field only controls the common
                       templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.
                     type: boolean
+                  enableMultiArchBootImageImport:
+                    description: |-
+                      EnableMultiArchBootImageImport allows the HCO to run on heterogeneous
+                      clusters with different CPU architectures. Setting this field to true will
+                      allow the HCO to create Golden Images for different CPU architectures.
+                    type: boolean
                   instancetypeConfig:
                     description: InstancetypeConfig holds the configuration of instance
                       type related functionality within KubeVirt.
@@ -5472,7 +5478,6 @@ spec:
                 declarativeHotplugVolumes: true
                 deployKubeSecondaryDNS: false
                 downwardMetrics: false
-                enableMultiArchBootImageImport: false
                 incrementalBackup: false
                 objectGraph: false
               liveMigrationConfig:
@@ -6609,7 +6614,6 @@ spec:
                   declarativeHotplugVolumes: true
                   deployKubeSecondaryDNS: false
                   downwardMetrics: false
-                  enableMultiArchBootImageImport: false
                   incrementalBackup: false
                   objectGraph: false
                 description: |-
@@ -6685,12 +6689,12 @@ spec:
                     description: 'Deprecated: This feature gate is ignored.'
                     type: boolean
                   enableMultiArchBootImageImport:
-                    default: false
                     description: |-
                       EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
                       Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.
-
-                      This feature is in Developer Preview.
+                      This feature gate has graduated to a dedicated configuration field.
+                      Deprecated: use v1's spec.workloadSources.enableMultiArchBootImageImport instead. This feature gate will be removed in
+                      a future release.
                     type: boolean
                   incrementalBackup:
                     default: false

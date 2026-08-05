@@ -110,13 +110,6 @@ type HyperConvergedSpec struct {
 	//   Allow to expose a limited set of host metrics to guests.
 	//   Phase: alpha
 	//
-	// * enableMultiArchBootImageImport:
-	//   EnableMultiArchBootImageImport allows the HCO to run on heterogeneous
-	//   clusters with different CPU architectures. Setting this field to true will
-	//   allow the HCO to create Golden Images for different CPU architectures.
-	//   This feature is in Developer Preview.
-	//   Phase: alpha
-	//
 	// * incrementalBackup:
 	//   IncrementalBackup enables changed block tracking backups and incremental
 	//   backups using QEMU capabilities in KubeVirt. When enabled, this also
@@ -132,9 +125,16 @@ type HyperConvergedSpec struct {
 	//   Phase: alpha
 	//
 	// * disableMDevConfiguration:
-	//   Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled
+	//   Deprecated: This feature gate has graduated to a dedicated configuration
+	//   field; use spec.virtualization.mediatedDevicesConfiguration.enabled
 	//   instead. This feature gate is deprecated and will be removed in a future
 	//   release.
+	//   Phase: deprecated
+	//
+	// * enableMultiArchBootImageImport:
+	//   Deprecated: This feature gate has graduated to a dedicated configuration
+	//   field; use spec.workloadSources.enableMultiArchBootImageImport instead.
+	//   This feature gate is deprecated and will be removed in a future release.
 	//   Phase: deprecated
 	//
 	// * persistentReservation:
@@ -416,6 +416,11 @@ type WorkloadSourcesConfig struct {
 	// +kubebuilder:default=true
 	// +default=true
 	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
+
+	// EnableMultiArchBootImageImport allows the HCO to run on heterogeneous
+	// clusters with different CPU architectures. Setting this field to true will
+	// allow the HCO to create Golden Images for different CPU architectures.
+	EnableMultiArchBootImageImport *bool `json:"enableMultiArchBootImageImport,omitempty"`
 
 	// DataImportCronTemplates holds list of data import cron templates (golden images)
 	// +optional

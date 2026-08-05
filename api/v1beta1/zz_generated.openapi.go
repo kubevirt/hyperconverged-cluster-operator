@@ -241,8 +241,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"enableMultiArchBootImageImport": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.\n\nThis feature is in Developer Preview.",
-							Default:     false,
+							Description: "EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures. This feature gate has graduated to a dedicated configuration field. Deprecated: use v1's spec.workloadSources.enableMultiArchBootImageImport instead. This feature gate will be removed in a future release.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

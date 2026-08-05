@@ -132,24 +132,6 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		}
 	}
 
-	// converting the EnableMultiArchBootImageImport v1beta1 alpha feature gate to v1
-	v1Idx = out.Index("enableMultiArchBootImageImport")
-	v1Found = v1Idx >= 0
-	if in.EnableMultiArchBootImageImport == nil {
-		if v1Found {
-			*out = slices.Delete(*out, v1Idx, v1Idx+1)
-		}
-	} else {
-		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
-		if (!v1Found && *in.EnableMultiArchBootImageImport) || (v1Found && v1Enabled != *in.EnableMultiArchBootImageImport) {
-			if *in.EnableMultiArchBootImageImport {
-				out.Enable("enableMultiArchBootImageImport")
-			} else {
-				out.Disable("enableMultiArchBootImageImport")
-			}
-		}
-	}
-
 	// converting the IncrementalBackup v1beta1 alpha feature gate to v1
 	v1Idx = out.Index("incrementalBackup")
 	v1Found = v1Idx >= 0
@@ -188,6 +170,8 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 
 	// the DisableMDevConfiguration feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 
+	// the EnableMultiArchBootImageImport feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
+
 	// the PersistentReservation feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 }
 
@@ -210,9 +194,6 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 	// converting the downwardMetrics v1 alpha feature gate to v1beta1
 	out.DownwardMetrics = new(in.IsEnabled("downwardMetrics"))
 
-	// converting the enableMultiArchBootImageImport v1 alpha feature gate to v1beta1
-	out.EnableMultiArchBootImageImport = new(in.IsEnabled("enableMultiArchBootImageImport"))
-
 	// converting the incrementalBackup v1 alpha feature gate to v1beta1
 	out.IncrementalBackup = new(in.IsEnabled("incrementalBackup"))
 
@@ -220,6 +201,8 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 	out.ObjectGraph = new(in.IsEnabled("objectGraph"))
 
 	// the disableMDevConfiguration feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
+
+	// the enableMultiArchBootImageImport feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 
 	// the persistentReservation feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 }

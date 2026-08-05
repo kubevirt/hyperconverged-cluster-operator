@@ -60,7 +60,7 @@ var GetDataImportCronTemplates = func(hc *hcov1.HyperConverged) ([]hcov1.DataImp
 	}
 	dictList = getCustomDicts(dictList, crDicts)
 
-	if hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate) {
+	if IsMultiArchEnabled(hc) {
 		for i := range dictList {
 			setDataImportCronTemplateStatusMultiArch(&dictList[i], nodeinfo.GetWorkloadsArchitectures())
 		}
@@ -72,7 +72,7 @@ var GetDataImportCronTemplates = func(hc *hcov1.HyperConverged) ([]hcov1.DataImp
 }
 
 func CheckDataImportCronTemplates(hc *hcov1.HyperConverged) {
-	multiArchEnabled := hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate)
+	multiArchEnabled := IsMultiArchEnabled(hc)
 
 	if multiArchEnabled {
 		for i := range hc.Status.DataImportCronTemplates {
@@ -186,7 +186,7 @@ func ensureDICTFields(dict *hcov1.DataImportCronTemplate) {
 }
 
 func getCommonDicts(list []hcov1.DataImportCronTemplateStatus, crDicts map[string]hcov1.DataImportCronTemplate, hc *hcov1.HyperConverged) []hcov1.DataImportCronTemplateStatus {
-	enableMultiArchBootImageImport := hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate)
+	enableMultiArchBootImageImport := IsMultiArchEnabled(hc)
 	for dictName, commonDict := range dataImportCronTemplateHardCodedMap {
 		targetDict := hcov1.DataImportCronTemplateStatus{
 			DataImportCronTemplate: *commonDict.DeepCopy(),
@@ -386,7 +386,7 @@ func hcoDictToSSP(hcoDictStatus hcov1.DataImportCronTemplateStatus, multiArchEna
 }
 
 func hcoDictToSSPSeq(hc *hcov1.HyperConverged, hcoDicts iter.Seq[hcov1.DataImportCronTemplateStatus]) iter.Seq[sspv1beta3.DataImportCronTemplate] {
-	multiArchEnabled := hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate)
+	multiArchEnabled := IsMultiArchEnabled(hc)
 	return func(yield func(sspv1beta3.DataImportCronTemplate) bool) {
 		for hcoDict := range hcoDicts {
 			sspDict, valid := hcoDictToSSP(hcoDict, multiArchEnabled)
@@ -407,4 +407,12 @@ func removeUnsupportedArchs(archAnnotation string, workloadsArchs []string) stri
 	}
 
 	return strings.Join(newArchList, ",")
+}
+
+func IsMultiArchEnabled(hc *hcov1.HyperConverged) bool {
+	if hc.Spec.WorkloadSources.EnableMultiArchBootImageImport != nil {
+		return *hc.Spec.WorkloadSources.EnableMultiArchBootImageImport
+	}
+
+	return hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate)
 }

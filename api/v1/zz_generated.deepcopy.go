@@ -1110,6 +1110,11 @@ func (in *WorkloadSourcesConfig) DeepCopyInto(out *WorkloadSourcesConfig) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.EnableMultiArchBootImageImport != nil {
+		in, out := &in.EnableMultiArchBootImageImport, &out.EnableMultiArchBootImageImport
+		*out = new(bool)
+		**out = **in
+	}
 	if in.DataImportCronTemplates != nil {
 		in, out := &in.DataImportCronTemplates, &out.DataImportCronTemplates
 		*out = make([]DataImportCronTemplate, len(*in))

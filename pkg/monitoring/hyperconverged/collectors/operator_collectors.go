@@ -45,9 +45,9 @@ func getMultiArchBootImagesStatusCallback(cli client.Client, operatorNamespace s
 			return []operatormetrics.CollectorResult{}
 		}
 
-		hc := hcov1.HyperConverged{}
+		hc := &hcov1.HyperConverged{}
 		key := client.ObjectKey{Name: hcov1.HyperConvergedName, Namespace: operatorNamespace}
-		if err := cli.Get(context.TODO(), key, &hc); err != nil {
+		if err := cli.Get(context.TODO(), key, hc); err != nil {
 			if !errors.IsNotFound(err) {
 				logger.Error(err, "can't read HyperConverged CR")
 			}
@@ -60,9 +60,9 @@ func getMultiArchBootImagesStatusCallback(cli client.Client, operatorNamespace s
 			return []operatormetrics.CollectorResult{}
 		}
 
-		// Set the metric based on the FeatureGate value
+		// Set the metric based on the enable field value
 		value := multiArchBootImagesFeatureDisabled
-		if hc.Spec.FeatureGates.IsEnabled(goldenimages.EnableMultiArchFeatureGate) {
+		if goldenimages.IsMultiArchEnabled(hc) {
 			value = multiArchBootImagesFeatureEnabled
 		}
 

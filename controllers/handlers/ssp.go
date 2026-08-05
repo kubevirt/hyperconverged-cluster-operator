@@ -182,7 +182,7 @@ func NewSSP(hc *hcov1.HyperConverged, useNodeInfoFromStatus bool) (*sspv1beta3.S
 
 		Cluster: cluster,
 
-		EnableMultipleArchitectures: ptr.To(hc.Spec.FeatureGates.IsEnabled(goldenimages.EnableMultiArchFeatureGate)),
+		EnableMultipleArchitectures: new(goldenimages.IsMultiArchEnabled(hc)),
 
 		// NodeLabeller field is explicitly initialized to its zero-value,
 		// in order to future-proof from bugs if SSP changes it to pointer-type,

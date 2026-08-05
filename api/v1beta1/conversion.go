@@ -19,13 +19,17 @@ import (
 
 const v1OnlyFieldAnnotation = APIVersionGroup + "/v1-only-fields"
 
-const DisableMDevConfigurationFG = "disableMDevConfiguration"
-const PersistentReservationFGName = "persistentReservation"
+const (
+	DisableMDevConfigurationFG  = "disableMDevConfiguration"
+	PersistentReservationFGName = "persistentReservation"
+	MultiArchFGName             = "enableMultiArchBootImageImport"
+)
 
 type v1OnlyFields struct {
 	DeployNetworkResourcesInjector *bool                              `json:"deployNetworkResourcesInjector,omitempty"`
 	MDevConfigEnable               *bool                              `json:"mdevConfigEnable,omitempty"`
 	PersistentReservationEnabled   *bool                              `json:"persistentReservationEnabled,omitempty"`
+	MultiArchEnabled               *bool                              `json:"multiArchEnabled,omitempty"`
 	FeatureGates                   hcov1fg.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 	Observability                  *hcov1.ObservabilityConfig         `json:"observability,omitempty"`
 }
@@ -34,6 +38,7 @@ func (fields *v1OnlyFields) isEmpty() bool {
 	return fields.DeployNetworkResourcesInjector == nil &&
 		fields.MDevConfigEnable == nil &&
 		fields.PersistentReservationEnabled == nil &&
+		fields.MultiArchEnabled == nil &&
 		fields.FeatureGates == nil &&
 		fields.Observability == nil
 }
@@ -70,6 +75,8 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 
 	convertWorkloadSourcesV1beta1ToV1(src.Spec, &dst.Spec.WorkloadSources)
 
+	convertMultiArchV1beta1FGToV1(src.Spec, &dst.Spec)
+
 	if err := convertDeploymentV1beta1ToV1(src.Spec, &dst.Spec.Deployment); err != nil {
 		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1beta1 to v1; %w", err)
 	}
@@ -103,6 +110,8 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 	convertNetworkingV1ToV1beta1(src.Spec.Networking, &dst.Spec)
 
 	convertWorkloadSourcesV1ToV1beta1(src.Spec.WorkloadSources, &dst.Spec)
+
+	convertMultiArchV1ToV1beta1FG(src.Spec.WorkloadSources, &dst.Spec)
 
 	if err := convertDeploymentV1ToV1beta1(src.Spec.Deployment, &dst.Spec); err != nil {
 		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1 to v1beta1; %w", err)
@@ -473,6 +482,31 @@ func convertWorkloadSourcesV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config 
 	}
 }
 
+func convertMultiArchV1ToV1beta1FG(v1WorkloadSources hcov1.WorkloadSourcesConfig, v1beta1Spec *HyperConvergedSpec) {
+	if v1WorkloadSources.EnableMultiArchBootImageImport == nil {
+		return
+	}
+
+	v1beta1Spec.FeatureGates.EnableMultiArchBootImageImport = new(*v1WorkloadSources.EnableMultiArchBootImageImport)
+}
+
+func convertMultiArchV1beta1FGToV1(v1beta1Spec HyperConvergedSpec, v1Spec *hcov1.HyperConvergedSpec) {
+	v1beta1FG := v1beta1Spec.FeatureGates.EnableMultiArchBootImageImport
+	if v1beta1FG == nil {
+		return
+	}
+
+	v1Spec.WorkloadSources.EnableMultiArchBootImageImport = new(*v1beta1FG)
+
+	if v1FGEnabled, v1FGExists := v1Spec.FeatureGates.IsExplicitlyEnabled(MultiArchFGName); v1FGExists && v1FGEnabled != *v1beta1FG {
+		if *v1beta1FG {
+			v1Spec.FeatureGates.Enable(MultiArchFGName)
+		} else {
+			v1Spec.FeatureGates.Disable(MultiArchFGName)
+		}
+	}
+}
+
 func convertDeploymentV1ToV1beta1(v1Config hcov1.DeploymentConfig, v1beta1Spec *HyperConvergedSpec) error {
 	if err := convertAAQConfigV1ToV1beta1(v1Config, v1beta1Spec); err != nil {
 		return err
@@ -578,6 +612,10 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		dst.Spec.Storage.PersistentReservationConfiguration.Enabled = new(*v1Fields.PersistentReservationEnabled)
 	}
 
+	if v1Fields.MultiArchEnabled != nil {
+		dst.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(*v1Fields.MultiArchEnabled)
+	}
+
 	if v1Fields.Observability != nil {
 		dst.Spec.Observability = v1Fields.Observability.DeepCopy()
 	}
@@ -586,16 +624,21 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 }
 
 func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
-	v1Fields := v1OnlyFields{
-		DeployNetworkResourcesInjector: src.Spec.Deployment.DeployNetworkResourcesInjector,
+	v1Fields := v1OnlyFields{}
+	if src.Spec.Deployment.DeployNetworkResourcesInjector != nil {
+		v1Fields.DeployNetworkResourcesInjector = new(*src.Spec.Deployment.DeployNetworkResourcesInjector)
 	}
 
-	if src.Spec.Virtualization.MediatedDevicesConfiguration != nil {
-		v1Fields.MDevConfigEnable = src.Spec.Virtualization.MediatedDevicesConfiguration.Enabled
+	if mdevConfig := src.Spec.Virtualization.MediatedDevicesConfiguration; mdevConfig != nil && mdevConfig.Enabled != nil {
+		v1Fields.MDevConfigEnable = new(*mdevConfig.Enabled)
 	}
 
-	if src.Spec.Storage != nil && src.Spec.Storage.PersistentReservationConfiguration != nil {
-		v1Fields.PersistentReservationEnabled = src.Spec.Storage.PersistentReservationConfiguration.Enabled
+	if src.Spec.Storage != nil && src.Spec.Storage.PersistentReservationConfiguration != nil && src.Spec.Storage.PersistentReservationConfiguration.Enabled != nil {
+		v1Fields.PersistentReservationEnabled = new(*src.Spec.Storage.PersistentReservationConfiguration.Enabled)
+	}
+
+	if src.Spec.WorkloadSources.EnableMultiArchBootImageImport != nil {
+		v1Fields.MultiArchEnabled = new(*src.Spec.WorkloadSources.EnableMultiArchBootImageImport)
 	}
 
 	if len(src.Spec.FeatureGates) > 0 {
@@ -654,8 +697,7 @@ func setPtr[T comparable](orig *T) *T {
 		return nil
 	}
 
-	dst := new(T)
-	*dst = *orig
+	dst := new(*orig)
 	return dst
 }
 
