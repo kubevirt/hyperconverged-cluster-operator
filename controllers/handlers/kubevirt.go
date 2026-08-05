@@ -144,6 +144,8 @@ const (
 	kvOptOutRoleAggregation        = "OptOutRoleAggregation"
 	kvContainerPathVolumes         = "ContainerPathVolumes"
 	kvPCINUMAAwareTopology         = "PCINUMAAwareTopology"
+	kvGraceIOVirtualization        = "GraceIOVirtualization"
+	kvIOMMUFD                      = "IOMMUFD"
 	kvTemplateFG                   = "Template"
 	kvExternalNetResourceInjection = "ExternalNetResourceInjection"
 )
@@ -967,7 +969,7 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	}
 
 	if hc.Annotations[aie.DeployAIEAnnotation] == "true" {
-		fgs = append(fgs, kvPCINUMAAwareTopology)
+		fgs = append(fgs, kvGraceIOVirtualization, kvIOMMUFD, kvPCINUMAAwareTopology)
 	}
 
 	if slices.Contains(nodeinfo.GetWorkloadsArchitectures(), nodeinfo.S390X) {
