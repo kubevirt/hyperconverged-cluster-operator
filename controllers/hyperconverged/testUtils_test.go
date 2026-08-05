@@ -22,7 +22,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -31,6 +30,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
+	vmfrv1 "kubevirt.io/vm-file-restore-operator/api/v1alpha1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
@@ -124,6 +124,7 @@ type BasicExpected struct {
 	cna                  *networkaddonsv1.NetworkAddonsConfig
 	ssp                  *sspv1beta3.SSP
 	migController        *migrationv1alpha1.MigController
+	vmFileRestore        *vmfrv1.FileRestoreOperator
 	mService             *corev1.Service
 	serviceMonitor       *monitoringv1.ServiceMonitor
 	cliDownload          *consolev1.ConsoleCLIDownload
@@ -152,6 +153,7 @@ func (be BasicExpected) toArray() []client.Object {
 		be.cna,
 		be.ssp,
 		be.migController,
+		be.vmFileRestore,
 		be.mService,
 		be.serviceMonitor,
 		be.cliDownload,
@@ -223,8 +225,8 @@ func getBasicDeployment() *BasicExpected {
 		Kind:               "Deployment",
 		Name:               "hco-operator",
 		UID:                "1234567890",
-		BlockOwnerDeletion: ptr.To(false),
-		Controller:         ptr.To(false),
+		BlockOwnerDeletion: new(false),
+		Controller:         new(false),
 	}
 	res.mService = alerts.NewMetricsService(namespace, deploymentRef)
 	res.serviceMonitor = alerts.NewServiceMonitor(namespace, deploymentRef)
@@ -267,6 +269,23 @@ func getBasicDeployment() *BasicExpected {
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	expectedMigController.Status.Conditions = getGenericCompletedConditions()
 	res.migController = expectedMigController
+
+	expectedFileRestore := handlers.NewFileRestoreOperator(hco)
+	expectedFileRestore.Status.Conditions = []metav1.Condition{
+		{
+			Type:   vmfrv1.ConditionAvailable,
+			Status: metav1.ConditionTrue,
+		},
+		{
+			Type:   vmfrv1.ConditionProgressing,
+			Status: metav1.ConditionFalse,
+		},
+		{
+			Type:   vmfrv1.ConditionDegraded,
+			Status: metav1.ConditionFalse,
+		},
+	}
+	res.vmFileRestore = expectedFileRestore
 
 	expectedCliDownload := handlers.NewConsoleCLIDownload()
 	res.cliDownload = expectedCliDownload

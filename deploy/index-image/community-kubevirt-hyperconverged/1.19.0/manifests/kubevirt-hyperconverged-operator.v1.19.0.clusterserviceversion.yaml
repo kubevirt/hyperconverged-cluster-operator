@@ -354,6 +354,19 @@ spec:
           - delete
           - patch
         - apiGroups:
+          - filerestore.kubevirt.io
+          resources:
+          - filerestoreoperators
+          - filerestoreoperators/finalizers
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+          - patch
+        - apiGroups:
           - ""
           resources:
           - configmaps

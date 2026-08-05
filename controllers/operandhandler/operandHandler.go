@@ -57,6 +57,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewCnaHandler(client, scheme),
 		handlers.NewAAQHandler(client, scheme),
 		handlers.NewMigControllerHandler(client, scheme),
+		handlers.NewVMFileRestoreHandler(client, scheme),
 		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
 		aie.NewAIEWebhookServiceHandler(client, scheme),
 		aie.NewAIEWebhookDeploymentHandler(client, scheme),

@@ -19,6 +19,7 @@ import (
 	cdiapi "kubevirt.io/containerized-data-importer-api/pkg/apis/core"
 	migrationapi "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspapi "kubevirt.io/ssp-operator/api/v1beta3"
+	vmfr "kubevirt.io/vm-file-restore-operator/api/v1alpha1"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -536,6 +537,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		roleWithAllPermissions(cnaoapi.GroupVersion.Group, stringListToSlice("networkaddonsconfigs", "networkaddonsconfigs/finalizers")),
 		roleWithAllPermissions(aaqapi.GroupName, stringListToSlice("aaqs", "aaqs/finalizers")),
 		roleWithAllPermissions(migrationapi.GroupVersion.Group, stringListToSlice("migcontrollers", "migcontrollers/finalizers")),
+		roleWithAllPermissions(vmfr.GroupVersion.Group, stringListToSlice("filerestoreoperators", "filerestoreoperators/finalizers")),
 		roleWithAllPermissions("", stringListToSlice("configmaps")),
 		{
 			APIGroups: emptyAPIGroup,

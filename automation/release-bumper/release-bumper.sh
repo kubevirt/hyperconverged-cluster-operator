@@ -141,6 +141,7 @@ function get_updated_versions {
     ["SSP"]="kubevirt.io/ssp-operator/api"
     ["AAQ"]="kubevirt.io/application-aware-quota"
     ["MIGRATION_OPERATOR"]="kubevirt.io/kubevirt-migration-operator"
+    ["VM_FILE_RESTORE_OPERATOR"]="kubevirt.io/vm-file-restore-operator"
   )
 
   UPDATED_VERSIONS=()

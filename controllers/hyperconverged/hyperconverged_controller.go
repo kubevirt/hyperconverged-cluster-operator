@@ -46,6 +46,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
+	vmfr "kubevirt.io/vm-file-restore-operator/api/v1alpha1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
@@ -173,6 +174,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		&networkaddonsv1.NetworkAddonsConfig{},
 		&aaqv1alpha1.AAQ{},
 		&migrationv1alpha1.MigController{},
+		&vmfr.FileRestoreOperator{},
 		&schedulingv1.PriorityClass{},
 		&corev1.ConfigMap{},
 		&corev1.Service{},
