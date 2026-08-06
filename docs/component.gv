@@ -81,6 +81,10 @@ digraph component {
 		fontname="Courier-Bold" fontsize=42 group="virt-network-resources-injector" label="virt-network-resources-injector" rank=same style=dashed
 		"deployment/virt-network-resources-injector" [label="deployment/virt-network-resources-injector"]
 	}
+	subgraph "cluster_vm-file-restore" {
+		fontname="Courier-Bold" fontsize=42 group="vm-file-restore" label="vm-file-restore" rank=same style=dashed
+		"deployment/vm-file-restore-operator-controller-manager" [label="deployment/vm-file-restore-operator-controller-manager"]
+	}
 	edge [style=invis]
 	"deployment/virt-platform-autopilot" -> "KubeVirt/kubevirt-kubevirt-hyperconverged"
 	"KubeVirt/kubevirt-kubevirt-hyperconverged" -> "deployment/hco-operator"
@@ -95,4 +99,5 @@ digraph component {
 	"CDI/cdi-kubevirt-hyperconverged" -> "deployment/virt-template-validator"
 	"deployment/virt-template-validator" -> "HyperConverged/kubevirt-hyperconverged"
 	"HyperConverged/kubevirt-hyperconverged" -> "deployment/virt-network-resources-injector"
+	"deployment/virt-network-resources-injector" -> "deployment/vm-file-restore-operator-controller-manager"
 }

@@ -105,6 +105,9 @@ digraph "managed-by" {
 	"deployment/virt-template-validator" [label="deployment/virt-template-validator"]
 	"deployment/ssp-operator" [label="deployment/ssp-operator"]
 	"deployment/ssp-operator" -> "deployment/virt-template-validator"
+	"deployment/vm-file-restore-operator-controller-manager" [label="deployment/vm-file-restore-operator-controller-manager"]
+	olm [label=olm]
+	olm -> "deployment/vm-file-restore-operator-controller-manager"
 	"daemonset/bridge-marker" [label="daemonset/bridge-marker"]
 	"deployment/cluster-network-addons-operator" [label="deployment/cluster-network-addons-operator"]
 	"deployment/cluster-network-addons-operator" -> "daemonset/bridge-marker"
