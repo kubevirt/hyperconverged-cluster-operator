@@ -2079,24 +2079,24 @@ Version: 1.2.3`)
 						},
 						Not(ContainElement(kvPasstBinding)),
 					),
-					// PCINUMAAwareTopology
-					Entry("should add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is true",
+					// AIE feature gates (GraceIOVirtualization, IOMMUFD, PCINUMAAwareTopology)
+					Entry("should add AIE feature gates to KubeVirt CR if deployAIE annotation is true",
 						func(hc *hcov1.HyperConverged) {
 							hc.Annotations[aie.DeployAIEAnnotation] = "true"
 						},
-						ContainElement(kvPCINUMAAwareTopology),
+						And(ContainElement(kvGraceIOVirtualization), ContainElement(kvIOMMUFD), ContainElement(kvPCINUMAAwareTopology)),
 					),
-					Entry("should not add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is false",
+					Entry("should not add AIE feature gates to KubeVirt CR if deployAIE annotation is false",
 						func(hc *hcov1.HyperConverged) {
 							hc.Annotations[aie.DeployAIEAnnotation] = "false"
 						},
-						Not(ContainElement(kvPCINUMAAwareTopology)),
+						And(Not(ContainElement(kvGraceIOVirtualization)), Not(ContainElement(kvIOMMUFD)), Not(ContainElement(kvPCINUMAAwareTopology))),
 					),
-					Entry("should not add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is not set",
+					Entry("should not add AIE feature gates to KubeVirt CR if deployAIE annotation is not set",
 						func(hc *hcov1.HyperConverged) {
 							delete(hc.Annotations, aie.DeployAIEAnnotation)
 						},
-						Not(ContainElement(kvPCINUMAAwareTopology)),
+						And(Not(ContainElement(kvGraceIOVirtualization)), Not(ContainElement(kvIOMMUFD)), Not(ContainElement(kvPCINUMAAwareTopology))),
 					),
 					Entry("should add the DeclarativeHotplugVolumes feature gate if DeclarativeHotplugVolumes is true in HyperConverged CR",
 						func(hc *hcov1.HyperConverged) {
