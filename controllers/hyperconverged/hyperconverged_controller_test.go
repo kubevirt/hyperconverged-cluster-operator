@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -57,7 +56,7 @@ var _ = Describe("HyperconvergedController", func() {
 	getClusterInfo := hcoutil.GetClusterInfo
 
 	origOperatorCondVarName := os.Getenv(hcoutil.OperatorConditionNameEnvVar)
-	origVirtIOWinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
+	origVirtIOWinContainer := os.Getenv(hcoutil.VirtioWinImageEnvV)
 	origVersion := os.Getenv(hcoutil.HcoKvIoVersionName)
 
 	BeforeEach(func() {
@@ -67,7 +66,7 @@ var _ = Describe("HyperconvergedController", func() {
 		fakeownresources.OLMV0OwnResourcesMock()
 
 		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, "OPERATOR_CONDITION")).To(Succeed())
-		Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
+		Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, commontestutils.VirtioWinImage)).To(Succeed())
 		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)).To(Succeed())
 
 		reqresolver.GeneratePlaceHolders()
@@ -77,7 +76,7 @@ var _ = Describe("HyperconvergedController", func() {
 			fakeownresources.ResetOwnResources()
 
 			Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
-			Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
+			Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, origVirtIOWinContainer)).To(Succeed())
 			Expect(os.Setenv(hcoutil.HcoKvIoVersionName, origVersion)).To(Succeed())
 		})
 	})
@@ -146,7 +145,6 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commontestutils.NewHco()
 				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
 					{Name: "downwardMetrics"},
-					{Name: "videoConfig"},
 				}
 
 				ci := hcoutil.GetClusterInfo()
@@ -207,13 +205,13 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedFeatureGates := []string{
 					"CPUManager",
 					"Snapshot",
-					"HotplugVolumes",
+					"DeclarativeHotplugVolumes",
 					"HostDevices",
 					"HypervStrictCheck",
 					"DownwardMetrics",
 					"KubevirtSeccompProfile",
-					"VideoConfig",
 					"DecentralizedLiveMigration",
+					"Template",
 				}
 				// Get the KV
 				kvList := &kubevirtcorev1.KubeVirtList{}
@@ -622,10 +620,10 @@ var _ = Describe("HyperconvergedController", func() {
 
 				// now, modify KV's node placement
 				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 				})
 				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 				})
 
 				existingResource.Spec.Infra.NodePlacement.NodeSelector["key1"] = "BADvalue1"
@@ -678,10 +676,10 @@ var _ = Describe("HyperconvergedController", func() {
 
 				// now, modify KV's node placement
 				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 				})
 				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 				})
 
 				existingResource.Spec.Infra.NodePlacement.NodeSelector["key1"] = "BADvalue1"
@@ -979,6 +977,67 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(int(value)).To(BeEquivalentTo(42))
 
+			})
+
+			It("should set NetworkResourcesInjectorReady condition to False after initial reconcile", func() {
+				expected := getBasicDeployment()
+				cl := expected.initClient()
+
+				foundResource, _, _ := doReconcile(cl, expected.hco, nil)
+
+				cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+				Expect(cond).ToNot(BeNil())
+				Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+			})
+
+			It("should set NetworkResourcesInjectorReady condition to True and enable ExternalNetResourceInjection FG when deployment is ready", func() {
+				expected := getBasicDeployment()
+				cl := expected.initClient()
+
+				_, r, _ := doReconcile(cl, expected.hco, nil)
+
+				dep := &appsv1.Deployment{}
+				Expect(cl.Get(context.TODO(), types.NamespacedName{
+					Name:      "virt-network-resources-injector",
+					Namespace: namespace,
+				}, dep)).To(Succeed())
+				dep.Status.ReadyReplicas = *dep.Spec.Replicas
+				dep.Status.Replicas = *dep.Spec.Replicas
+				Expect(cl.Status().Update(context.TODO(), dep)).To(Succeed())
+
+				// KV is reconciled before NRI, so the first reconcile updates the
+				// condition to True but KV still sees the old value.
+				foundResource, r, _ := doReconcile(cl, expected.hco, r)
+
+				cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+				Expect(cond).ToNot(BeNil())
+				Expect(cond.Status).To(Equal(metav1.ConditionTrue))
+				Expect(cond.Reason).To(Equal("DeploymentReady"))
+
+				// Second reconcile: KV now sees condition=True and enables the FG.
+				_, _, _ = doReconcile(cl, expected.hco, r)
+
+				kvList := &kubevirtcorev1.KubeVirtList{}
+				Expect(cl.List(context.TODO(), kvList)).To(Succeed())
+				Expect(kvList.Items).To(HaveLen(1))
+				Expect(kvList.Items[0].Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("ExternalNetResourceInjection"))
+			})
+
+			It("should remove NetworkResourcesInjectorReady condition and not enable ExternalNetResourceInjection FG when deployment is disabled", func() {
+				expected := getBasicDeployment()
+				expected.hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
+				cl := expected.initClient()
+
+				foundResource, _, _ := doReconcile(cl, expected.hco, nil)
+
+				cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+				Expect(cond).To(BeNil())
+
+				kvList := &kubevirtcorev1.KubeVirtList{}
+				Expect(cl.List(context.TODO(), kvList)).To(Succeed())
+				Expect(kvList.Items).To(HaveLen(1))
+				Expect(kvList.Items[0].Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement("ExternalNetResourceInjection"))
 			})
 		})
 
@@ -1800,7 +1859,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 		Context("Update Conflict Error", func() {
 			BeforeEach(func() {
-				Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
+				Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, commontestutils.VirtioWinImage)).To(Succeed())
 			})
 
 			It("Should requeue in case of update conflict", func() {

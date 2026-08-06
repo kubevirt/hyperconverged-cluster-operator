@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +15,7 @@ import (
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcofg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
 )
 
 // FuzzV1beta1ToV1RoundTrip verifies that converting a v1beta1 HyperConverged CR to v1 and back does not lose or
@@ -46,8 +48,9 @@ func FuzzV1beta1ToV1RoundTrip(f *testing.F) {
 		v1Second := &hcov1.HyperConverged{}
 		g.Expect(roundTripped.ConvertTo(v1Second)).To(Succeed())
 
+		diff := cmp.Diff(v1First.Spec, v1Second.Spec)
 		// the two v1 representations should be equal
-		g.Expect(v1Second.Spec).To(Equal(v1First.Spec))
+		g.Expect(diff).To(BeEmpty(), diff)
 	})
 }
 
@@ -77,7 +80,8 @@ func FuzzV1ToV1beta1RoundTrip(f *testing.F) {
 		g.Expect(v1beta1Second.ConvertFrom(roundTripped)).To(Succeed())
 
 		// the two v1beta1 representations should be equal
-		g.Expect(v1beta1Second.Spec).To(Equal(v1beta1First.Spec))
+		diff := cmp.Diff(v1beta1First.Spec, v1beta1Second.Spec)
+		g.Expect(diff).To(BeEmpty(), diff)
 	})
 }
 
@@ -97,6 +101,7 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 				ProgressTimeout:                   randPtr(r, r.Int64()),
 				AllowAutoConverge:                 randPtr(r, r.IntN(2) == 1),
 				AllowPostCopy:                     randPtr(r, r.IntN(2) == 1),
+				AllowWorkloadDisruption:           randPtr(r, r.IntN(2) == 1),
 			},
 			WorkloadUpdateStrategy: hcov1.HyperConvergedWorkloadUpdateStrategy{
 				WorkloadUpdateMethods: randStringSlice(r),
@@ -140,6 +145,18 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 		hc.Spec.MediatedDevicesConfiguration = &MediatedDevicesConfiguration{
 			MediatedDeviceTypes: randStringSlice(r),
 		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.FeatureGates.DisableMDevConfiguration = randPtr(r, r.IntN(2) == 1)
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.FeatureGates.PersistentReservation = randPtr(r, r.IntN(2) == 1)
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.FeatureGates.EnableMultiArchBootImageImport = randPtr(r, r.IntN(2) == 1)
 	}
 
 	if r.IntN(2) == 1 {
@@ -283,6 +300,11 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 	return hc
 }
 
+var (
+	alphaFGs = featuregatedetails.ListAlphaFeatureGates()
+	betaFGs  = featuregatedetails.ListBetaFeatureGates()
+)
+
 // randomV1HC creates a HyperConverged v1 CR with randomly populated fields.
 //
 //nolint:gocognit
@@ -302,6 +324,7 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 					ProgressTimeout:                   randPtr(r, r.Int64()),
 					AllowAutoConverge:                 randPtr(r, r.IntN(2) == 1),
 					AllowPostCopy:                     randPtr(r, r.IntN(2) == 1),
+					AllowWorkloadDisruption:           randPtr(r, r.IntN(2) == 1),
 				},
 				WorkloadUpdateStrategy: hcov1.HyperConvergedWorkloadUpdateStrategy{
 					WorkloadUpdateMethods: randStringSlice(r),
@@ -340,6 +363,7 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	if r.IntN(2) == 1 {
 		hc.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 			MediatedDeviceTypes: randStringSlice(r),
+			Enabled:             randPtr(r, r.IntN(2) == 1),
 		}
 	}
 
@@ -389,11 +413,14 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 
 	if r.IntN(2) == 1 {
 		hc.Spec.FeatureGates = hcofg.HyperConvergedFeatureGates{}
-		if r.IntN(2) == 1 {
-			hc.Spec.FeatureGates.Enable("downwardMetrics")
+		if len(alphaFGs) > 0 && r.IntN(2) == 1 {
+			hc.Spec.FeatureGates = append(hc.Spec.FeatureGates, randFG(r, alphaFGs[r.IntN(len(alphaFGs))]))
 		}
-		if r.IntN(2) == 1 {
-			hc.Spec.FeatureGates.Disable("decentralizedLiveMigration")
+		if len(betaFGs) > 0 && r.IntN(2) == 1 {
+			hc.Spec.FeatureGates = append(hc.Spec.FeatureGates, randFG(r, betaFGs[r.IntN(len(betaFGs))]))
+		}
+		if r.IntN(2) == 1 { //add unknown FG
+			hc.Spec.FeatureGates = append(hc.Spec.FeatureGates, randFG(r, randMixedCasesString(r)))
 		}
 	}
 
@@ -405,6 +432,11 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 		if r.IntN(2) == 1 {
 			hc.Spec.Storage.StorageImport = &hcov1.StorageImportConfig{
 				InsecureRegistries: randStringSlice(r),
+			}
+		}
+		if r.IntN(2) == 1 {
+			hc.Spec.Storage.PersistentReservationConfiguration = &hcov1.PersistentReservationConfiguration{
+				Enabled: randPtr(r, r.IntN(2) == 1),
 			}
 		}
 	}
@@ -458,6 +490,7 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	hc.Spec.WorkloadSources.CommonTemplatesNamespace = randPtr(r, randString(r))
 	hc.Spec.WorkloadSources.CommonBootImageNamespace = randPtr(r, randString(r))
 	hc.Spec.WorkloadSources.EnableCommonBootImageImport = randPtr(r, r.IntN(2) == 1)
+	hc.Spec.WorkloadSources.EnableMultiArchBootImageImport = randPtr(r, r.IntN(2) == 1)
 
 	if r.IntN(2) == 1 {
 		hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
@@ -496,6 +529,22 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 
 	hc.Spec.Deployment.DeployVMConsoleProxy = randPtr(r, r.IntN(2) == 1)
 
+	if r.IntN(2) == 1 {
+		hc.Spec.Deployment.DeployNetworkResourcesInjector = new(r.IntN(2) == 1)
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Observability = &hcov1.ObservabilityConfig{
+			AllowedAlerts:         randStringSlice(r),
+			AllowedRecordingRules: randStringSlice(r),
+		}
+		if r.IntN(2) == 1 {
+			hc.Spec.Observability.Workloads = &hcov1.ObservabilityWorkloadsConfig{
+				AllowedMetrics: randStringSlice(r),
+			}
+		}
+	}
+
 	return hc
 }
 
@@ -523,4 +572,36 @@ func randPtr[T any](r *rand.Rand, value T) *T {
 		return nil
 	}
 	return &value
+}
+
+func randMixedCasesString(r *rand.Rand) string {
+	const letters = "abcdefghijklmnopqrstuvwxyz" +
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"0123456789"
+
+	length := r.IntN(50) + 1
+	b := make([]byte, length)
+
+	idx := r.IntN(len(letters) - 10) // not a digit
+	b[0] = letters[idx]
+
+	for i := 1; i < length; i++ {
+		idx = r.IntN(len(letters))
+		b[i] = letters[idx]
+	}
+
+	return string(b)
+}
+
+func randFG(r *rand.Rand, name string) hcofg.FeatureGate {
+	fg := hcofg.FeatureGate{Name: name}
+	switch r.IntN(3) {
+	case 0:
+	case 1:
+		fg.State = new(hcofg.Enabled)
+	case 2:
+		fg.State = new(hcofg.Disabled)
+	}
+
+	return fg
 }

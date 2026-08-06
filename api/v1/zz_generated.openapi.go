@@ -45,8 +45,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration":         schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedDevicesConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedHostDevice":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodeMediatedDeviceTypesConfig":        schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTypesConfig(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityConfig":                  schema_kubevirt_hyperconverged_cluster_operator_api_v1_ObservabilityConfig(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityWorkloadsConfig":         schema_kubevirt_hyperconverged_cluster_operator_api_v1_ObservabilityWorkloadsConfig(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PciHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1_PciHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1_PermittedHostDevices(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PersistentReservationConfiguration":   schema_kubevirt_hyperconverged_cluster_operator_api_v1_PersistentReservationConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig":                  schema_kubevirt_hyperconverged_cluster_operator_api_v1_StorageImportConfig(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.USBHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1_USBHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.USBSelector":                          schema_kubevirt_hyperconverged_cluster_operator_api_v1_USBSelector(ref),
@@ -239,7 +242,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 				Properties: map[string]spec.Schema{
 					"featureGates": {
 						SchemaProps: spec.SchemaProps{
-							Description: "FeatureGates is a set of optional feature gates to enable or disable new features that are not generally available yet. Add a new FeatureGate Object to this set, to enable a feature that is disabled by default, or to disable a feature that is enabled by default.\n\nA feature gate may be in the following phases: * alpha: the feature is in dev-preview. It is disabled by default, but can\n  be enabled.\n* beta: the feature gate is in tech-preview. It is enabled by default, but\n  can be disabled.\n* GA: the feature is graduated and is always enabled. There is no way to\n  disable it.\n* deprecated: the feature is deprecated. The feature gate will be removed in a future release.\n\nFeature-Gate list: * decentralizedLiveMigration:\n  DecentralizedLiveMigration enables the decentralized live migration\n  (cross-cluster migration) feature. This feature allows live migration of\n  VirtualMachineInstances between different clusters. This feature is in\n  Developer Preview.\n  Phase: beta\n\n* videoConfig:\n  VideoConfig allows users to configure video device types for their virtual\n  machines. This can be useful for workloads that require specific video\n  capabilities or architectures. Note: This feature is in Tech Preview.\n  Phase: beta\n\n* alignCPUs:\n  Enable KubeVirt to request up to two additional dedicated CPUs in order to\n  complete the total CPU count to an even parity when using emulator thread\n  isolation. Note: this feature is in Developer Preview.\n  Phase: alpha\n\n* containerPathVolumes:\n  ContainerPathVolumes enables the use of container paths as volumes in\n  KubeVirt. This allows VMs to access files and directories from the\n  virt-launcher pod's filesystem via virtiofs.\n  Phase: alpha\n\n* declarativeHotplugVolumes:\n  DeclarativeHotplugVolumes enables the use of the declarative volume\n  hotplug feature in KubeVirt. When set to true, the\n  \"DeclarativeHotplugVolumes\" feature gate is enabled instead of\n  \"HotplugVolumes\". When set to false or nil, the \"HotplugVolumes\" feature\n  gate is enabled (default behavior). This feature is in Developer Preview.\n  Phase: alpha\n\n* deployKubeSecondaryDNS:\n  Deploy KubeSecondaryDNS by CNAO\n  Phase: alpha\n\n* disableMDevConfiguration:\n  Disable mediated devices handling on KubeVirt\n  Phase: alpha\n\n* downwardMetrics:\n  Allow to expose a limited set of host metrics to guests.\n  Phase: alpha\n\n* enableMultiArchBootImageImport:\n  EnableMultiArchBootImageImport allows the HCO to run on heterogeneous\n  clusters with different CPU architectures. Setting this field to true will\n  allow the HCO to create Golden Images for different CPU architectures.\n  This feature is in Developer Preview.\n  Phase: alpha\n\n* incrementalBackup:\n  IncrementalBackup enables changed block tracking backups and incremental\n  backups using QEMU capabilities in KubeVirt. When enabled, this also\n  enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This\n  feature is in Tech Preview.\n  Phase: alpha\n\n* objectGraph:\n  ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.\n  This subresource returns a structured list of k8s objects that are related\n  to the specified VM or VMI, enabling better dependency tracking. Note:\n  This feature is in Developer Preview.\n  Phase: alpha\n\n* persistentReservation:\n  Enable persistent reservation of a LUN through the SCSI Persistent Reserve\n  commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM\n  requires activation of the persistent reservation flag. Once this feature\n  gate is enabled, then the additional container with the qemu-pr-helper is\n  deployed inside the virt-handler pod. Enabling (or removing) the feature\n  gate causes the redeployment of the virt-handler pod.\n  Phase: alpha",
+							Description: "FeatureGates is a set of optional feature gates to enable or disable new features that are not generally available yet. Add a new FeatureGate Object to this set, to enable a feature that is disabled by default, or to disable a feature that is enabled by default.\n\nA feature gate may be in the following phases: * alpha: the feature is in dev-preview. It is disabled by default, but can\n  be enabled.\n* beta: the feature gate is in tech-preview. It is enabled by default, but\n  can be disabled.\n* GA: the feature is graduated and is always enabled. There is no way to\n  disable it.\n* deprecated: the feature is deprecated. The feature gate will be removed in a future release.\n\nFeature-Gate list: * decentralizedLiveMigration:\n  DecentralizedLiveMigration enables the decentralized live migration\n  (cross-cluster migration) feature. This feature allows live migration of\n  VirtualMachineInstances between different clusters. This feature is in\n  Tech Preview.\n  Phase: beta\n\n* declarativeHotplugVolumes:\n  DeclarativeHotplugVolumes enables the use of the declarative volume\n  hotplug feature in KubeVirt. When set to true or nil, the\n  \"DeclarativeHotplugVolumes\" feature gate is enabled and the\n  \"HotplugVolumes\" feature gate is not (default behavior). When set to\n  false, the \"HotplugVolumes\" featuregate is enabled in KubeVirt. This\n  feature is in Technical Preview.\n  Phase: beta\n\n* template:\n  VirtualMachine Templates provide a native, in-cluster VM templating for\n  KubeVirt. They allow you to define reusable VM blueprints with\n  parameterized values that can be processed to create virtual machine. the\n  \"template\" feature gate enables this feature. Note: this feature is in\n  Tech Preview.\n  Phase: beta\n\n* alignCPUs:\n  Enable KubeVirt to request up to two additional dedicated CPUs in order to\n  complete the total CPU count to an even parity when using emulator thread\n  isolation. Note: this feature is in Developer Preview.\n  Phase: alpha\n\n* containerPathVolumes:\n  ContainerPathVolumes enables the use of container paths as volumes in\n  KubeVirt. This allows VMs to access files and directories from the\n  virt-launcher pod's filesystem via virtiofs.\n  Phase: alpha\n\n* deployKubeSecondaryDNS:\n  Deploy KubeSecondaryDNS by CNAO\n  Phase: alpha\n\n* deployObservabilityController:\n  Deploy the virt-observability-controller component. When enabled, the\n  controller exposes KubeVirt metrics and manages PrometheusRule resources\n  independently from the KubeVirt control plane.\n  Phase: alpha\n\n* downwardMetrics:\n  Allow to expose a limited set of host metrics to guests.\n  Phase: alpha\n\n* incrementalBackup:\n  IncrementalBackup enables changed block tracking backups and incremental\n  backups using QEMU capabilities in KubeVirt. When enabled, this also\n  enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This\n  feature is in Developer Preview.\n  Phase: alpha\n\n* objectGraph:\n  ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.\n  This subresource returns a structured list of k8s objects that are related\n  to the specified VM or VMI, enabling better dependency tracking. Note:\n  This feature is in Developer Preview.\n  Phase: alpha\n\n* disableMDevConfiguration:\n  Deprecated: This feature gate has graduated to a dedicated configuration\n  field; use spec.virtualization.mediatedDevicesConfiguration.enabled\n  instead. This feature gate is deprecated and will be removed in a future\n  release.\n  Phase: deprecated\n\n* enableMultiArchBootImageImport:\n  Deprecated: This feature gate has graduated to a dedicated configuration\n  field; use spec.workloadSources.enableMultiArchBootImageImport instead.\n  This feature gate is deprecated and will be removed in a future release.\n  Phase: deprecated\n\n* persistentReservation:\n  This feature gate has graduated to a dedicated configuration field. Use\n  spec.storage.persistentReservationConfiguration.enabled instead. This\n  feature gate is deprecated and will be removed in a future release.\n  Phase: deprecated",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -290,11 +293,17 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig"),
 						},
 					},
+					"observability": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Observability contains configurations for the observability controller",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityConfig"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"},
 	}
 }
 
@@ -512,8 +521,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_LiveMigrationConfigu
 					},
 					"parallelOutboundMigrationsPerNode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Maximum number of outbound migrations per node.",
-							Default:     2,
+							Description: "The maximum number of outbound migrations allowed simultaneously per node. Setting this to 1 (default) ensures maximum available bandwidth per migration. Higher values accelerate node drains through parallel operations, but increase the risk of busy VMs failing due to network congestion.",
+							Default:     1,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -528,7 +537,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_LiveMigrationConfigu
 					"completionTimeoutPerGiB": {
 						SchemaProps: spec.SchemaProps{
 							Description: "If a migrating VM is big and busy, while the connection to the destination node is slow, migration may never converge. The completion timeout is calculated based on completionTimeoutPerGiB times the size of the guest (both RAM and migrated disks, if any). For example, with completionTimeoutPerGiB set to 800, a virtual machine instance with 6GiB memory will timeout if it has not completed migration in 1h20m. Use a lower completionTimeoutPerGiB to induce quicker failure, so that another destination or post-copy is attempted. Use a higher completionTimeoutPerGiB to let workload with spikes in its memory dirty rate to converge. The format is a number.",
-							Default:     150,
+							Default:     20,
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -559,6 +568,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_LiveMigrationConfigu
 					"allowPostCopy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "When enabled, KubeVirt attempts to use post-copy live-migration in case it reaches its completion timeout while attempting pre-copy live-migration. Post-copy migrations allow even the busiest VMs to successfully live-migrate. However, events like a network failure or a failure in any of the source or destination nodes can cause the migrated VM to crash or reach inconsistency. Enable this option when evicting nodes is more important than keeping VMs alive. Defaults to false.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"allowWorkloadDisruption": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowWorkloadDisruption indicates that the migration shouldn't be canceled after the acceptable completion time is exceeded. Instead, if permitted, migration will be switched to post-copy or the VMI will be paused to allow the migration to complete. Defaults to false.",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -605,6 +622,13 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedDevicesConfi
 				Description: "MediatedDevicesConfiguration holds information about MDEV types to be defined, if available",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"enabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enables the creation and removal of mediated devices by virt-handler",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"mediatedDeviceTypes": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -739,6 +763,97 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTy
 	}
 }
 
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1_ObservabilityConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ObservabilityConfig contains configurations for the observability controller",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"workloads": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Workloads defines filtering configuration for workload-related metrics",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityWorkloadsConfig"),
+						},
+					},
+					"allowedAlerts": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowedAlerts defines the list of alert rule names to include. When set, only alerts matching this list will be created.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"allowedRecordingRules": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowedRecordingRules defines the list of recording rule names to include. When set, only recording rules matching this list will be created.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ObservabilityWorkloadsConfig"},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1_ObservabilityWorkloadsConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ObservabilityWorkloadsConfig defines filtering for workload metrics",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"allowedMetrics": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowedMetrics defines the list of metric names to expose. When set, only metrics matching this list will be collected.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_kubevirt_hyperconverged_cluster_operator_api_v1_PciHostDevice(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -855,6 +970,26 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_PermittedHostDevices
 		},
 		Dependencies: []string{
 			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedHostDevice", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PciHostDevice", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.USBHostDevice"},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1_PersistentReservationConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PersistentReservationConfiguration holds the configuration for SCSI persistent reservation support",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"enabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enabled controls the deployment of additional resources like the pr-helper container for enabling the use of the SCSI persistent reservation in VMs, defaults to false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 

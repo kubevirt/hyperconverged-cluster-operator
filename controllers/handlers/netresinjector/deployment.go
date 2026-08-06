@@ -1,18 +1,26 @@
 package netresinjector
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/library-go/pkg/crypto"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -22,7 +30,85 @@ var (
 )
 
 func NewDeploymentHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewDeploymentHandler(cli, scheme, newDeployment)
+	return &netResInjDeploymentHandler{
+		inner: operands.NewConditionalHandler(
+			operands.NewDeploymentHandler(cli, scheme, newDeployment),
+			shouldDeploy,
+			func(hc *hcov1.HyperConverged) client.Object {
+				return NewDeploymentWithNameOnly()
+			},
+		),
+		client: cli,
+	}
+}
+
+type netResInjDeploymentHandler struct {
+	inner  operands.Operand
+	client client.Client
+}
+
+func (h *netResInjDeploymentHandler) Ensure(req *common.HcoRequest) *operands.EnsureResult {
+	result := h.inner.Ensure(req)
+	if result.Err != nil {
+		return result
+	}
+
+	if !shouldDeploy(req.Instance) {
+		removeNetResInjCondition(req)
+		return result
+	}
+
+	dep := &appsv1.Deployment{}
+	key := client.ObjectKeyFromObject(NewDeploymentWithNameOnly())
+	if err := h.client.Get(req.Ctx, key, dep); err != nil {
+		if !apierrors.IsNotFound(err) {
+			result.Err = err
+			return result
+		}
+		setNetResInjCondition(req, metav1.ConditionFalse, "DeploymentNotFound", "Network resources injector deployment not found")
+		return result
+	}
+
+	if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 && dep.Status.ReadyReplicas == *dep.Spec.Replicas {
+		setNetResInjCondition(req, metav1.ConditionTrue, "DeploymentReady", "All replicas are ready")
+	} else {
+		setNetResInjCondition(req, metav1.ConditionFalse, "DeploymentNotReady",
+			fmt.Sprintf("%d/%d replicas ready", dep.Status.ReadyReplicas, *dep.Spec.Replicas))
+	}
+
+	return result
+}
+
+func (h *netResInjDeploymentHandler) Reset() {
+	h.inner.Reset()
+}
+
+func (h *netResInjDeploymentHandler) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
+	if getter, ok := h.inner.(operands.CRGetter); ok {
+		return getter.GetFullCr(hc)
+	}
+	return nil, nil
+}
+
+func setNetResInjCondition(req *common.HcoRequest, status metav1.ConditionStatus, reason, message string) {
+	cond := metav1.Condition{
+		Type:               hcov1.ConditionNetworkResourcesInjectorReady,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: req.Instance.Generation,
+	}
+	changed := meta.SetStatusCondition(&req.Instance.Status.Conditions, cond)
+	if changed {
+		req.StatusDirty = true
+	}
+}
+
+func removeNetResInjCondition(req *common.HcoRequest) {
+	changed := meta.RemoveStatusCondition(&req.Instance.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+	if changed {
+		req.StatusDirty = true
+	}
 }
 
 func NewDeploymentWithNameOnly() *appsv1.Deployment {
@@ -35,8 +121,18 @@ func NewDeploymentWithNameOnly() *appsv1.Deployment {
 	}
 }
 
-func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
+func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	image := os.Getenv(hcoutil.NetworkResourcesInjectorImageEnvV)
+
+	cipherNames, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.Security.TLSSecurityProfile)
+	ianaCiphers := crypto.OpenSSLToIANACipherSuites(cipherNames)
+
+	var replicas int32
+	if nodeinfo.IsInfrastructureHighlyAvailable() {
+		replicas = int32(2)
+	} else {
+		replicas = int32(1)
+	}
 
 	selectorLabels := map[string]string{
 		hcoutil.AppLabel:          hcoutil.HyperConvergedName,
@@ -45,12 +141,73 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 
 	podLabels := operands.GetLabels(hcoutil.AppComponentNetResInjector)
 
-	infrastructureHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
-	affinity := operands.GetPodAntiAffinity(podLabels[hcoutil.AppLabelComponent], infrastructureHighlyAvailable)
+	// Configure affinity to prefer control plane nodes
+	// Use PreferredDuringScheduling to support HyperShift (worker-only) and SNO clusters
+	affinity := &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
+				// Prefer standard Kubernetes control-plane nodes
+				{
+					Preference: corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      nodeinfo.LabelNodeRoleControlPlane,
+								Operator: corev1.NodeSelectorOpExists,
+							},
+						},
+					},
+					Weight: 100,
+				},
+				// Prefer KubeVirt control-plane nodes (HyperShift)
+				{
+					Preference: corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      nodeinfo.LabelNodeRoleKubevirtControlPlane,
+								Operator: corev1.NodeSelectorOpExists,
+							},
+						},
+					},
+					Weight: 100,
+				},
+				// Avoid worker-only nodes when control plane nodes are available
+				{
+					Preference: corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      nodeinfo.LabelNodeRoleWorker,
+								Operator: corev1.NodeSelectorOpDoesNotExist,
+							},
+						},
+					},
+					Weight: 50,
+				},
+			},
+		},
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+				{
+					PodAffinityTerm: corev1.PodAffinityTerm{
+						LabelSelector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								{
+									Key:      hcoutil.AppLabelComponent,
+									Operator: metav1.LabelSelectorOpIn,
+									Values:   []string{string(hcoutil.AppComponentNetResInjector)},
+								},
+							},
+						},
+						TopologyKey: corev1.LabelHostname,
+					},
+					Weight: 1,
+				},
+			},
+		},
+	}
 
 	dep := NewDeploymentWithNameOnly()
 	dep.Spec = appsv1.DeploymentSpec{
-		Replicas: new(int32(2)),
+		Replicas: &replicas,
 		Selector: &metav1.LabelSelector{
 			MatchLabels: selectorLabels,
 		},
@@ -65,6 +222,20 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 				ServiceAccountName: serviceAccountName,
 				PriorityClassName:  "system-cluster-critical",
 				Affinity:           affinity,
+				NodeSelector: map[string]string{
+					"kubernetes.io/os": "linux",
+				},
+				Tolerations: []corev1.Toleration{
+					{
+						Key:      "CriticalAddonsOnly",
+						Operator: corev1.TolerationOpExists,
+					},
+					{
+						Effect:   corev1.TaintEffectNoSchedule,
+						Key:      nodeinfo.LabelNodeRoleControlPlane,
+						Operator: corev1.TolerationOpExists,
+					},
+				},
 				SecurityContext: &corev1.PodSecurityContext{
 					RunAsNonRoot: new(true),
 				},
@@ -73,15 +244,7 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 						Name:    "webhook-server",
 						Image:   image,
 						Command: []string{"webhook"},
-						Args: []string{
-							"-bind-address=0.0.0.0",
-							"-port=6443",
-							"-tls-private-key-file=" + tlsMountPath + "/tls.key",
-							"-tls-cert-file=" + tlsMountPath + "/tls.crt",
-							"-insecure=true",
-							"-logtostderr=true",
-							"-alsologtostderr=true",
-						},
+						Args:    tlsArgs(minTLSVersion, ianaCiphers),
 						Env: []corev1.EnvVar{
 							{
 								Name: "NAMESPACE",
@@ -137,4 +300,25 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 	}
 
 	return dep
+}
+
+func tlsArgs(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ianaCiphers []string) []string {
+	args := []string{
+		"-bind-address=0.0.0.0",
+		"-port=6443",
+		"-tls-private-key-file=" + tlsMountPath + "/tls.key",
+		"-tls-cert-file=" + tlsMountPath + "/tls.crt",
+		"-insecure=true",
+		"-logtostderr=true",
+		"-alsologtostderr=true",
+	}
+
+	if minTLSVersion != "" {
+		args = append(args, "-tls-min-version="+string(minTLSVersion))
+	}
+	if minTLSVersion < openshiftconfigv1.VersionTLS13 && len(ianaCiphers) > 0 {
+		args = append(args, "-tls-cipher-suites="+strings.Join(ianaCiphers, ","))
+	}
+
+	return args
 }

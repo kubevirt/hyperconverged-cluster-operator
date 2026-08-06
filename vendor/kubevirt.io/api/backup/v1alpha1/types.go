@@ -22,6 +22,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // BackupMode is the const type for the backup possible modes
@@ -205,6 +206,18 @@ type VirtualMachineBackupSpec struct {
 	TTLDuration *metav1.Duration `json:"ttlDuration,omitempty"`
 }
 
+// QuiesceStatus represents the outcome of a filesystem quiesce operation
+type QuiesceStatus string
+
+const (
+	// QuiesceSucceeded indicates the filesystem was successfully quiesced
+	QuiesceSucceeded QuiesceStatus = "Succeeded"
+	// QuiesceFailed indicates the filesystem quiesce failed
+	QuiesceFailed QuiesceStatus = "Failed"
+	// QuiesceSkipped indicates the filesystem quiesce was skipped
+	QuiesceSkipped QuiesceStatus = "Skipped"
+)
+
 // VirtualMachineBackupStatus is the status for a VirtualMachineBackup resource
 type VirtualMachineBackupStatus struct {
 	// +optional
@@ -225,30 +238,44 @@ type VirtualMachineBackupStatus struct {
 	// +listType=atomic
 	// IncludedVolumes lists the volumes that were included in the backup
 	IncludedVolumes []BackupVolumeInfo `json:"includedVolumes,omitempty"`
+	// +optional
+	// ExportUID tracks the UID of the associated VMExport for pull-mode backups
+	// used to detect VMExport recreation and re-initiate the export handshake
+	ExportUID *types.UID `json:"exportUID,omitempty"`
 }
 
 // ConditionType is the const type for Conditions
 type ConditionType string
 
 const (
-	// ConditionDone indicates the backup was completed
-	ConditionDone ConditionType = "Done"
+	// ConditionComplete indicates the backup completed successfully
+	ConditionComplete ConditionType = "Complete"
+
+	// ConditionFailed indicates the backup has encountered a terminal failure
+	ConditionFailed ConditionType = "Failed"
 
 	// ConditionProgressing indicates the backup is in progress
 	ConditionProgressing ConditionType = "Progressing"
 
-	// ConditionInitializing indicates the backup is initializing
-	ConditionInitializing ConditionType = "Initializing"
+	// ConditionQuiesced indicates whether the VM filesystem was quiesced (frozen) during backup
+	ConditionQuiesced ConditionType = "Quiesced"
+)
 
-	// ConditionExportInitiated indicates the backup export has been initiated
-	ConditionExportInitiated ConditionType = "ExportInitiated"
-
-	// ConditionExportReady indicates the backup export is ready
-	ConditionExportReady ConditionType = "ExportReady"
-
-	// ConditionDeleting indicates the backup is deleting
-	ConditionDeleting ConditionType = "Deleting"
-
-	// ConditionAborting indicates the backup is aborting
-	ConditionAborting ConditionType = "Aborting"
+// Reason constants for ConditionProgressing, ConditionComplete, ConditionFailed, and ConditionQuiesced
+const (
+	ReasonInitializing         = "Initializing"
+	ReasonInitiated            = "Initiated"
+	ReasonPreparingExport      = "PreparingExport"
+	ReasonExportInitiated      = "ExportInitiated"
+	ReasonExportReady          = "ExportReady"
+	ReasonAborting             = "Aborting"
+	ReasonCompleted            = "Completed"
+	ReasonCompletedWithWarning = "CompletedWithWarning"
+	ReasonFailed               = "Failed"
+	ReasonQuiesceSucceeded     = "QuiesceSucceeded"
+	ReasonQuiesceFailed        = "QuiesceFailed"
+	ReasonQuiesceSkipped       = "QuiesceSkipped"
+	ReasonSourceLost           = "SourceLost"
+	ReasonSourceUnhealthy      = "SourceUnhealthy"
+	ReasonDeletedDuringInit    = "DeletedDuringInit"
 )

@@ -48,33 +48,17 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 bool = false
 		in.Spec.FeatureGates.DeployKubeSecondaryDNS = &ptrVar1
 	}
-	if in.Spec.FeatureGates.DisableMDevConfiguration == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.DisableMDevConfiguration = &ptrVar1
-	}
-	if in.Spec.FeatureGates.PersistentReservation == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.PersistentReservation = &ptrVar1
-	}
 	if in.Spec.FeatureGates.AlignCPUs == nil {
 		var ptrVar1 bool = false
 		in.Spec.FeatureGates.AlignCPUs = &ptrVar1
-	}
-	if in.Spec.FeatureGates.EnableMultiArchBootImageImport == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.EnableMultiArchBootImageImport = &ptrVar1
 	}
 	if in.Spec.FeatureGates.DecentralizedLiveMigration == nil {
 		var ptrVar1 bool = true
 		in.Spec.FeatureGates.DecentralizedLiveMigration = &ptrVar1
 	}
 	if in.Spec.FeatureGates.DeclarativeHotplugVolumes == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.DeclarativeHotplugVolumes = &ptrVar1
-	}
-	if in.Spec.FeatureGates.VideoConfig == nil {
 		var ptrVar1 bool = true
-		in.Spec.FeatureGates.VideoConfig = &ptrVar1
+		in.Spec.FeatureGates.DeclarativeHotplugVolumes = &ptrVar1
 	}
 	if in.Spec.FeatureGates.ObjectGraph == nil {
 		var ptrVar1 bool = false
@@ -93,11 +77,11 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		in.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = &ptrVar1
 	}
 	if in.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode == nil {
-		var ptrVar1 uint32 = 2
+		var ptrVar1 uint32 = 1
 		in.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = &ptrVar1
 	}
 	if in.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB == nil {
-		var ptrVar1 int64 = 150
+		var ptrVar1 int64 = 20
 		in.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = &ptrVar1
 	}
 	if in.Spec.LiveMigrationConfig.ProgressTimeout == nil {
@@ -111,6 +95,10 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 	if in.Spec.LiveMigrationConfig.AllowPostCopy == nil {
 		var ptrVar1 bool = false
 		in.Spec.LiveMigrationConfig.AllowPostCopy = &ptrVar1
+	}
+	if in.Spec.LiveMigrationConfig.AllowWorkloadDisruption == nil {
+		var ptrVar1 bool = false
+		in.Spec.LiveMigrationConfig.AllowWorkloadDisruption = &ptrVar1
 	}
 	if in.Spec.CertConfig.CA.Duration == nil {
 		if err := json.Unmarshal([]byte(`"48h0m0s"`), &in.Spec.CertConfig.CA.Duration); err != nil {

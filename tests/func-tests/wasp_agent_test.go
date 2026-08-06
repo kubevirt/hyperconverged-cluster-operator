@@ -257,15 +257,10 @@ func getWaspSA(ctx context.Context, cli client.Client) error {
 }
 
 func setMemoryOvercommitPercentage(ctx context.Context, cli client.Client, percentage int) {
+	GinkgoHelper()
 	patchBytes := fmt.Appendf(nil, setMemoryOvercommitTemplate, percentage)
 
-	Eventually(tests.PatchHCO).
-		WithArguments(ctx, cli, patchBytes).
-		WithTimeout(10 * time.Second).
-		WithPolling(100 * time.Millisecond).
-		WithContext(ctx).
-		WithOffset(2).
-		Should(Succeed())
+	tests.PatchHCO(ctx, cli, patchBytes)
 }
 
 func getWaspDS(ctx context.Context, cli client.Client) (*appsv1.DaemonSet, error) {
@@ -290,12 +285,7 @@ func setAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 		}
 	}`, waspagent.AutopilotSwapAnnotation, waspagent.AutopilotSwapAnnotationValue))
 
-	Eventually(func(g Gomega, ctx context.Context) {
-		g.Expect(tests.PatchMergeHCO(ctx, cli, patchBytes)).To(Succeed())
-	}).WithTimeout(30 * time.Second).
-		WithPolling(time.Second).
-		WithContext(ctx).
-		Should(Succeed())
+	tests.PatchMergeHCO(ctx, cli, patchBytes)
 
 	Eventually(func(g Gomega, ctx context.Context) {
 		hco, err := tests.GetHCO(ctx, cli)
@@ -318,12 +308,7 @@ func removeAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 		}
 	}`, waspagent.AutopilotSwapAnnotation))
 
-	Eventually(func(g Gomega, ctx context.Context) {
-		g.Expect(tests.PatchMergeHCO(ctx, cli, patchBytes)).To(Succeed())
-	}).WithTimeout(30 * time.Second).
-		WithPolling(time.Second).
-		WithContext(ctx).
-		Should(Succeed())
+	tests.PatchMergeHCO(ctx, cli, patchBytes)
 
 	Eventually(func(g Gomega, ctx context.Context) {
 		hco, err := tests.GetHCO(ctx, cli)

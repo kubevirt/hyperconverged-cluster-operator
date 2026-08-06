@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
@@ -31,6 +30,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -338,7 +338,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			outdatedResource.UID = "oldObjectUID"
 			outdatedResource.ResourceVersion = "1234"
 
-			outdatedResource.Spec.Replicas = ptr.To(int32(123))
+			outdatedResource.Spec.Replicas = new(int32(123))
 			outdatedResource.Spec.Template.Spec.Containers[0].Image = "quay.io/fake/image:latest"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
@@ -506,15 +506,20 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 					if managedSet[k] {
 						Expect(foundResource.Data).To(HaveKeyWithValue(k, v))
 					} else {
-						Expect(foundResource.Data).To(HaveKeyWithValue(k, Not(Equal(v))))
+						Expect(foundResource.Data).To(HaveKeyWithValue(k, Equal("modified_"+v)))
 					}
 				}
 
 				Expect(foundResource.Data).To(HaveKeyWithValue(userAddedDataKey, userAddedDataValue))
 			},
 				Entry("user settings config", hcoutil.AppComponentUIConfig, NewKvUIUserSettingsCM, NewKvUIUserSettingsCMHandler, []string(nil)),
-				Entry("UI features config", hcoutil.AppComponentUIConfig, NewKvUIFeaturesCM, NewKvUIFeaturesCMHandler, []string{"ipStackType"}),
+				Entry("UI features config", hcoutil.AppComponentUIConfig, NewKvUIFeaturesCM, NewKvUIFeaturesCMHandler, []string{ipStackTypeKey, hcoVersionKey}),
 			)
+
+			It("should include hcoVersion in UI features ConfigMap", func() {
+				cm := NewKvUIFeaturesCM()
+				Expect(cm.Data).To(HaveKeyWithValue("hcoVersion", ownresources.Version()))
+			})
 		})
 
 		Context("KubeVirt UI Nginx ConfigMap (NewKVUINginxCM)", func() {
@@ -675,7 +680,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				// now, modify HCO's node placement
 				infra := hco.Spec.Deployment.NodePlacements.Infra
 				infra.Tolerations = append(infra.Tolerations, v1.Toleration{
-					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: ptr.To[int64](34),
+					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: new(int64(34)),
 				})
 				infra.NodeSelector["key3"] = "something entirely else"
 
@@ -720,7 +725,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 				// now, modify deployment Kubevirt Console Plugin Deployment node placement
 				existingResource.Spec.Template.Spec.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, v1.Toleration{
-					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: ptr.To[int64](34),
+					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: new(int64(34)),
 				})
 				existingResource.Spec.Template.Spec.NodeSelector["key3"] = "BADvalue3"
 
@@ -872,7 +877,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 					Infra: nil,
 				}
 				existingResource.Spec.Template.Spec.Affinity = nil
-				existingResource.Spec.Replicas = ptr.To(int32(1))
+				existingResource.Spec.Replicas = new(int32(1))
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := handlerFunc(cl, commontestutils.GetScheme())
@@ -911,7 +916,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				})
 
 				existingResource := deploymentManifestor(hco)
-				existingResource.Spec.Replicas = ptr.To(int32(3))
+				existingResource.Spec.Replicas = new(int32(3))
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := handlerFunc(cl, commontestutils.GetScheme())

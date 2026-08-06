@@ -1170,6 +1170,7 @@ tests:
             operator_health_impact: "none"
             namespace: "default"
             name: "deprecated-vm"
+            vm: "deprecated-vm"
             machine_type: "pc-q35-rhel7.6.0"
             kubernetes_operator_part_of: "kubevirt"
             kubernetes_operator_component: "hyperconverged-cluster-operator"

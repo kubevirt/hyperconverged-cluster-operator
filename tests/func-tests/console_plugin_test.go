@@ -106,12 +106,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 
 		addNodeSelectorPatch := fmt.Appendf(nil, `{"spec":{"deployment":{"nodePlacements":{"infra":{"nodeSelector": %s}}}}}`, string(expectedNodeSelectorBytes))
 
-		Eventually(func(ctx context.Context) error {
-			return tests.PatchMergeHCO(ctx, cli, addNodeSelectorPatch)
-		}).WithTimeout(1 * time.Minute).
-			WithPolling(1 * time.Millisecond).
-			WithContext(ctx).
-			Should(Succeed())
+		tests.PatchMergeHCO(ctx, cli, addNodeSelectorPatch)
 
 		Eventually(func(g Gomega, ctx context.Context) {
 			consoleUIDeployment := &appsv1.Deployment{
@@ -145,12 +140,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 
 		// clear node placement from HyperConverged CR and verify the nodeSelector has been cleared as well from the UI Deployments
 		removeNodeSelectorPatch := []byte(`[{"op": "remove", "path": "/spec/deployment/nodePlacements/infra"}]`)
-		Eventually(func(ctx context.Context) error {
-			return tests.PatchHCO(ctx, cli, removeNodeSelectorPatch)
-		}).WithTimeout(1 * time.Minute).
-			WithPolling(1 * time.Millisecond).
-			WithContext(ctx).
-			Should(Succeed())
+		tests.PatchHCO(ctx, cli, removeNodeSelectorPatch)
 
 		Eventually(func(g Gomega, ctx context.Context) {
 			consoleUIDeployment := &appsv1.Deployment{

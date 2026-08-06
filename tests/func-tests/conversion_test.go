@@ -187,25 +187,16 @@ func getCurrentV1Beta1FGStatus(fgs hcov1beta1.HyperConvergedFeatureGates) map[st
 func restoreFGsToDefault(ctx context.Context, cl client.Client) {
 	GinkgoHelper()
 
+	hco, err := tests.GetHCO(ctx, cl)
+	Expect(err).ToNot(HaveOccurred())
+
+	if hco.Spec.FeatureGates != nil {
+		patch := fmt.Appendf(nil, removePathPatchTmplt, "/spec/featureGates")
+		tests.PatchHCO(ctx, cl, patch)
+	}
+
 	hcv1beta1 := &hcov1beta1.HyperConverged{}
-	patch := fmt.Appendf(nil, removePathPatchTmplt, "/spec/featureGates")
-
 	Eventually(func(g Gomega, ctx context.Context) {
-		hco, err := tests.GetHCO(ctx, cl)
-		g.Expect(err).ToNot(HaveOccurred())
-
-		if hco.Spec.FeatureGates == nil {
-			return
-		}
-
-		g.Expect(tests.PatchHCO(ctx, cl, patch)).To(Succeed())
-	}).WithTimeout(2 * time.Second).
-		WithPolling(500 * time.Millisecond).
-		WithContext(ctx).
-		Should(Succeed())
-
-	Eventually(func(g Gomega, ctx context.Context) {
-		var err error
 		hcv1beta1, err = tests.GetHCOv1beta1(ctx, cl)
 		g.Expect(err).NotTo(HaveOccurred())
 

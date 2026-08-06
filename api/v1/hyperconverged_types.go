@@ -64,13 +64,24 @@ type HyperConvergedSpec struct {
 	//   DecentralizedLiveMigration enables the decentralized live migration
 	//   (cross-cluster migration) feature. This feature allows live migration of
 	//   VirtualMachineInstances between different clusters. This feature is in
-	//   Developer Preview.
+	//   Tech Preview.
 	//   Phase: beta
 	//
-	// * videoConfig:
-	//   VideoConfig allows users to configure video device types for their virtual
-	//   machines. This can be useful for workloads that require specific video
-	//   capabilities or architectures. Note: This feature is in Tech Preview.
+	// * declarativeHotplugVolumes:
+	//   DeclarativeHotplugVolumes enables the use of the declarative volume
+	//   hotplug feature in KubeVirt. When set to true or nil, the
+	//   "DeclarativeHotplugVolumes" feature gate is enabled and the
+	//   "HotplugVolumes" feature gate is not (default behavior). When set to
+	//   false, the "HotplugVolumes" featuregate is enabled in KubeVirt. This
+	//   feature is in Technical Preview.
+	//   Phase: beta
+	//
+	// * template:
+	//   VirtualMachine Templates provide a native, in-cluster VM templating for
+	//   KubeVirt. They allow you to define reusable VM blueprints with
+	//   parameterized values that can be processed to create virtual machine. the
+	//   "template" feature gate enables this feature. Note: this feature is in
+	//   Tech Preview.
 	//   Phase: beta
 	//
 	// * alignCPUs:
@@ -85,38 +96,25 @@ type HyperConvergedSpec struct {
 	//   virt-launcher pod's filesystem via virtiofs.
 	//   Phase: alpha
 	//
-	// * declarativeHotplugVolumes:
-	//   DeclarativeHotplugVolumes enables the use of the declarative volume
-	//   hotplug feature in KubeVirt. When set to true, the
-	//   "DeclarativeHotplugVolumes" feature gate is enabled instead of
-	//   "HotplugVolumes". When set to false or nil, the "HotplugVolumes" feature
-	//   gate is enabled (default behavior). This feature is in Developer Preview.
-	//   Phase: alpha
-	//
 	// * deployKubeSecondaryDNS:
 	//   Deploy KubeSecondaryDNS by CNAO
 	//   Phase: alpha
 	//
-	// * disableMDevConfiguration:
-	//   Disable mediated devices handling on KubeVirt
+	// * deployObservabilityController:
+	//   Deploy the virt-observability-controller component. When enabled, the
+	//   controller exposes KubeVirt metrics and manages PrometheusRule resources
+	//   independently from the KubeVirt control plane.
 	//   Phase: alpha
 	//
 	// * downwardMetrics:
 	//   Allow to expose a limited set of host metrics to guests.
 	//   Phase: alpha
 	//
-	// * enableMultiArchBootImageImport:
-	//   EnableMultiArchBootImageImport allows the HCO to run on heterogeneous
-	//   clusters with different CPU architectures. Setting this field to true will
-	//   allow the HCO to create Golden Images for different CPU architectures.
-	//   This feature is in Developer Preview.
-	//   Phase: alpha
-	//
 	// * incrementalBackup:
 	//   IncrementalBackup enables changed block tracking backups and incremental
 	//   backups using QEMU capabilities in KubeVirt. When enabled, this also
 	//   enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This
-	//   feature is in Tech Preview.
+	//   feature is in Developer Preview.
 	//   Phase: alpha
 	//
 	// * objectGraph:
@@ -126,21 +124,31 @@ type HyperConvergedSpec struct {
 	//   This feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * disableMDevConfiguration:
+	//   Deprecated: This feature gate has graduated to a dedicated configuration
+	//   field; use spec.virtualization.mediatedDevicesConfiguration.enabled
+	//   instead. This feature gate is deprecated and will be removed in a future
+	//   release.
+	//   Phase: deprecated
+	//
+	// * enableMultiArchBootImageImport:
+	//   Deprecated: This feature gate has graduated to a dedicated configuration
+	//   field; use spec.workloadSources.enableMultiArchBootImageImport instead.
+	//   This feature gate is deprecated and will be removed in a future release.
+	//   Phase: deprecated
+	//
 	// * persistentReservation:
-	//   Enable persistent reservation of a LUN through the SCSI Persistent Reserve
-	//   commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM
-	//   requires activation of the persistent reservation flag. Once this feature
-	//   gate is enabled, then the additional container with the qemu-pr-helper is
-	//   deployed inside the virt-handler pod. Enabling (or removing) the feature
-	//   gate causes the redeployment of the virt-handler pod.
-	//   Phase: alpha
+	//   This feature gate has graduated to a dedicated configuration field. Use
+	//   spec.storage.persistentReservationConfiguration.enabled instead. This
+	//   feature gate is deprecated and will be removed in a future release.
+	//   Phase: deprecated
 	//
 	// +optional
 	// +k8s:conversion-gen=false
 	FeatureGates featuregates.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// Virtualization contains all the configurations for virtualization
-	// +kubebuilder:default={"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}
+	// +kubebuilder:default={"liveMigrationConfig": {"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false, "allowWorkloadDisruption": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}
 	// +kubebuilder:validation:XValidation:rule="!has(self.vmiCPUAllocationRatio) || self.vmiCPUAllocationRatio > 0",message="vmiCPUAllocationRatio must be greater than 0"
 	// +k8s:conversion-gen=false
 	Virtualization VirtualizationConfig `json:"virtualization,omitempty"`
@@ -164,10 +172,48 @@ type HyperConvergedSpec struct {
 	Security SecurityConfig `json:"security,omitempty"`
 
 	// Deployment contains all the configurations related to deployment of KubeVirt components
-	// +kubebuilder:default={"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}
+	// +kubebuilder:default={"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "deployNetworkResourcesInjector": true, "applicationAwareConfig": {"enable": false}}
 	// +optional
 	// +k8s:conversion-gen=false
 	Deployment DeploymentConfig `json:"deployment,omitempty"`
+
+	// Observability contains configurations for the observability controller
+	// +optional
+	// +k8s:conversion-gen=false
+	Observability *ObservabilityConfig `json:"observability,omitempty"`
+}
+
+// ObservabilityConfig contains configurations for the observability controller
+// +k8s:openapi-gen=true
+type ObservabilityConfig struct {
+	// Workloads defines filtering configuration for workload-related metrics
+	// +optional
+	Workloads *ObservabilityWorkloadsConfig `json:"workloads,omitempty"`
+
+	// AllowedAlerts defines the list of alert rule names to include.
+	// When set, only alerts matching this list will be created.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"
+	AllowedAlerts []string `json:"allowedAlerts,omitempty"`
+
+	// AllowedRecordingRules defines the list of recording rule names to include.
+	// When set, only recording rules matching this list will be created.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"
+	AllowedRecordingRules []string `json:"allowedRecordingRules,omitempty"`
+}
+
+// ObservabilityWorkloadsConfig defines filtering for workload metrics
+// +k8s:openapi-gen=true
+type ObservabilityWorkloadsConfig struct {
+	// AllowedMetrics defines the list of metric names to expose.
+	// When set, only metrics matching this list will be collected.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"
+	AllowedMetrics []string `json:"allowedMetrics,omitempty"`
 }
 
 // VirtualizationConfig contains all the virtualization configurations
@@ -182,7 +228,7 @@ type VirtualizationConfig struct {
 
 	// Live migration limits and timeouts are applied so that migration processes do not
 	// overwhelm the cluster.
-	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
+	// +kubebuilder:default={"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false, "allowWorkloadDisruption": false}
 	// +optional
 	LiveMigrationConfig LiveMigrationConfigurations `json:"liveMigrationConfig,omitempty"`
 
@@ -313,6 +359,22 @@ type StorageConfig struct {
 	// resource
 	// +optional
 	WorkloadResourceRequirements *corev1.ResourceRequirements `json:"workloadResourceRequirements,omitempty"`
+
+	// PersistentReservationConfiguration controls the deployment of additional resources
+	// required for using SCSI persistent reservation in VMs
+	// +optional
+	// +k8s:conversion-gen=false
+	PersistentReservationConfiguration *PersistentReservationConfiguration `json:"persistentReservationConfiguration,omitempty"`
+}
+
+// PersistentReservationConfiguration holds the configuration for SCSI persistent reservation support
+// +k8s:openapi-gen=true
+type PersistentReservationConfiguration struct {
+	// Enabled controls the deployment of additional resources like the pr-helper container
+	// for enabling the use of the SCSI persistent reservation in VMs, defaults to false.
+	// +optional
+	// +k8s:conversion-gen=false
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // NetworkingConfig contains all the networking configurations
@@ -354,6 +416,11 @@ type WorkloadSourcesConfig struct {
 	// +kubebuilder:default=true
 	// +default=true
 	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
+
+	// EnableMultiArchBootImageImport allows the HCO to run on heterogeneous
+	// clusters with different CPU architectures. Setting this field to true will
+	// allow the HCO to create Golden Images for different CPU architectures.
+	EnableMultiArchBootImageImport *bool `json:"enableMultiArchBootImageImport,omitempty"`
 
 	// DataImportCronTemplates holds list of data import cron templates (golden images)
 	// +optional
@@ -418,6 +485,14 @@ type DeploymentConfig struct {
 	// +kubebuilder:default=false
 	// +default=false
 	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
+
+	// DeployNetworkResourcesInjector enables deployment of the network-resources-injector component.
+	// When enabled, the network-resources-injector mutating webhook will be deployed to automatically
+	// inject resource requests for custom resources annotated in NetworkAttachmentDefinition.
+	// +optional
+	// +kubebuilder:default=true
+	// +default=true
+	DeployNetworkResourcesInjector *bool `json:"deployNetworkResourcesInjector,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -495,10 +570,13 @@ type LiveMigrationConfigurations struct {
 	// +default=5
 	ParallelMigrationsPerCluster *uint32 `json:"parallelMigrationsPerCluster,omitempty"`
 
-	// Maximum number of outbound migrations per node.
+	// The maximum number of outbound migrations allowed simultaneously per node.
+	// Setting this to 1 (default) ensures maximum available bandwidth per migration.
+	// Higher values accelerate node drains through parallel operations, but increase
+	// the risk of busy VMs failing due to network congestion.
 	// +optional
-	// +kubebuilder:default=2
-	// +default=2
+	// +kubebuilder:default=1
+	// +default=1
 	ParallelOutboundMigrationsPerNode *uint32 `json:"parallelOutboundMigrationsPerNode,omitempty"`
 
 	// Bandwidth limit of each migration, the value is quantity of bytes per second (e.g. 2048Mi = 2048MiB/sec)
@@ -516,8 +594,8 @@ type LiveMigrationConfigurations struct {
 	// higher completionTimeoutPerGiB to let workload with spikes in its memory dirty
 	// rate to converge.
 	// The format is a number.
-	// +kubebuilder:default=150
-	// +default=150
+	// +kubebuilder:default=20
+	// +default=20
 	// +optional
 	CompletionTimeoutPerGiB *int64 `json:"completionTimeoutPerGiB,omitempty"`
 
@@ -550,6 +628,16 @@ type LiveMigrationConfigurations struct {
 	// +kubebuilder:default=false
 	// +default=false
 	AllowPostCopy *bool `json:"allowPostCopy,omitempty"`
+
+	// AllowWorkloadDisruption indicates that the migration shouldn't be
+	// canceled after the acceptable completion time is exceeded. Instead, if
+	// permitted, migration will be switched to post-copy or the VMI will be
+	// paused to allow the migration to complete.
+	// Defaults to false.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	AllowWorkloadDisruption *bool `json:"allowWorkloadDisruption,omitempty"`
 }
 
 // VirtualMachineOptions holds the cluster level information regarding the virtual machine.
@@ -659,6 +747,12 @@ type MediatedHostDevice struct {
 // MediatedDevicesConfiguration holds information about MDEV types to be defined, if available
 // +k8s:openapi-gen=true
 type MediatedDevicesConfiguration struct {
+
+	// Enables the creation and removal of mediated devices by virt-handler
+	// +optional
+	// +k8s:conversion-gen=false
+	Enabled *bool `json:"enabled,omitempty"`
+
 	// +optional
 	// +listType=atomic
 	MediatedDeviceTypes []string `json:"mediatedDeviceTypes"`
@@ -911,6 +1005,10 @@ const (
 	// has been applied to the HyperConverged resource via a specialized annotation.
 	// This condition is exposed only when its value is True, and is otherwise hidden.
 	ConditionTaintedConfiguration = "TaintedConfiguration"
+
+	// ConditionNetworkResourcesInjectorReady indicates whether the network resources injector
+	// deployment is fully ready (all replicas running).
+	ConditionNetworkResourcesInjectorReady = "VirtNetworkResourcesInjectorReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -925,7 +1023,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}}
+	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "deployNetworkResourcesInjector": true, "applicationAwareConfig": {"enable": false}}}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

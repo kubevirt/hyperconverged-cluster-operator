@@ -131,6 +131,7 @@ rules:
   - kubevirt-virt-handler-server-certs
   - kubevirt-virt-handler-migration-client-certs
   - kubevirt-virt-handler-vsock-client-certs
+  - kubevirt-virt-handler-monitoring-client-certs
   - kubevirt-operator-certs
   - kubevirt-virt-api-certs
   - kubevirt-controller-certs
@@ -870,6 +871,54 @@ rules:
   - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    name: vm-file-restore-operator-controller-manager
+  name: vm-file-restore-operator-controller-manager
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
@@ -917,6 +966,38 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines
+  - virtualmachineinstancemigrations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - instancetype.kubevirt.io
+  resources:
+  - virtualmachineinstancetypes
+  - virtualmachineclusterinstancetypes
+  - virtualmachinepreferences
+  - virtualmachineclusterpreferences
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
 - apiGroups:
   - cdi.kubevirt.io
   resources:
@@ -1029,6 +1110,14 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - get
@@ -1070,6 +1159,14 @@ rules:
   - create
   - update
   - delete
+- apiGroups:
+  - apps
+  resources:
+  - controllerrevisions
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
@@ -1383,6 +1480,19 @@ rules:
   - create
   - update
   - delete
+- apiGroups:
+  - cert-manager.io
+  resources:
+  - certificates
+  - issuers
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -2200,6 +2310,14 @@ rules:
   - delete
   - patch
 - apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - pool.kubevirt.io
   resources:
   - virtualmachinepools
@@ -2424,6 +2542,14 @@ rules:
   - watch
   - patch
 - apiGroups:
+  - plugin.kubevirt.io
+  resources:
+  - plugins
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - export.kubevirt.io
   resources:
   - virtualmachineexports
@@ -2609,6 +2735,19 @@ rules:
   - watch
   - deletecollection
 - apiGroups:
+  - plugin.kubevirt.io
+  resources:
+  - plugins
+  verbs:
+  - get
+  - delete
+  - create
+  - update
+  - patch
+  - list
+  - watch
+  - deletecollection
+- apiGroups:
   - export.kubevirt.io
   resources:
   - virtualmachineexports
@@ -2940,6 +3079,14 @@ rules:
   - migrations.kubevirt.io
   resources:
   - migrationpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - plugin.kubevirt.io
+  resources:
+  - plugins
   verbs:
   - get
   - list
@@ -3614,6 +3761,12 @@ rules:
   verbs:
   - update
 - apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
   - authorization.k8s.io
   resources:
   - subjectaccessreviews
@@ -3633,6 +3786,16 @@ rules:
   - get
   - list
   - update
+  - patch
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+- nonResourceURLs:
+  - /debug/pprof
+  - /debug/pprof/*
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -4796,3 +4959,124 @@ rules:
   - patch
   - update
   - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    name: vm-file-restore-operator-controller-manager
+  name: vm-file-restore-operator-controller-manager
+rules:
+- apiGroups:
+  - filerestore.kubevirt.io
+  resources:
+  - filerestoreoperators
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - filerestore.kubevirt.io
+  resources:
+  - filerestoreoperators/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - filerestore.kubevirt.io
+  resources:
+  - filerestoreoperators/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - filerestore.kubevirt.io
+  resources:
+  - virtualmachinefilerestores
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - filerestore.kubevirt.io
+  resources:
+  - virtualmachinefilerestores/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - filerestore.kubevirt.io
+  resources:
+  - virtualmachinefilerestores/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachineinstances
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - datavolumes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create

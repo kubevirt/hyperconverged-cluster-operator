@@ -105,7 +105,34 @@ EOF
 NUM_WAIT_ITERATIONS=150
 ITERATION_WAIT_TIME=10
 
+exitCode=""
+
+FUNCTEST_LOG_FILE="${OUTPUT_DIR}/functest-stream.log"
+mkdir -p "${OUTPUT_DIR}"
+
+$KUBECTL_BINARY wait pod --timeout=120s --for=condition=Ready -n "${INSTALLED_NAMESPACE}" functest
+
+# Stream functest logs in the background so they are captured even if the pod disappears
+($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" logs -f pod/functest -c functest > "${FUNCTEST_LOG_FILE}" 2>&1) &
+LOG_STREAM_PID=$!
+
+POD_NOT_FOUND=false
+
 for i in $(seq 1 ${NUM_WAIT_ITERATIONS}); do
+  get_pod_rc=0
+  get_pod_err="$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod/functest -o name 2>&1 >/dev/null)" || get_pod_rc=$?
+  if [[ ${get_pod_rc} -ne 0 ]]; then
+    if echo "${get_pod_err}" | grep -qi 'NotFound'; then
+      echo "ERROR: functest pod disappeared unexpectedly"
+      POD_NOT_FOUND=true
+      break
+    fi
+    echo "WARN: transient failure while checking functest pod (rc=${get_pod_rc}): ${get_pod_err}"
+
+    sleep ${ITERATION_WAIT_TIME}
+    continue
+  fi
+
   exitCode=$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod/functest -o jsonpath='{.status .containerStatuses[?(@.name=="functest")] .state .terminated .exitCode}')
 
   if [[ -n ${exitCode} ]]; then
@@ -116,18 +143,39 @@ for i in $(seq 1 ${NUM_WAIT_ITERATIONS}); do
   sleep ${ITERATION_WAIT_TIME}
 done
 
-if [[ -z ${exitCode} ]]; then
-  $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod functest -o yaml || true
+# Stop the background log stream
+kill ${LOG_STREAM_PID} 2>/dev/null || true
+wait ${LOG_STREAM_PID} 2>/dev/null || true
+
+if ${POD_NOT_FOUND}; then
+  echo "=== Captured functest logs ==="
+  cat "${FUNCTEST_LOG_FILE}" 2>/dev/null || echo "No logs captured"
+  echo ""
+  echo "=== functest pod events ==="
+  $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get events --field-selector involvedObject.name=functest --sort-by='.lastTimestamp' || true
+  echo "=== Recent namespace events ==="
+  $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get events --sort-by='.lastTimestamp' | tail -50 || true
+  echo "=== Node status ==="
+  $KUBECTL_BINARY get nodes -o wide || true
+  echo "=== Node conditions ==="
+  for node in $($KUBECTL_BINARY get nodes -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+    echo "--- Node: $node ---"
+    $KUBECTL_BINARY describe node "$node" | grep -A10 "Conditions:" || true
+  done
+  exitCode=1
+else
+  if [[ -z ${exitCode} ]]; then
+    $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod functest -o yaml || true
+  fi
+
+  if [[ ${NUM_WAIT_ITERATIONS} -eq $i ]]; then
+    echo "ERROR: Timeout: the test pod didn't exit after $((${ITERATION_WAIT_TIME} * ${NUM_WAIT_ITERATIONS})) seconds"
+  fi
+
+  $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" cp -c=copy functest:/test/output "$OUTPUT_DIR"
+  $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" logs functest -c functest
+  $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" delete pod functest --ignore-not-found --wait=true
 fi
-
-if [[ ${NUM_WAIT_ITERATIONS} -eq $i ]]; then
-  echo "ERROR: Timeout: the test pod didn't exit after $((${ITERATION_WAIT_TIME} * ${NUM_WAIT_ITERATIONS})) seconds"
-fi
-
-$KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" cp -c=copy functest:/test/output "$OUTPUT_DIR"
-$KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" logs functest -c functest
-$KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" delete pod functest --ignore-not-found --wait=true
-
 
 echo "Exiting... Exit code: $exitCode"
 

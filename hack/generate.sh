@@ -9,13 +9,33 @@ PACKAGE=github.com/kubevirt/hyperconverged-cluster-operator
 API_FOLDER=api
 API_VERSIONS=(v1 v1beta1)
 
-go install \
-	"k8s.io/code-generator/cmd/deepcopy-gen@${K8S_VER}" \
-	"k8s.io/code-generator/cmd/defaulter-gen@${K8S_VER}" \
-	"k8s.io/code-generator/cmd/conversion-gen@${K8S_VER}"
+go_install() {
+  local tool=$1
+  local path_part="${tool%@*}"          # everything before @
+  local tool_name="${path_part##*/}"    # last path segment (the binary name)
+  local req_version="${tool##*@}"       # everything after @
 
-go install \
-	"k8s.io/kube-openapi/cmd/openapi-gen@${KUBEOPENAPI_VER}"
+  local cmd_path
+
+  if cmd_path=$(command -v "${tool_name}"); then
+    local current_ver
+    current_ver=$(go version -json -m "${cmd_path}" | jq '.Main.Version' -r)
+    if [[ "${current_ver}" == "${req_version}" ]]; then
+      echo "${tool} already installed"
+      return
+    fi
+  fi
+
+  echo "installing ${tool}..."
+  go install "${tool}"
+}
+
+set +x
+go_install "k8s.io/code-generator/cmd/deepcopy-gen@${K8S_VER}"
+go_install "k8s.io/code-generator/cmd/defaulter-gen@${K8S_VER}"
+go_install "k8s.io/code-generator/cmd/conversion-gen@${K8S_VER}"
+go_install "k8s.io/kube-openapi/cmd/openapi-gen@${KUBEOPENAPI_VER}"
+set -x
 
 deepcopy-gen \
       --output-file zz_generated.deepcopy.go \
@@ -29,7 +49,7 @@ openapi-gen \
     --output-pkg github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates \
     "${PACKAGE}/${API_FOLDER}/v1/featuregates"
 
-for API_VERSION in ${API_VERSIONS[@]}; do
+for API_VERSION in "${API_VERSIONS[@]}"; do
   deepcopy-gen \
     --output-file zz_generated.deepcopy.go \
     --go-header-file "${PROJECT_ROOT}/hack/boilerplate.go.txt" \

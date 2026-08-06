@@ -45,11 +45,11 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		in.Spec.Virtualization.LiveMigrationConfig.ParallelMigrationsPerCluster = &ptrVar1
 	}
 	if in.Spec.Virtualization.LiveMigrationConfig.ParallelOutboundMigrationsPerNode == nil {
-		var ptrVar1 uint32 = 2
+		var ptrVar1 uint32 = 1
 		in.Spec.Virtualization.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = &ptrVar1
 	}
 	if in.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB == nil {
-		var ptrVar1 int64 = 150
+		var ptrVar1 int64 = 20
 		in.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = &ptrVar1
 	}
 	if in.Spec.Virtualization.LiveMigrationConfig.ProgressTimeout == nil {
@@ -63,6 +63,10 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 	if in.Spec.Virtualization.LiveMigrationConfig.AllowPostCopy == nil {
 		var ptrVar1 bool = false
 		in.Spec.Virtualization.LiveMigrationConfig.AllowPostCopy = &ptrVar1
+	}
+	if in.Spec.Virtualization.LiveMigrationConfig.AllowWorkloadDisruption == nil {
+		var ptrVar1 bool = false
+		in.Spec.Virtualization.LiveMigrationConfig.AllowWorkloadDisruption = &ptrVar1
 	}
 	if in.Spec.Virtualization.WorkloadUpdateStrategy.WorkloadUpdateMethods == nil {
 		if err := json.Unmarshal([]byte(`["LiveMigrate"]`), &in.Spec.Virtualization.WorkloadUpdateStrategy.WorkloadUpdateMethods); err != nil {
@@ -143,6 +147,10 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 	if in.Spec.Deployment.DeployVMConsoleProxy == nil {
 		var ptrVar1 bool = false
 		in.Spec.Deployment.DeployVMConsoleProxy = &ptrVar1
+	}
+	if in.Spec.Deployment.DeployNetworkResourcesInjector == nil {
+		var ptrVar1 bool = true
+		in.Spec.Deployment.DeployNetworkResourcesInjector = &ptrVar1
 	}
 }
 

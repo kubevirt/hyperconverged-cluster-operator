@@ -33,6 +33,16 @@ var _ = Describe("Feature Gate Details", func() {
 			Expect(phase).To(Equal(featuregates.PhaseGA))
 		})
 
+		It("should return the phase of the feature gate, with different casing", func() {
+			featureGatesDetails = map[string]featuregates.FeatureGate{
+				"fg1": {Name: "fg1", Phase: featuregates.PhaseGA},
+			}
+
+			phase, exists := GetFeatureGatePhase("FG1")
+			Expect(exists).To(BeTrue())
+			Expect(phase).To(Equal(featuregates.PhaseGA))
+		})
+
 		It("should return false if feature gate does not exist", func() {
 			featureGatesDetails = map[string]featuregates.FeatureGate{
 				"exists": {Name: "exists", Phase: featuregates.PhaseGA},

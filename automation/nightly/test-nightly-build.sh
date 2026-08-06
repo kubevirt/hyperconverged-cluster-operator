@@ -3,6 +3,7 @@
 set -ex
 
 source "hack/cri-bin.sh"
+source "hack/validate-kv-fg-file.sh"
 
 function dump() {
     rv=$?
@@ -52,7 +53,11 @@ git clone https://github.com/kubevirt/kubevirt.git
 (
   cd kubevirt
   git checkout "${latest_kubevirt_commit}"
- )
+  go run ./tools/feature-gate-report > ../kv-beta-feature-gates.json
+)
+
+validate-kv-fg-json-file kv-beta-feature-gates.json
+mv kv-beta-feature-gates.json pkg/internal/kvfeaturegates/kv-beta-feature-gates.json
 
 # Get latest CDI
 git clone https://github.com/kubevirt/containerized-data-importer.git cdi

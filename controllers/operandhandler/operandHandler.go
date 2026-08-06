@@ -19,6 +19,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	netresinjector "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/netresinjector"
+	observabilitycontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/observabilitycontroller"
 	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -63,8 +64,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		aie.NewAIEWebhookClusterRoleHandler(client, scheme),
 		aie.NewAIEWebhookClusterRoleBindingHandler(client, scheme),
 		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
-		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
-		aie.NewIOMMUFDDevicePluginDaemonSetHandler(client, scheme),
 		netresinjector.NewClusterRoleHandler(client, scheme),
 		netresinjector.NewClusterRoleBindingHandler(client, scheme),
 		netresinjector.NewServiceAccountHandler(client, scheme),
@@ -72,6 +71,15 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		netresinjector.NewDeploymentHandler(client, scheme),
 		netresinjector.NewPDBHandler(client, scheme),
 		netresinjector.NewMutatingWebhookConfigurationHandler(client, scheme),
+	}
+
+	if ci.IsMonitoringAvailable() {
+		operandList = append(operandList, []operands.Operand{
+			observabilitycontroller.NewServiceAccountHandler(client, scheme),
+			observabilitycontroller.NewClusterRoleHandler(client, scheme),
+			observabilitycontroller.NewClusterRoleBindingHandler(client, scheme),
+			observabilitycontroller.NewDeploymentHandler(client, scheme),
+		}...)
 	}
 
 	if ci.IsOpenshift() {
@@ -87,7 +95,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			waspagent.NewWaspAgentClusterRoleBindingHandler(client, scheme),
 			handlers.NewVirtioWinCmReaderRoleHandler(client, scheme),
 			handlers.NewVirtioWinCmReaderRoleBindingHandler(client, scheme),
-			aie.NewIOMMUFDDevicePluginSCCHandler(client, scheme),
 		}...)
 
 		virtioWinCMHandler, err := handlers.NewVirtioWinCmHandler(client, scheme)
@@ -116,6 +123,11 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				handlers.NewKVAPIServerProxyNetworkPolicyHandler(client, scheme),
 			}...)
 		}
+	} else {
+		operandList = append(operandList,
+			handlers.NewCertManagerIssuerHandler(client, scheme),
+			netresinjector.NewCertManagerCertHandler(client, scheme),
+		)
 	}
 
 	if ci.IsManagedByOLM() {

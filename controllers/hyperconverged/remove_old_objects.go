@@ -1,6 +1,7 @@
 package hyperconverged
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -12,6 +13,9 @@ import (
 	v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/patch"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -121,4 +125,59 @@ func mustGetOldNetworkPolicySelector() client.MatchingLabelsSelector {
 	})
 
 	return networkPolicySelector
+}
+
+func removeWrongJsonPatch(hc *hcov1.HyperConverged) (bool, error) {
+	patchStr, found := hc.Annotations[common.JSONPatchKVAnnotationName]
+	if !found {
+		return false, nil
+	}
+
+	var patches []patch.JSONPatchAction
+	err := json.Unmarshal([]byte(patchStr), &patches)
+	if err != nil {
+		return false, nil // if the patch is not valid, then no harm done anyway
+	}
+
+	idx := slices.IndexFunc(patches, isAddTemplateFGPatch)
+
+	if idx < 0 {
+		return false, nil
+	}
+
+	if len(patches) == 1 {
+		delete(hc.Annotations, common.JSONPatchKVAnnotationName)
+		return true, nil
+	}
+
+	patches = slices.Delete(patches, idx, idx+1)
+
+	newAnnotation, err := json.Marshal(patches)
+	if err != nil {
+		return false, err
+	}
+
+	hc.Annotations[common.JSONPatchKVAnnotationName] = string(newAnnotation)
+	return true, nil
+}
+
+func isAddTemplateFGPatch(patch patch.JSONPatchAction) bool {
+	if patch.Op != "add" {
+		return false
+	}
+
+	if patch.Path != "/spec/configuration/developerConfiguration/featureGates/-" {
+		return false
+	}
+
+	if patch.Value == nil {
+		return false
+	}
+
+	value, isString := patch.Value.(string)
+	if !isString {
+		return false
+	}
+
+	return value == "Template"
 }

@@ -1,6 +1,8 @@
 package common
 
-import "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+import (
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+)
 
 const (
 	ReconcileCompleted        = "ReconcileCompleted"

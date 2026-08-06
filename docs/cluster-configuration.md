@@ -54,7 +54,7 @@ To enable a feature, add a new feature gate object to the `featureGates` list. T
 by default (a beta feature gate), set its `state` field to `Disabled`. The default value of the `state` field is
 `Enabled`, and there is no need to set it to enable a feature gate.
 
-For example, the following setting enables the `alignCPUs` feature gate (alpha), and disables the `videoConfig` feature
+For example, the following setting enables the `alignCPUs` feature gate (alpha), and disables the `decentralizedLiveMigration` feature
 gate (beta).
 ```yaml
 apiVersion: hco.kubevirt.io/v1
@@ -65,9 +65,25 @@ metadata:
 spec:
   featureGates:
   - name: alignCPUs
-  - name: videoConfig
+  - name: decentralizedLiveMigration
     state: Disabled
 ```
+
+The feature gate names are case-insensitive. The above example can be done also like this:
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: AlignCPUs
+  - name: DecentralizedLiveMigration
+    state: Disabled
+```
+
+> **Note**: Feature gate names must be unique (case-insensitive) in the `spec.featureGates` list.
 
 ### downwardMetrics Feature Gate
 Add the `downwardMetrics` feature gate in order to allow exposing a limited set of VM and host metrics to the guest.
@@ -90,29 +106,15 @@ For additional information, see here: [KubeSecondaryDNS](https://github.com/kube
 
 **Default**: `Disabled`
 
-### persistentReservation Feature Gate
-Add the `persistentReservation` feature gate in order to enable the reservation of a LUN through the SCSI Persistent Reserve commands.
+### persistentReservation Feature Gate (deprecated)
 
-SCSI protocol offers dedicated commands in order to reserve and control access to the LUNs. This can be used to prevent data corruption if the disk is shared by multiple VMs (or more in general processes).
-The SCSI persistent reservation is handled by the qemu-pr-helper. The pr-helper is a privileged daemon that can be either started by libvirt directly or managed externally.
-In case of KubeVirt, the qemu-pr-helper needs to be started externally because it requires high privileges in order to perform the persistent SCSI reservation. Afterward, the pr-helper socket is accessed by the unprivileged virt-launcher pod for enabling the SCSI persistent reservation.
-Once the feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.
-
-VMI example:
-```yaml
-    devices:
-      disks:
-      - name: mypvcdisk
-        lun:
-          reservations: true
-```
-**Note**: An important aspect of this feature is that the SCSI persistent reservation doesn't support migration. Even if you apply the reservation to an RWX PVC provisioning SCSI devices, the restriction is due to the reservation done by the initiator on the node. The VM could be migrated but not the reservation.
-
-**Note**: this feature is in Developer Preview.
+The `persistentReservation` feature gate is deprecated. Use
+`spec.storage.persistentReservationConfiguration.enabled` instead. See
+[SCSI Persistent Reservation](#scsi-persistent-reservation) for details.
 
 **Default**: `Disabled`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Deprecated
 
 ### alignCPUs Feature Gate
 Add the `alignCPUs` feature gate to enable KubeVirt
@@ -125,16 +127,16 @@ to an even parity when using emulator thread isolation.
 
 **Graduation Status**: Alpha
 
-### disableMDevConfiguration Feature Gate
-KubeVirt aims to facilitate the configuration of mediated devices on large clusters.
+### disableMDevConfiguration Feature Gate (deprecated)
 
-If this is not desired, set the `disableMDevConfiguration` feature gate in order to disable this feature.
-
-**Note**: this feature is in Developer Preview.
+The `disableMDevConfiguration` feature gate is deprecated. Use
+`spec.virtualization.mediatedDevicesConfiguration.enabled` instead (`enabled: false` preserves prior behavior when
+the feature gate was used to disable mediated device configuration). See
+[Automatic Configuration of Mediated Devices](#automatic-configuration-of-mediated-devices-including-vgpus) for details.
 
 **Default**: `Disabled`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Deprecated
 
 ### decentralizedLiveMigration Feature Gate
 By default, live migration is limited in its flexibility because the migration is centralized. This limits live
@@ -157,24 +159,25 @@ volume hotplug operations are performed using KubeVirt's subresource API. Change
 spec require a VM restart to take effect. When enabled, volume hotplug operations can be performed declaratively by
 modifying the VirtualMachine spec directly. These changes are applied immediately without requiring a VM restart.
 
-**Note**: This feature is in Developer Preview.
+**Note**: This feature is in Technical Preview.
 
-**Default**: `Disabled`
+**Default**: `Enabled`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
-### videoConfig Feature Gate
-By default, the video type depends on the architecture and firmware:
-* For amd64: vga for BIOS VMs, and bochs for UEFI VMs.
-* For arm64 and s390x: virtio.
+### template FeatureGate
+*VirtualMachine Templates* provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable
+virtual machine blueprints with parameterized values that can be processed to create virtual machine.
 
-By default, it is possible to explicitly configuring the video type in the
-VirtualMachine spec.
+Unlike external templating tools such as Helm or Kustomize, `VirtualMachineTemplates` can capture storage state (e.g.
+DataVolume snapshots and cloned disks) that external tools cannot represent. They also work on any Kubernetes cluster
+without requiring OpenShift.
 
-To prevent customization of Virtual Machine video configurations, ddd the
-`videoConfig` feature gate with the `state` field set to `Disabled`.
+See more details [here](https://kubevirt.io/user-guide/user_workloads/vm_templates/)
 
-**Note**: This feature is in Tech Preview.
+the `template` feature gate enables this feature.
+
+**Note**: this feature is in Technical Preview.
 
 **Default**: `Enabled`
 
@@ -205,7 +208,7 @@ virt-launcher pod without having a matching disk in the domain. This is
 required to collect the backup output or to store changes performed during
 the backup operation, depending on the backup mode.
 
-**Note**: This feature is in Tech Preview.
+**Note**: This feature is in Developer Preview.
 
 **Default**: `Disabled`
 
@@ -223,8 +226,47 @@ workload identity.
 
 **Graduation Status**: Alpha
 
-### enableMultiArchBootImageImport Feature Gate
-See more details [below](#golden-images-in-heterogeneous-clusters).
+### enableMultiArchBootImageImport Feature Gate (Deprecated)
+This feature is GA now, and the feature gate is deprecated. It will be removed in a future version.
+
+Use the `spec.workloadSources.enableMultiArchBootImageImport` field instead.
+See [Golden Images in Heterogeneous Clusters](`#golden-images-in-heterogeneous-clusters`) for more details.
+
+**Graduation Status**: GA
+
+### deployObservabilityController Feature Gate
+Add the `deployObservabilityController` feature gate to deploy the
+`virt-observability-controller` as a standalone operand managed by HCO. The
+controller is responsible for managing KubeVirt core PrometheusRules and
+exposing KubeVirt-specific metrics.
+
+When enabled, HCO creates a ServiceAccount, ClusterRole, ClusterRoleBinding,
+and Deployment for the observability controller in the HCO namespace. The
+controller's TLS configuration (minimum TLS version and cipher suites) is
+inherited from the `spec.security.tlsSecurityProfile` setting.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: deployObservabilityController
+```
+
+To disable the controller after it has been enabled, set the feature gate
+state to `Disabled`. HCO will remove all resources associated with the
+observability controller:
+
+```yaml
+spec:
+  featureGates:
+  - name: deployObservabilityController
+    state: Disabled
+```
+
+**Note**: This feature is in Developer Preview.
 
 **Default**: `Disabled`
 
@@ -265,7 +307,7 @@ higher completionTimeoutPerGiB to let workload with spikes in its memory dirty
 rate to converge.
 The format is a number.
 
-**default**: 150
+**default**: 20
 
 #### parallelMigrationsPerCluster
 
@@ -275,9 +317,9 @@ Number of migrations running in parallel in the cluster. The format is an intege
 
 #### parallelOutboundMigrationsPerNode
 
-Maximum number of outbound migrations per node. The format is a number.
+Maximum number of outbound migrations per node. Available network bandwidth is shared between concurrent migrations, lower number makes single migration more likely to converge. For idle VMs and when bandwidth is not a concern higher value speeds up mass migrations and node drains. The format is a number.
 
-**default**: 2
+**default**: 1
 
 #### progressTimeout:
 
@@ -309,6 +351,23 @@ alive.
 
 **default**: false
 
+#### allowWorkloadDisruption
+
+When enabled, the migration controller will not cancel migrations that exceed the
+acceptable completion time (determined by `completionTimeoutPerGiB` and the VM size).
+Instead, it will take action to force migration completion. The action depends on the
+`allowPostCopy` setting:
+
+- If `allowPostCopy` is `true`, the migration switches to post-copy mode.
+- If `allowPostCopy` is `false`, the VMI is paused until the migration completes.
+
+**Backward compatibility:** When `allowWorkloadDisruption` is not set, KubeVirt
+defaults it to the value of `allowPostCopy`. This means existing users with
+`allowPostCopy: true` will continue to get post-copy behavior without needing
+to explicitly set `allowWorkloadDisruption: true`.
+
+**default**: false
+
 #### Example
 
 ```yaml
@@ -319,13 +378,14 @@ metadata:
 spec:
   virtualization:
     liveMigrationConfig:
-      completionTimeoutPerGiB: 150
+      completionTimeoutPerGiB: 20
       network: migration-network
       parallelMigrationsPerCluster: 5
-      parallelOutboundMigrationsPerNode: 2
+      parallelOutboundMigrationsPerNode: 1
       progressTimeout: 150
       allowAutoConverge: false
       allowPostCopy: false
+      allowWorkloadDisruption: false
 ```
 
 ### Automatic Configuration of Mediated Devices (including vGPUs)
@@ -334,6 +394,29 @@ Cluster-admins can provide a list of desired mediated devices (vGPU) types.
 KubeVirt will attempt to automatically create the relevant devices on nodes that can support such configuration.
 Currently, it is possible to configure one type per physical card.
 KubeVirt will configure all `available_instances` for each configurable type.
+
+The `enabled` field controls whether virt-handler automatically creates and removes mediated devices on cluster nodes.
+It defaults to `true` when omitted. Set `enabled: false` to disable automatic mediated device configuration.
+
+#### Example: disabling automatic mediated device configuration
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  virtualization:
+    mediatedDevicesConfiguration:
+      enabled: false
+      mediatedDeviceTypes:
+      - nvidia-222
+```
+
+**Migration from `disableMDevConfiguration`:** The deprecated `disableMDevConfiguration` feature gate is replaced by
+`spec.virtualization.mediatedDevicesConfiguration.enabled`. If you previously used the feature gate to disable
+mediated device configuration, set `enabled: false` to preserve the same behavior. When both are set,
+`enabled` takes precedence over the deprecated feature gate.
 
 #### Example
 
@@ -1108,6 +1191,33 @@ spec:
       - "private-registry-example-2:5000"
 ```
 
+### SCSI Persistent Reservation
+
+The `spec.storage.persistentReservationConfiguration.enabled` field enables the reservation of a LUN through the
+SCSI Persistent Reserve commands. This can be used to prevent data corruption if the disk is shared by multiple VMs.
+
+The SCSI persistent reservation is handled by the qemu-pr-helper. When enabled, an additional container with the
+qemu-pr-helper is deployed inside the virt-handler pod. Enabling or disabling this causes the redeployment of the
+virt-handler pod.
+
+#### Example: enabling SCSI persistent reservation
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  storage:
+    persistentReservationConfiguration:
+      enabled: true
+```
+
+**Migration from `persistentReservation` feature gate:** The deprecated `persistentReservation` feature gate is
+replaced by `spec.storage.persistentReservationConfiguration.enabled`. If you previously used the feature gate,
+set `enabled: true` to preserve the same behavior. When both are set, `enabled` takes precedence over the
+deprecated feature gate.
+
 ## Security Configurations
 The `spec.security` field contains all the configurations for security.
 
@@ -1416,10 +1526,8 @@ In heterogeneous clusters, where nodes have different CPU architectures, it is p
 the boot image supports the the CPU architecture of the cluster nodes. For example, a golden image that supports both
 `arm64` and `amd64` CPU architectures can be used on both types of nodes.
 
-Notice that this feature is on `Alpha` stage, and is not fully supported yet. Also, it is disabled by default. To
-activate the golden images support in heterogeneous clusters, enable the `enableMultiArchBootImageImport` feature gate
-in the HyperConverged CR. See the [feature gate documentation](#featuregates)
-for more details.
+Notice that this feature is disabled by default. To activate the golden images support in heterogeneous clusters, set
+the `spec.workloadSources.enableMultiArchBootImageImport` field in the HyperConverged CR, to `true`.
 
 However, not activating this feature gate may cause virtual machine to fail to start on a node with a different CPU
 architecture than the one of the golden image. If activating this feature is not an option, it is possible to use the
@@ -1438,9 +1546,8 @@ list of CPU architectures that the image supports.
 For example, assume the following custom image support amd64 and arm64
 ```yaml
 spec:
-  featureGates:
-    name: enableMultiArchBootImageImport
   workloadSources:
+    enableMultiArchBootImageImport: true
     dataImportCronTemplates:
     - metadata:
         name: kubevirt-hyperconverged
@@ -1550,6 +1657,38 @@ spec:
   workloadSources:
     commonInstancetypesDeployment:
       enabled: false
+```
+
+## Observability Configurations
+The `spec.observability` section allows filtering which metrics, alerts, and
+recording rules the observability controller exposes. This section is only
+relevant when the `deployObservabilityController` feature gate is enabled.
+
+Each allowlist field accepts:
+- Not set or empty — allow all items
+- `["none"]` — block all items
+- `["item_a", "item_b"]` — allow only the listed items
+
+Mixing `"none"` with other values is not allowed.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: deployObservabilityController
+  observability:
+    workloads:
+      allowedMetrics:
+      - kubevirt_vmi_memory_used_bytes
+      - kubevirt_vmi_cpu_usage_seconds_total
+    allowedAlerts:
+    - KubeVirtVMDown
+    - KubeVirtVMIExcessiveMigrations
+    allowedRecordingRules:
+    - kubevirt_vmi_phase_count:sum
 ```
 
 ## Deployment Configurations
@@ -1812,6 +1951,37 @@ metadata:
 spec:
   deployment:
     deployVmConsoleProxy: true
+```
+
+### Deploy Network Resources Injector
+The Network Resources Injector is a webhook that injects network-related resource requests into pod specifications based on network annotations. It is critical for proper SR-IOV and other network resource management.
+
+To control the deployment of the Network Resources Injector, set the `spec.deployment.deployNetworkResourcesInjector` field.
+
+**Default**: `true`
+
+**Note**: This component is mandatory for proper network resource management. Set this to `false` only if another instance is running elsewhere (e.g., under SR-IOV operator) to avoid conflicts, or if your system does not make use of multus with custom network resources.
+
+#### Example
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  deployment:
+    deployNetworkResourcesInjector: true
+```
+
+To disable the deployment (when running an external instance):
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  deployment:
+    deployNetworkResourcesInjector: false
 ```
 
 ## Configurations via Annotations

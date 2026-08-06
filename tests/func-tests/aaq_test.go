@@ -116,11 +116,5 @@ func disableAAQ(ctx context.Context, cli client.Client) {
 func setAAQEnablement(ctx context.Context, cli client.Client, shouldEnable bool) {
 	patchBytes := fmt.Appendf(nil, setAAQFGPatchTemplate, shouldEnable)
 
-	Eventually(tests.PatchMergeHCO).
-		WithArguments(ctx, cli, patchBytes).
-		WithTimeout(10 * time.Second).
-		WithPolling(100 * time.Millisecond).
-		WithContext(ctx).
-		WithOffset(2).
-		Should(Succeed())
+	tests.PatchMergeHCO(ctx, cli, patchBytes)
 }

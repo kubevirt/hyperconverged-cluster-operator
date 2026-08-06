@@ -11,8 +11,8 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const disableOperandDeletionPatch = `[{"op": "replace", "path": "/metadata/annotations/console.openshift.io~1disable-operand-delete", "value": "%t"}]`
@@ -44,7 +44,7 @@ func (c csvHandler) Ensure(req *common.HcoRequest) *operands.EnsureResult {
 		return er.Error(err)
 	}
 
-	foundDisableOperandDeletion := csv.Annotations[components.DisableOperandDeletionAnnotation]
+	foundDisableOperandDeletion := csv.Annotations[hcoutil.DisableOperandDeletionAnnotation]
 	requiredDisableOperandDeletion := req.Instance.Spec.Deployment.UninstallStrategy == hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 
 	if foundDisableOperandDeletion != strconv.FormatBool(requiredDisableOperandDeletion) {

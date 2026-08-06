@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
@@ -99,12 +98,12 @@ var _ = Describe("SSP Operands", func() {
 
 		It("should reconcile to default", func() {
 			const cTNamespace = "nonDefault"
-			hco.Spec.WorkloadSources.CommonTemplatesNamespace = ptr.To(cTNamespace)
+			hco.Spec.WorkloadSources.CommonTemplatesNamespace = new(cTNamespace)
 			expectedResource, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
 			existingResource := expectedResource.DeepCopy()
 
-			existingResource.Spec.TemplateValidator.Replicas = ptr.To(defaultTemplateValidatorReplicas * 2) // non-default value
+			existingResource.Spec.TemplateValidator.Replicas = new(defaultTemplateValidatorReplicas * 2) // non-default value
 
 			req.HCOTriggered = false // mock a reconciliation triggered by a change in NewKubeVirtCommonTemplateBundle CR
 
@@ -199,7 +198,7 @@ var _ = Describe("SSP Operands", func() {
 		})
 
 		It("should create ssp with deployVmConsoleProxy feature gate enabled", func() {
-			hco.Spec.Deployment.DeployVMConsoleProxy = ptr.To(true)
+			hco.Spec.Deployment.DeployVMConsoleProxy = new(true)
 
 			expectedResource, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
@@ -207,6 +206,17 @@ var _ = Describe("SSP Operands", func() {
 			Expect(expectedResource.Spec.TokenGenerationService).ToNot(BeNil())
 			Expect(expectedResource.Spec.TokenGenerationService.Enabled).To(BeTrue())
 		})
+
+		DescribeTable("should copy the HC's EnableMultiArchBootImageImport field, to SSP's EnableMultipleArchitectures field", func(fieldVal bool, matcher gomegatypes.GomegaMatcher) {
+			hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(fieldVal)
+
+			ssp, _, err := NewSSP(hco, false)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ssp.Spec.EnableMultipleArchitectures).To(matcher)
+		},
+			Entry("when HC's EnableMultiArchBootImageImport is false", false, HaveValue(BeFalse())),
+			Entry("when HC's EnableMultiArchBootImageImport is true", true, HaveValue(BeTrue())),
+		)
 
 		DescribeTable("should copy the HC's EnableMultiArchBootImageImport feature gate, to SSP's EnableMultipleArchitectures field", func(hcFG *featuregates.State, matcher gomegatypes.GomegaMatcher) {
 			hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
@@ -217,8 +227,22 @@ var _ = Describe("SSP Operands", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ssp.Spec.EnableMultipleArchitectures).To(matcher)
 		},
-			Entry("when HC's EnableMultiArchBootImageImport is false", ptr.To(featuregates.Disabled), HaveValue(BeFalse())),
-			Entry("when HC's EnableMultiArchBootImageImport is true", ptr.To(featuregates.Enabled), HaveValue(BeTrue())),
+			Entry("when HC's the FG is false", new(featuregates.Disabled), HaveValue(BeFalse())),
+			Entry("when HC's the FG is true", new(featuregates.Enabled), HaveValue(BeTrue())),
+		)
+
+		DescribeTable("should prefer EnableMultiArchBootImageImport field over the feature gate", func(fieldVal bool, hcFG *featuregates.State, matcher gomegatypes.GomegaMatcher) {
+			hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(fieldVal)
+			hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+				{Name: goldenimages.EnableMultiArchFeatureGate, State: hcFG},
+			}
+
+			ssp, _, err := NewSSP(hco, false)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ssp.Spec.EnableMultipleArchitectures).To(matcher)
+		},
+			Entry("when HC's field is false and the FG is enabled", false, new(featuregates.Enabled), HaveValue(BeFalse())),
+			Entry("when HC's field is true and the FG is disabled", true, new(featuregates.Disabled), HaveValue(BeTrue())),
 		)
 
 		Context("SSP's Cluster filed", func() {
@@ -414,12 +438,12 @@ var _ = Describe("SSP Operands", func() {
 
 				// now, modify HCO's node placement
 				hco.Spec.Deployment.NodePlacements.Workload.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
-					Key: "key12", Operator: "operator12", Value: "value12", Effect: "effect12", TolerationSeconds: ptr.To[int64](12),
+					Key: "key12", Operator: "operator12", Value: "value12", Effect: "effect12", TolerationSeconds: new(int64(12)),
 				})
 				hco.Spec.Deployment.NodePlacements.Workload.NodeSelector["key1"] = "something else"
 
 				hco.Spec.Deployment.NodePlacements.Infra.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
-					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: ptr.To[int64](34),
+					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: new(int64(34)),
 				})
 				hco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "something entirely else"
 
@@ -460,7 +484,7 @@ var _ = Describe("SSP Operands", func() {
 
 				// and modify TemplateValidator node placement
 				existingResource.Spec.TemplateValidator.Placement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
-					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: ptr.To(int64(34)),
+					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: new(int64(34)),
 				})
 				existingResource.Spec.TemplateValidator.Placement.NodeSelector["key3"] = "BADvalue3"
 
@@ -650,7 +674,7 @@ var _ = Describe("SSP Operands", func() {
 					goldenimages.GetDataImportCronTemplates = origFunc
 				})
 
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 				firstCR, err := hook.GetFullCr(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -692,7 +716,7 @@ var _ = Describe("SSP Operands", func() {
 				})
 
 				When("creating new SSP CR", func() {
-					It("Should not change the metrics if the FG is disabled", func(ctx context.Context) {
+					It("Should not change the metrics if EnableCommonBootImageImport is not set", func(ctx context.Context) {
 						nodeinfo.GetWorkloadsArchitectures = func() []string {
 							return []string{"arch1", "arch2"}
 						}
@@ -712,7 +736,7 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -755,8 +779,8 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-						hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+						hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -816,8 +840,8 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
-						hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -841,7 +865,7 @@ var _ = Describe("SSP Operands", func() {
 				})
 
 				When("updating existing SSP CR", func() {
-					It("Should not change metrics if the FG is disabled", func(ctx context.Context) {
+					It("Should not change metrics if EnableCommonBootImageImport is not set", func(ctx context.Context) {
 						nodeinfo.GetWorkloadsArchitectures = func() []string {
 							return []string{"arch1", "arch2"}
 						}
@@ -866,7 +890,7 @@ var _ = Describe("SSP Operands", func() {
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco, ssp})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -921,8 +945,8 @@ var _ = Describe("SSP Operands", func() {
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
-						hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco, ssp})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -945,7 +969,7 @@ var _ = Describe("SSP Operands", func() {
 						}
 					})
 
-					It("Should set metrics to 0 if the FG is enabled", func(ctx context.Context) {
+					It("Should set metrics to 0 if EnableCommonBootImageImport is enabled", func(ctx context.Context) {
 						nodeinfo.GetWorkloadsArchitectures = func() []string {
 							return []string{"arch1", "arch2"}
 						}
@@ -990,8 +1014,8 @@ var _ = Describe("SSP Operands", func() {
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
-						hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco, ssp})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -1022,7 +1046,7 @@ var _ = Describe("SSP Operands", func() {
 				})
 
 				When("creating new SSP CR", func() {
-					It("Should not rise metrics if the FG is disabled", func(ctx context.Context) {
+					It("Should not rise metrics if EnableCommonBootImageImport is disabled", func(ctx context.Context) {
 						nodeinfo.GetWorkloadsArchitectures = func() []string {
 							return []string{"arch1", "arch2"}
 						}
@@ -1038,7 +1062,7 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -1081,8 +1105,8 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
-						hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -1119,8 +1143,8 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
-						hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -1143,7 +1167,7 @@ var _ = Describe("SSP Operands", func() {
 				})
 
 				When("updating existing SSP CR", func() {
-					It("Should not rise metrics if the FG is disabled", func(ctx context.Context) {
+					It("Should not rise metrics if EnableCommonBootImageImport is disabled", func(ctx context.Context) {
 						nodeinfo.GetWorkloadsArchitectures = func() []string {
 							return []string{"arch1", "arch2"}
 						}
@@ -1161,7 +1185,7 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 						ssp, _, err := NewSSP(hco, false)
 						Expect(err).ToNot(HaveOccurred())
 
@@ -1218,8 +1242,8 @@ var _ = Describe("SSP Operands", func() {
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
-						hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco, ssp})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -1266,8 +1290,8 @@ var _ = Describe("SSP Operands", func() {
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
-						hco.Spec.FeatureGates.Enable(goldenimages.EnableMultiArchFeatureGate)
-						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+						hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 						cli := commontestutils.InitClient([]client.Object{hco, ssp})
 						handler := NewSspHandler(cli, commontestutils.GetScheme())
@@ -1378,7 +1402,7 @@ func makeDICT(num int) hcov1.DataImportCronTemplateStatus {
 			Template: cdiv1beta1.DataVolume{
 				Spec: cdiv1beta1.DataVolumeSpec{
 					Source: &cdiv1beta1.DataVolumeSource{
-						Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To(fmt.Sprintf("docker://someregistry/%s", name))},
+						Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new(fmt.Sprintf("docker://someregistry/%s", name))},
 					},
 				},
 			},

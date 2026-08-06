@@ -17,8 +17,13 @@ import (
 )
 
 func NewPDBHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewGenericOperand(cli, scheme, "PodDisruptionBudget",
-		&pdbHooks{pdb: newPDB()}, true)
+	return operands.NewConditionalHandler(
+		operands.NewGenericOperand(cli, scheme, "PodDisruptionBudget", &pdbHooks{pdb: newPDB()}, true),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return NewPDBWithNameOnly()
+		},
+	)
 }
 
 type pdbHooks struct {

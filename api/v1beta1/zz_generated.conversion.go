@@ -260,6 +260,7 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 	// INFO: in.WorkloadSources opted out of conversion generation
 	// INFO: in.Security opted out of conversion generation
 	// INFO: in.Deployment opted out of conversion generation
+	// INFO: in.Observability opted out of conversion generation
 	return nil
 }
 
@@ -291,6 +292,7 @@ func Convert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfigura
 }
 
 func autoConvert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(in *v1.MediatedDevicesConfiguration, out *MediatedDevicesConfiguration, s conversion.Scope) error {
+	// INFO: in.Enabled opted out of conversion generation
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
 	if in.NodeMediatedDeviceTypes != nil {
 		in, out := &in.NodeMediatedDeviceTypes, &out.NodeMediatedDeviceTypes

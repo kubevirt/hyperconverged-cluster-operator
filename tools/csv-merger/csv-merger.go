@@ -45,8 +45,8 @@ import (
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/manifests"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
 
@@ -103,9 +103,12 @@ var (
 	kvUIProxyImage                = flag.String("kubevirt-consoleproxy-image-name", "", "KubeVirt Console Proxy image")
 	networkResourcesInjectorImage = flag.String("network-resources-injector-image-name", "", "Network Resources Injector image")
 	kvVirtIOWinImage              = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
+	kvVirtIOWinDataFile           = flag.String("kv-virtiowin-data-file", "", "Path to the data file inside the VirtIO Win image")
+	kvVirtIOWinMountPath          = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
 	waspAgentImage                = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
 	aieWebhookImage               = flag.String("aie-webhook-image-name", "", "AIE Webhook image")
-	iommufdDevicePluginImage      = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
+	_                             = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
+	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
 	smbiosFile                    = flag.String("smbios-file", "", "Custom SMBIOS file name, used by HCO to configure the SMBIOS in KubeVirt CR")
 	machinetype                   = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
@@ -138,6 +141,7 @@ var (
 	aaqVersion                    = flag.String("aaq-version", "", "AAQ operator version")
 	migrationOperatorVersion      = flag.String("migration-operator-version", "", "Migration operator version")
 	autopilotVersion              = flag.String("autopilot-version", "", "Autopilot version")
+	vmFileRestoreOperatorVersion  = flag.String("vm-file-restore-operator-version", "", "VM File Restore Operator version")
 	inFlightOperationsVersion     = flag.String("inflight-operations-version", "", "InFlightOperations version")
 	enableUniqueSemver            = flag.Bool("enable-unique-version", false, "Insert a skipRange annotation to support unique semver in the CSV")
 	skipsList                     = flag.String("skips-list", "",
@@ -263,31 +267,31 @@ func getHcoCsv() {
 }
 
 // getInstallStrategyBase returns the basics of an HCO InstallStrategy
-func getInstallStrategyBase(params *components.DeploymentOperatorParams) *csvv1alpha1.StrategyDetailsDeployment {
+func getInstallStrategyBase(params *manifests.DeploymentOperatorParams) *csvv1alpha1.StrategyDetailsDeployment {
 	return &csvv1alpha1.StrategyDetailsDeployment{
 
 		DeploymentSpecs: []csvv1alpha1.StrategyDeploymentSpec{
 			{
 				Name:  hcoDeploymentName,
-				Spec:  components.GetDeploymentSpecOperator(params),
-				Label: components.GetLabels(hcoutil.HCOOperatorName, params.HcoKvIoVersion),
+				Spec:  manifests.GetDeploymentSpecOperator(params),
+				Label: manifests.GetLabels(hcoutil.HCOOperatorName, params.HcoKvIoVersion),
 			},
 			{
 				Name:  hcoWhDeploymentName,
-				Spec:  components.GetDeploymentSpecWebhook(params),
-				Label: components.GetLabels(hcoutil.HCOWebhookName, params.HcoKvIoVersion),
+				Spec:  manifests.GetDeploymentSpecWebhook(params),
+				Label: manifests.GetLabels(hcoutil.HCOWebhookName, params.HcoKvIoVersion),
 			},
 			{
 				Name:  hcoutil.CLIDownloadsName,
-				Spec:  components.GetDeploymentSpecCliDownloads(params),
-				Label: components.GetLabels(hcoutil.CLIDownloadsName, params.HcoKvIoVersion),
+				Spec:  manifests.GetDeploymentSpecCliDownloads(params),
+				Label: manifests.GetLabels(hcoutil.CLIDownloadsName, params.HcoKvIoVersion),
 			},
 		},
 		Permissions: []csvv1alpha1.StrategyDeploymentPermissions{},
 		ClusterPermissions: []csvv1alpha1.StrategyDeploymentPermissions{
 			{
 				ServiceAccountName: hcoutil.HCOOperatorName,
-				Rules:              components.GetClusterPermissions(),
+				Rules:              manifests.GetClusterPermissions(),
 			},
 			{
 				ServiceAccountName: hcoutil.CLIDownloadsName,
@@ -391,16 +395,16 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 			Name:      fmt.Sprintf("%v.v%v", params.Name, params.Version.String()),
 			Namespace: params.Namespace,
 			Annotations: map[string]string{
-				"alm-examples":   string(almExamples),
-				"capabilities":   "Deep Insights",
-				"certified":      "false",
-				"categories":     "OpenShift Optional",
-				"containerImage": params.Image,
-				components.DisableOperandDeletionAnnotation: "true",
-				"createdAt":   time.Now().Format("2006-01-02 15:04:05"),
-				"description": params.MetaDescription,
-				"repository":  "https://github.com/kubevirt/hyperconverged-cluster-operator",
-				"support":     "false",
+				"alm-examples":                           string(almExamples),
+				"capabilities":                           "Deep Insights",
+				"certified":                              "false",
+				"categories":                             "OpenShift Optional",
+				"containerImage":                         params.Image,
+				hcoutil.DisableOperandDeletionAnnotation: "true",
+				"createdAt":                              time.Now().Format("2006-01-02 15:04:05"),
+				"description":                            params.MetaDescription,
+				"repository":                             "https://github.com/kubevirt/hyperconverged-cluster-operator",
+				"support":                                "false",
 				"operatorframework.io/suggested-namespace":         params.Namespace,
 				"operatorframework.io/initialization-resource":     string(almExamples),
 				"operators.openshift.io/infrastructure-features":   `["disconnected","proxy-aware"]`, // TODO: deprecated, remove once all the tools support "features.operators.openshift.io/*"
@@ -647,8 +651,8 @@ func processCsvs(componentsWithCsvs []util.CsvWithComponent, installStrategyBase
 
 func processOneCsv(c util.CsvWithComponent, installStrategyBase *csvv1alpha1.StrategyDetailsDeployment, csvBase *csvv1alpha1.ClusterServiceVersion, ris *[]csvv1alpha1.RelatedImage) {
 	if c.Csv == "" {
-		if c.Name == "MigrationOperator" {
-			return // ignore migration operator csv
+		if c.Name == "MigrationOperator" || c.Name == "VmFileRestoreOperator" {
+			return // ignore migration operator and vm file restore operator csv
 		}
 		log.Panicf("ERROR: the %s CSV was empty", c.Name)
 	}
@@ -764,8 +768,8 @@ func getCsvBaseParams(version semver.Version) *csvBaseParams {
 	}
 }
 
-func getDeploymentParams() *components.DeploymentOperatorParams {
-	return &components.DeploymentOperatorParams{
+func getDeploymentParams() *manifests.DeploymentOperatorParams {
+	return &manifests.DeploymentOperatorParams{
 		Namespace:                     *namespace,
 		Image:                         *operatorImage,
 		WebhookImage:                  *webhookImage,
@@ -775,6 +779,8 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		NetworkResourcesInjectorImage: *networkResourcesInjectorImage,
 		ImagePullPolicy:               "IfNotPresent",
 		VirtIOWinContainer:            *kvVirtIOWinImage,
+		VirtIOWinDataFile:             *kvVirtIOWinDataFile,
+		VirtIOWinMountPath:            *kvVirtIOWinMountPath,
 		Smbios:                        *smbios,
 		Machinetype:                   *machinetype,
 		Amd64MachineType:              *amd64MachineType,
@@ -790,10 +796,11 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		AaqVersion:                    *aaqVersion,
 		MigrationOperatorVersion:      *migrationOperatorVersion,
 		AutopilotVersion:              *autopilotVersion,
+		VMFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		WaspAgentImage:                *waspAgentImage,
 		AIEWebhookImage:               *aieWebhookImage,
-		IOMMUFDDevicePluginImage:      *iommufdDevicePluginImage,
+		ObservabilityControllerImage:  *observabilityControllerImage,
 		Env:                           envVars,
 		AddNetworkPolicyLabels:        *dumpNetworkPolicies,
 	}

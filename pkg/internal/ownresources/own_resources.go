@@ -1,6 +1,7 @@
 package ownresources
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -15,10 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
 
 // OwnResources holds the running POd, Deployment and CSV, if exist
@@ -28,6 +29,8 @@ var (
 	csvRef        *corev1.ObjectReference
 
 	initOnce = &sync.Once{}
+
+	ownVersion = findOwnVersion()
 )
 
 // GetPod returns the running pod, or nil if not exists
@@ -60,6 +63,14 @@ func Init(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger 
 	initOnce.Do(doInit(ctx, cl, scheme, logger))
 }
 
+func Version() string {
+	return ownVersion
+}
+
+func findOwnVersion() string {
+	return cmp.Or(os.Getenv(hcoutil.HcoKvIoVersionName), version.Version)
+}
+
 func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) func() {
 	return func() {
 		if !hcoutil.GetClusterInfo().IsRunningLocally() {
@@ -68,12 +79,12 @@ func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logge
 			pod, err := getThePod(ctx, cl, logger)
 			if err != nil {
 				logger.Error(err, "Can't get self pod")
+				return
 			}
 
 			thePod = pod
 
-			operatorNs := hcoutil.GetOperatorNamespaceFromEnv()
-			deployment, err := getDeploymentFromPod(ctx, pod, cl, operatorNs, logger)
+			deployment, err := getDeploymentFromPod(ctx, pod, cl, logger)
 			if err != nil {
 				logger.Error(err, "Can't get deployment")
 				return
@@ -106,13 +117,15 @@ func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logge
 
 func getThePod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev1.Pod, error) {
 	ci := hcoutil.GetClusterInfo()
-	operatorNs := hcoutil.GetOperatorNamespaceFromEnv()
-
-	// This is taken from k8sutil.getPod. This method only receives client. But the client is not always ready. We'll
-	// use --- instead
 	if ci.IsRunningLocally() {
 		return nil, nil
 	}
+
+	operatorNs, err := hcoutil.GetOperatorNamespace(logger)
+	if err != nil {
+		return nil, err
+	}
+
 	podName := os.Getenv(hcoutil.PodNameEnvVar)
 	if podName == "" {
 		return nil, fmt.Errorf("required env %q not set, please configure downward API", hcoutil.PodNameEnvVar)
@@ -120,7 +133,7 @@ func getThePod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev
 
 	pod := &corev1.Pod{}
 	key := client.ObjectKey{Namespace: operatorNs, Name: podName}
-	err := c.Get(ctx, key, pod)
+	err = c.Get(ctx, key, pod)
 	if err != nil {
 		logger.Error(err, "Failed to get Pod", "Pod.Namespace", operatorNs, "Pod.Name", podName)
 		return nil, err
@@ -136,7 +149,7 @@ func getThePod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev
 	return pod, nil
 }
 
-func getDeploymentFromPod(ctx context.Context, pod *corev1.Pod, c client.Reader, operatorNs string, logger logr.Logger) (*appsv1.Deployment, error) {
+func getDeploymentFromPod(ctx context.Context, pod *corev1.Pod, c client.Reader, logger logr.Logger) (*appsv1.Deployment, error) {
 	if pod == nil {
 		return nil, nil
 	}
@@ -148,7 +161,7 @@ func getDeploymentFromPod(ctx context.Context, pod *corev1.Pod, c client.Reader,
 	}
 	rs := &appsv1.ReplicaSet{}
 	err := c.Get(context.TODO(), client.ObjectKey{
-		Namespace: operatorNs,
+		Namespace: pod.Namespace,
 		Name:      rsReference.Name,
 	}, rs)
 	if err != nil {
@@ -164,7 +177,7 @@ func getDeploymentFromPod(ctx context.Context, pod *corev1.Pod, c client.Reader,
 	}
 	deployment := &appsv1.Deployment{}
 	err = c.Get(ctx, client.ObjectKey{
-		Namespace: operatorNs,
+		Namespace: pod.Namespace,
 		Name:      dReference.Name,
 	}, deployment)
 	if err != nil {
@@ -211,7 +224,7 @@ func buildOwnerReference(ownerDeployment *appsv1.Deployment) *metav1.OwnerRefere
 		Kind:               "Deployment",
 		Name:               ownerDeployment.GetName(),
 		UID:                ownerDeployment.GetUID(),
-		BlockOwnerDeletion: ptr.To(false),
-		Controller:         ptr.To(false),
+		BlockOwnerDeletion: new(false),
+		Controller:         new(false),
 	}
 }

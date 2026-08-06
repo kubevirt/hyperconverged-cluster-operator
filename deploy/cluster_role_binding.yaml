@@ -128,6 +128,22 @@ subjects:
   namespace: kubevirt-hyperconverged
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    name: vm-file-restore-operator-controller-manager
+  name: vm-file-restore-operator-controller-manager
+  namespace: kubevirt-hyperconverged
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vm-file-restore-operator-controller-manager
+subjects:
+- kind: ServiceAccount
+  name: vm-file-restore-operator-controller-manager
+  namespace: kubevirt-hyperconverged
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
@@ -275,4 +291,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: virt-platform-autopilot
+  namespace: kubevirt-hyperconverged
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    name: vm-file-restore-operator-controller-manager
+  name: vm-file-restore-operator-controller-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vm-file-restore-operator-controller-manager
+subjects:
+- kind: ServiceAccount
+  name: vm-file-restore-operator-controller-manager
   namespace: kubevirt-hyperconverged

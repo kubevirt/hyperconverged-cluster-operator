@@ -1,5 +1,21 @@
 {
-  "hcoCRPatchList": [],
+  "hcoCRPatchList": [
+    {
+      "semverRange": "<1.19.0",
+      "jsonPatch": [
+        {
+          "op": "test",
+          "path": "/spec/virtualization/liveMigrationConfig/completionTimeoutPerGiB",
+          "value": 150
+        },
+        {
+          "op": "replace",
+          "path": "/spec/virtualization/liveMigrationConfig/completionTimeoutPerGiB",
+          "value": 20
+        }
+      ]
+    }
+  ],
   "objectsToBeRemoved": [
     {
       "semverRange": ">=1.16.0 <1.19.0",
@@ -46,6 +62,42 @@
       },
       "objectKey": {
         "name": "passt-binding-cni",
+        "namespace": ""
+      }
+    },
+    {
+      "semverRange": ">=1.18.0 <1.19.0",
+      "groupVersionKind": {
+        "group": "apps",
+        "version": "v1",
+        "kind": "DaemonSet"
+      },
+      "objectKey": {
+        "name": "iommufd-device-plugin",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": ">=1.18.0 <1.19.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ServiceAccount"
+      },
+      "objectKey": {
+        "name": "iommufd-device-plugin",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": ">=1.18.0 <1.19.0",
+      "groupVersionKind": {
+        "group": "security.openshift.io",
+        "version": "v1",
+        "kind": "SecurityContextConstraints"
+      },
+      "objectKey": {
+        "name": "iommufd-device-plugin",
         "namespace": ""
       }
     }

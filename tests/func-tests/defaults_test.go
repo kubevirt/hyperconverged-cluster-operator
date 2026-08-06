@@ -43,9 +43,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that certConfig defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -75,8 +73,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			"alignCPUs":                      BeFalseBecause("the alignCPUs feature gate should be disabled by default"),
 			"enableMultiArchBootImageImport": BeFalseBecause("the enableMultiArchBootImageImport feature gate should be disabled by default"),
 			"decentralizedLiveMigration":     BeTrueBecause("the decentralizedLiveMigration feature gate should be enabled by default"),
-			"declarativeHotplugVolumes":      BeFalseBecause("the declarativeHotplugVolumes feature gate should be disabled by default"),
-			"videoConfig":                    BeTrueBecause("the videoConfig feature gate should be enabled by default"),
+			"declarativeHotplugVolumes":      BeTrueBecause("the declarativeHotplugVolumes feature gate should be enabled by default"),
 			"objectGraph":                    BeFalseBecause("the objectGraph feature gate should be disabled by default"),
 			"incrementalBackup":              BeFalseBecause("the incrementalBackup feature gate should be disabled by default"),
 			"containerPathVolumes":           BeFalseBecause("the containerPathVolumes feature gate should be disabled by default"),
@@ -84,15 +81,12 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		It("Check that featureGates defaults are behaving as expected", func(ctx context.Context) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, "/spec/featureGates")
-			Eventually(func(g Gomega, ctx context.Context) error {
-				hc, err := tests.GetHCO(ctx, cli)
-				g.Expect(err).NotTo(HaveOccurred())
+			hc, err := tests.GetHCO(ctx, cli)
+			Expect(err).NotTo(HaveOccurred())
 
-				if len(hc.Spec.FeatureGates) == 0 {
-					return nil
-				}
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			if len(hc.Spec.FeatureGates) > 0 {
+				tests.PatchHCO(ctx, cli, patch)
+			}
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -109,17 +103,16 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		defaultLiveMigrationConfig := hcov1.LiveMigrationConfigurations{
 			AllowAutoConverge:                 new(false),
 			AllowPostCopy:                     new(false),
-			CompletionTimeoutPerGiB:           new(int64(150)),
+			AllowWorkloadDisruption:           new(false),
+			CompletionTimeoutPerGiB:           new(int64(20)),
 			ParallelMigrationsPerCluster:      new(uint32(5)),
-			ParallelOutboundMigrationsPerNode: new(uint32(2)),
+			ParallelOutboundMigrationsPerNode: new(uint32(1)),
 			ProgressTimeout:                   new(int64(150)),
 		}
 
 		DescribeTable("Check that liveMigrationConfig defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -130,6 +123,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		},
 			Entry("when removing /spec/virtualization/liveMigrationConfig/allowAutoConverge", "/spec/virtualization/liveMigrationConfig/allowAutoConverge"),
 			Entry("when removing /spec/virtualization/liveMigrationConfig/allowPostCopy", "/spec/virtualization/liveMigrationConfig/allowPostCopy"),
+			Entry("when removing /spec/virtualization/liveMigrationConfig/allowWorkloadDisruption", "/spec/virtualization/liveMigrationConfig/allowWorkloadDisruption"),
 			Entry("when removing /spec/virtualization/liveMigrationConfig/completionTimeoutPerGiB", "/spec/virtualization/liveMigrationConfig/completionTimeoutPerGiB"),
 			Entry("when removing /spec/virtualization/liveMigrationConfig/parallelMigrationsPerCluster", "/spec/virtualization/liveMigrationConfig/parallelMigrationsPerCluster"),
 			Entry("when removing /spec/virtualization/liveMigrationConfig/parallelOutboundMigrationsPerNode", "/spec/virtualization/liveMigrationConfig/parallelOutboundMigrationsPerNode"),
@@ -145,9 +139,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that resourceRequirements defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -171,9 +163,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that workloadUpdateStrategy defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -196,9 +186,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that uninstallStrategy default is behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -221,9 +209,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -247,9 +233,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that HigherWorkloadDensity defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)

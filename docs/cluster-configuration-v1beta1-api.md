@@ -154,13 +154,25 @@ For additional information, see here: [KubeSecondaryDNS](https://github.com/kube
 
 **Default**: `false`
 
-### persistentReservation Feature Gate
-Set the `persistentReservation` feature gate to true in order to enable the reservation of a LUN through the SCSI Persistent Reserve commands.
+### persistentReservation Feature Gate (deprecated)
 
-SCSI protocol offers dedicated commands in order to reserve and control access to the LUNs. This can be used to prevent data corruption if the disk is shared by multiple VMs (or more in general processes).
-The SCSI persistent reservation is handled by the qemu-pr-helper. The pr-helper is a privileged daemon that can be either started by libvirt directly or managed externally.
-In case of KubeVirt, the qemu-pr-helper needs to be started externally because it requires high privileges in order to perform the persistent SCSI reservation. Afterward, the pr-helper socket is accessed by the unprivileged virt-launcher pod for enabling the SCSI persistent reservation.
-Once the feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.
+The `persistentReservation` feature gate is deprecated and will be removed in a future release.
+
+On the v1 API, use `spec.storage.persistentReservationConfiguration.enabled` instead. See
+[SCSI Persistent Reservation](./cluster-configuration.md#scsi-persistent-reservation) in the v1 cluster configuration
+documentation for details.
+
+On v1beta1, set this feature gate to `true` to enable the reservation of a LUN through the SCSI Persistent Reserve
+commands until you migrate to the v1 API.
+
+SCSI protocol offers dedicated commands in order to reserve and control access to the LUNs. This can be used to prevent
+data corruption if the disk is shared by multiple VMs (or more in general processes). The SCSI persistent reservation is
+handled by the qemu-pr-helper. The pr-helper is a privileged daemon that can be either started by libvirt directly or
+managed externally. In case of KubeVirt, the qemu-pr-helper needs to be started externally because it requires high
+privileges in order to perform the persistent SCSI reservation. Afterward, the pr-helper socket is accessed by the
+unprivileged virt-launcher pod for enabling the SCSI persistent reservation. Once the feature gate is enabled, then the
+additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature
+gate causes the redeployment of the virt-handler pod.
 
 VMI example:
 ```yaml
@@ -170,13 +182,9 @@ VMI example:
         lun:
           reservations: true
 ```
-**Note**: An important aspect of this feature is that the SCSI persistent reservation doesn't support migration. Even if you apply the reservation to an RWX PVC provisioning SCSI devices, the restriction is due to the reservation done by the initiator on the node. The VM could be migrated but not the reservation.
-
-**Note**: this feature is in Developer Preview.
-
 **Default**: `false`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Deprecated
 
 ### alignCPUs Feature Gate
 Set the `alignCPUs` feature gate to enable KubeVirt
@@ -189,16 +197,21 @@ to an even parity when using emulator thread isolation.
 
 **Graduation Status**: Alpha
 
-### disableMDevConfiguration Feature Gate
-KubeVirt aims to facilitate the configuration of mediated devices on large clusters.
+### disableMDevConfiguration Feature Gate (deprecated)
 
-If this is not desired, set the `disableMDevConfiguration` feature gate in order to disable this feature.
+The `disableMDevConfiguration` feature gate is deprecated and will be removed in a future release.
 
-**Note**: this feature is in Developer Preview.
+On the v1 API, use `spec.virtualization.mediatedDevicesConfiguration.enabled` instead. See
+[Automatic Configuration of Mediated Devices](./cluster-configuration.md#automatic-configuration-of-mediated-devices-including-vgpus)
+in the v1 cluster configuration documentation for details.
+
+On v1beta1, set this feature gate to `true` to disable automatic mediated device configuration by virt-handler on
+cluster nodes. KubeVirt aims to facilitate the configuration of mediated devices on large clusters; if this is not
+desired, set the `disableMDevConfiguration` feature gate until you migrate to the v1 API.
 
 **Default**: `false`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Deprecated
 
 ### decentralizedLiveMigration Feature Gate
 By default, live migration is limited in its flexibility because the migration is centralized. This limits live
@@ -208,43 +221,37 @@ a UAT namespace to the production namespace.
 
 Set the `decentralizedLiveMigration` feature gate to true in order to enable decentralized live migration.
 
-**Note**: this feature is in Developer Preview.
+**Note**: this feature is in Tech Preview.
 
 **Default**: `false`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
-### enableMultiArchBootImageImport Feature Gates
+### enableMultiArchBootImageImport Feature Gates (Deprecated)
 Set the `enableMultiArchBootImageImport` feature gate to true in order to enable the golden images support in
 heterogeneous clusters. See [Golden Images](#golden-images-in-heterogeneous-clusters) for more information.
 
-**Note**: this feature is in Developer Preview.
+**Note**: this feature is GA, and the feature gate is deprecated. Use the 
+`spec.workloadSources.enableMultiArchBootImageImport` field in the **`v1`** API version, instead.
+See the [v1 golden images in heterogeneous clusters documentation](./cluster-configuration.md#golden-images-in-heterogeneous-clusters).
 
 **Default**: `false`
 
-**Graduation Status**: Alpha
+**Graduation Status**: GA
 
 ### declarativeHotplugVolumes Feature Gate
 Set the `declarativeHotplugVolumes` feature gate to true to enable the declarative volume hotplug API in KubeVirt. By default, volume hotplug operations are performed using KubeVirt's subresource API. Changes made directly to the VirtualMachine spec require a VM restart to take effect. When enabled, volume hotplug operations can be performed declaratively by modifying the VirtualMachine spec directly. These changes are applied immediately without requiring a VM restart.
 
-**Note**: This feature is in Developer Preview.
+**Note**: This feature is in Technical Preview.
 
-**Default**: `false`
+**Default**: `true`
 
 **Graduation Status**: Alpha
 
 ### videoConfig Feature Gate
-Set the `videoConfig` feature gate to true in order to override the default video device type used by KubeVirt. By default, the video type depends on the architecture and firmware:
-* For amd64: vga for BIOS VMs, and bochs for UEFI VMs.
-* For arm64 and s390x: virtio.
+This feature gate is ignored, as the videoConfig feature is GA.
 
-Enabling this feature gate allows explicitly configuring the video type in the VirtualMachine spec.
-
-**Note**: This feature is in Tech Preview.
-
-**Default**: `true`
-
-**Graduation Status**: Beta
+**Graduation Status**: GA
 
 ### Object Graph Feature Gate
 Set the `objectGraph` feature gate to true in order to enable the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking.
@@ -259,7 +266,7 @@ Set the `objectGraph` feature gate to true in order to enable the ObjectGraph VM
 Set the `incrementalBackup` feature gate to true in order to enable changed block tracking and incremental backups using QEMU capabilities in KubeVirt. Enabling changed block tracking is mandatory for performing storage-agnostic backups and incremental backups.
 When enabled, this also enables the `UtilityVolumes` feature gate in the KubeVirt CR, which allows utility volumes to be mounted to the VMI virt-launcher pod without having a matching disk in the domain. This is required to collect the backup output or to store changes performed during the backup operation, depending on the backup mode.
 
-**Note**: This feature is in Tech Preview.
+**Note**: This feature is in Developer Preview.
 
 **Default**: `false`
 
@@ -333,7 +340,7 @@ higher completionTimeoutPerGiB to let workload with spikes in its memory dirty
 rate to converge.
 The format is a number.
 
-**default**: 150
+**default**: 20
 
 ### parallelMigrationsPerCluster
 
@@ -343,9 +350,9 @@ Number of migrations running in parallel in the cluster. The format is a number.
 
 ### parallelOutboundMigrationsPerNode
 
-Maximum number of outbound migrations per node. The format is a number.
+Maximum number of outbound migrations per node. Available network bandwidth is shared between concurrent migrations, lower number makes single migration more likely to converge. For idle VMs and when bandwidth is not a concern higher value speeds up mass migrations and node drains. The format is a number.
 
-**default**: 2
+**default**: 1
 
 ### progressTimeout:
 
@@ -386,10 +393,10 @@ metadata:
   name: kubevirt-hyperconverged
 spec:
   liveMigrationConfig:
-    completionTimeoutPerGiB: 150
+    completionTimeoutPerGiB: 20
     network: migration-network
     parallelMigrationsPerCluster: 5
-    parallelOutboundMigrationsPerNode: 2
+    parallelOutboundMigrationsPerNode: 1
     progressTimeout: 150
     allowAutoConverge: false
     allowPostCopy: false
@@ -401,6 +408,11 @@ Administrators can provide a list of desired mediated devices (vGPU) types.
 KubeVirt will attempt to automatically create the relevant devices on nodes that can support such configuration.
 Currently, it is possible to configure one type per physical card.
 KubeVirt will configure all `available_instances` for each configurable type.
+
+To disable automatic mediated device configuration on v1beta1, set the deprecated `disableMDevConfiguration` feature
+gate to `true`. On the v1 API, use `spec.virtualization.mediatedDevicesConfiguration.enabled: false` instead. See
+[Automatic Configuration of Mediated Devices](./cluster-configuration.md#automatic-configuration-of-mediated-devices-including-vgpus)
+for the v1 migration path.
 
 ### Example
 

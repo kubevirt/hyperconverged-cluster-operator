@@ -12,8 +12,8 @@ import (
 	"github.com/onsi/gomega/types"
 	"k8s.io/utils/ptr"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 )
 
 var (
@@ -205,7 +205,7 @@ var _ = Describe("upgradePatches", func() {
 			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", emptyFileContent))
 			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
-			hc := components.GetOperatorV1CR()
+			hc := commontestutils.NewHco()
 			ver, err := semver.Parse("1.18.5")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -219,7 +219,7 @@ var _ = Describe("upgradePatches", func() {
 			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
 			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
-			hc := components.GetOperatorV1CR()
+			hc := commontestutils.NewHco()
 			Expect(hc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeFalse()))
 
 			ver, err := semver.Parse("1.18.5")
@@ -235,7 +235,7 @@ var _ = Describe("upgradePatches", func() {
 			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
 			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
-			hc := components.GetOperatorV1CR()
+			hc := commontestutils.NewHco()
 			Expect(hc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeFalse()))
 
 			ver, err := semver.Parse("1.19.0")
@@ -251,7 +251,7 @@ var _ = Describe("upgradePatches", func() {
 			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
 			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
-			hc := components.GetOperatorV1CR()
+			hc := commontestutils.NewHco()
 			hc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(true)
 
 			ver, err := semver.Parse("1.18.5")
@@ -267,7 +267,7 @@ var _ = Describe("upgradePatches", func() {
 			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
 			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
-			hc := components.GetOperatorV1CR()
+			hc := commontestutils.NewHco()
 
 			ver, err := semver.Parse("1.18.0")
 			Expect(err).NotTo(HaveOccurred())
@@ -286,7 +286,7 @@ var _ = Describe("upgradePatches", func() {
 			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", missingPathOnRemove))
 			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
-			hc := components.GetOperatorV1CR()
+			hc := commontestutils.NewHco()
 			hc.Spec.Virtualization.VirtualMachineOptions = nil
 
 			ver, err := semver.Parse("1.18.0")

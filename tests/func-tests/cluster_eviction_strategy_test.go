@@ -48,17 +48,13 @@ var _ = Describe("Cluster level evictionStrategy default value", Label("eviction
 		if initialEvictionStrategy != nil {
 			patch = fmt.Appendf(nil, setEvictionStrategyPatch, *initialEvictionStrategy)
 		}
-		Eventually(tests.PatchHCO).
-			WithArguments(ctx, cli, patch).
-			WithPolling(100 * time.Millisecond).
-			WithTimeout(5 * time.Second).
-			Should(Succeed())
+		tests.PatchHCO(ctx, cli, patch)
 	})
 
 	DescribeTable("test spec.virtualization.evictionStrategy", func(ctx context.Context, clusterValidationFn func(bool), expectedValue kvv1.EvictionStrategy) {
 		clusterValidationFn(singleWorkerCluster)
 
-		Expect(tests.PatchHCO(ctx, cli, rmEvictionStrategyPatch)).To(Succeed())
+		tests.PatchHCO(ctx, cli, rmEvictionStrategyPatch)
 
 		Eventually(func(g Gomega, ctx context.Context) {
 			hc, err := tests.GetHCO(ctx, cli)

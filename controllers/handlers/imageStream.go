@@ -42,8 +42,8 @@ type imageStreamOperand struct {
 }
 
 func (iso imageStreamOperand) Ensure(req *common.HcoRequest) *operands.EnsureResult {
-	// if the EnableCommonBootImageImport field is set, make sure the imageStream is in place and up-to-date
-	if ptr.Deref(req.Instance.Spec.WorkloadSources.EnableCommonBootImageImport, false) {
+	// if the EnableCommonBootImageImport field is enabled, make sure the imageStream is in place and up-to-date
+	if ptr.Deref(req.Instance.Spec.WorkloadSources.EnableCommonBootImageImport, true) {
 		if result := iso.checkCustomNamespace(req); result != nil {
 			return result
 		}
@@ -51,7 +51,7 @@ func (iso imageStreamOperand) Ensure(req *common.HcoRequest) *operands.EnsureRes
 		return iso.operand.Ensure(req)
 	}
 
-	// if the FG is not set, make sure the imageStream is not exist
+	// iif the EnableCommonBootImageImport field set to false, make sure the imageStream is not exist
 	cr := iso.hooks.GetEmptyCr()
 	res := operands.NewEnsureResult(cr)
 	res.SetName(cr.GetName())

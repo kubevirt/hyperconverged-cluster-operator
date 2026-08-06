@@ -19,8 +19,13 @@ import (
 )
 
 func NewMutatingWebhookConfigurationHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewGenericOperand(cli, scheme, "MutatingWebhookConfiguration",
-		&mwcHooks{required: newMutatingWebhookConfiguration()}, false)
+	return operands.NewConditionalHandler(
+		operands.NewGenericOperand(cli, scheme, "MutatingWebhookConfiguration", &mwcHooks{required: newMutatingWebhookConfiguration()}, false),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return NewMutatingWebhookConfigurationWithNameOnly()
+		},
+	)
 }
 
 type mwcHooks struct {
@@ -140,14 +145,18 @@ func newMutatingWebhookConfiguration() *admissionregistrationv1.MutatingWebhookC
 
 	mwc.Webhooks = []admissionregistrationv1.MutatingWebhook{
 		{
-			Name:                    "cnv-network-resources-injector-config.k8s.io",
+			Name:                    "virt-network-resources-injector-config.k8s.io",
 			AdmissionReviewVersions: []string{"v1", "v1beta1"},
 			SideEffects:             new(admissionregistrationv1.SideEffectClassNone),
-			FailurePolicy:           new(admissionregistrationv1.Ignore),
+			FailurePolicy:           new(admissionregistrationv1.Fail),
 			TimeoutSeconds:          new(int32(10)),
 			MatchPolicy:             new(admissionregistrationv1.Equivalent),
 			ReinvocationPolicy:      new(admissionregistrationv1.NeverReinvocationPolicy),
-			ObjectSelector:          &metav1.LabelSelector{},
+			ObjectSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					kubevirtcorev1.AppLabel: "virt-launcher",
+				},
+			},
 			ClientConfig: admissionregistrationv1.WebhookClientConfig{
 				Service: &admissionregistrationv1.ServiceReference{
 					Name:      serviceName,
@@ -166,10 +175,6 @@ func newMutatingWebhookConfiguration() *admissionregistrationv1.MutatingWebhookC
 				},
 			},
 			MatchConditions: []admissionregistrationv1.MatchCondition{
-				{
-					Name:       "isVirtLauncherPod",
-					Expression: `has(object.metadata.labels) && object.metadata.labels["` + kubevirtcorev1.AppLabel + `"] == "virt-launcher"`,
-				},
 				{
 					Name:       "hasMultusAnnotation",
 					Expression: `has(object.metadata.annotations) && "k8s.v1.cni.cncf.io/networks" in object.metadata.annotations`,

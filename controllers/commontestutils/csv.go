@@ -4,7 +4,7 @@ import (
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 func GetCSV() *csvv1alpha1.ClusterServiceVersion {
@@ -17,7 +17,7 @@ func GetCSV() *csvv1alpha1.ClusterServiceVersion {
 			Name:      "hco-operator",
 			Namespace: Namespace,
 			Annotations: map[string]string{
-				components.DisableOperandDeletionAnnotation: "true",
+				hcoutil.DisableOperandDeletionAnnotation: "true",
 			},
 		},
 	}

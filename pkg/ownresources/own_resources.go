@@ -17,4 +17,6 @@ var (
 
 	// Init collect own references at startup
 	Init = internal.Init
+
+	Version = internal.Version
 )

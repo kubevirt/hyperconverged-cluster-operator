@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -27,6 +26,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1fg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -128,6 +128,19 @@ var _ = Describe("v1 webhooks validator", func() {
 			Expect(res.Result.Message).To(Equal("unknown operation request \"MALFORMED\""))
 		})
 
+		It("should not mask validation error by validation warning", func(ctx context.Context) {
+			cr.Annotations = map[string]string{common.JSONPatchKVAnnotationName: invalidKvJSONAnnotation}
+			cr.Spec.FeatureGates = []hcov1fg.FeatureGate{
+				{Name: "unknown"},
+			}
+			req := newRequest(admissionv1.Create, cr, hcoCodec, false)
+
+			res := wh.Handle(ctx, req)
+			Expect(res.Allowed).To(BeFalse())
+			Expect(res.Warnings).ToNot(BeEmpty())
+			Expect(res.Result.Code).To(Equal(int32(403)))
+		})
+
 		It("should accept creation of a resource with a valid namespace", func(ctx context.Context) {
 			Expect(wh.validateCreate(GinkgoLogr, dryRun, cr).Allowed).To(BeTrue())
 		})
@@ -226,7 +239,7 @@ var _ = Describe("v1 webhooks validator", func() {
 						Template: cdiv1beta1.DataVolume{
 							Spec: cdiv1beta1.DataVolumeSpec{
 								Source: &cdiv1beta1.DataVolumeSource{
-									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image1")},
+									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/image1")},
 								},
 							},
 						},
@@ -241,7 +254,7 @@ var _ = Describe("v1 webhooks validator", func() {
 						Template: cdiv1beta1.DataVolume{
 							Spec: cdiv1beta1.DataVolumeSpec{
 								Source: &cdiv1beta1.DataVolumeSource{
-									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image2")},
+									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/image2")},
 								},
 							},
 						},
@@ -256,7 +269,7 @@ var _ = Describe("v1 webhooks validator", func() {
 						Template: cdiv1beta1.DataVolume{
 							Spec: cdiv1beta1.DataVolumeSpec{
 								Source: &cdiv1beta1.DataVolumeSource{
-									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image3")},
+									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/image3")},
 								},
 							},
 						},
@@ -271,7 +284,7 @@ var _ = Describe("v1 webhooks validator", func() {
 						Template: cdiv1beta1.DataVolume{
 							Spec: cdiv1beta1.DataVolumeSpec{
 								Source: &cdiv1beta1.DataVolumeSource{
-									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image4")},
+									Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: new("docker://someregistry/image4")},
 								},
 							},
 						},
@@ -411,22 +424,25 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 		})
 
-		// TODO: Uncomment the table below when we have deprecated feature gates to test again.
-		//
-		//	Context("validate deprecated FGs", func() {
-		//		DescribeTable("should return warning for deprecated feature gate", func(ctx context.Context, fgs hcov1fg.HyperConvergedFeatureGates, fgNames ...string) {
-		//			cr.Spec.FeatureGates = fgs
-		//			resp := wh.validateCreate(GinkgoLogr, dryRun, cr)
-		//			checkAcceptedRequest(resp, fgNames...)
-		//		},
-		//			Entry("should trigger a warning if the disableMDevConfiguration=false FG exists in the CR",
-		//				hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)}}, "disableMDevConfiguration"),
-		//			Entry("should trigger a warning if the disableMDevConfiguration=true FG exists in the CR",
-		//				hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Enabled)}}, "disableMDevConfiguration"),
-		//			Entry("should trigger a warning if the disableMDevConfiguration FG exists in the CR",
-		//				hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}, "disableMDevConfiguration"),
-		//		)
-		//	})
+		Context("validate deprecated FGs", func() {
+			DescribeTable("should return warning for deprecated feature gate", func(ctx context.Context, fgs hcov1fg.HyperConvergedFeatureGates, enabled *bool, fgNames ...string) {
+				cr.Spec.FeatureGates = fgs
+				if enabled != nil {
+					cr.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+						Enabled: enabled,
+					}
+				}
+				resp := wh.validateCreate(GinkgoLogr, dryRun, cr)
+				checkAcceptedRequest(resp, fgNames...)
+			},
+				Entry("should trigger a warning if the disableMDevConfiguration=false FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: new(hcov1fg.Disabled)}}, nil, "disableMDevConfiguration"),
+				Entry("should trigger a warning if the disableMDevConfiguration=true FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: new(hcov1fg.Enabled)}}, new(false), "disableMDevConfiguration"),
+				Entry("should trigger a warning if the disableMDevConfiguration FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}, new(false), "disableMDevConfiguration"),
+			)
+		})
 
 		Context("validate affinity", func() {
 			It("should allow empty nodePlacements", func(ctx context.Context) {

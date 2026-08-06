@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/blang/semver/v4"
 	. "github.com/onsi/ginkgo/v2"
@@ -25,7 +26,10 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	kubevirtv1 "kubevirt.io/api/core/v1"
+
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -50,14 +54,14 @@ var _ = Describe("Upgrade Mode", func() {
 		fakeownresources.OLMV0OwnResourcesMock()
 
 		origOperatorCondVarName := os.Getenv(hcoutil.OperatorConditionNameEnvVar)
-		origVirtIOWinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
+		origVirtIOWinContainer := os.Getenv(hcoutil.VirtioWinImageEnvV)
 		origVersion := os.Getenv(hcoutil.HcoKvIoVersionName)
 
 		hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 			return commontestutils.ClusterInfoMock{}
 		}
 		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, "OPERATOR_CONDITION")).To(Succeed())
-		Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
+		Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, commontestutils.VirtioWinImage)).To(Succeed())
 		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)).To(Succeed())
 
 		reqresolver.GeneratePlaceHolders()
@@ -107,7 +111,7 @@ var _ = Describe("Upgrade Mode", func() {
 			fakeownresources.ResetOwnResources()
 
 			Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
-			Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
+			Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, origVirtIOWinContainer)).To(Succeed())
 			Expect(os.Setenv(hcoutil.HcoKvIoVersionName, origVersion)).To(Succeed())
 		})
 	})
@@ -597,6 +601,32 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(requeue).To(BeFalse())
 			Expect(foundResource.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeTrue()))
 		})
+
+		It("should update completionTimeoutPerGiB from old default on upgrade", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.5")
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To[int64](150)
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeTrue())
+			_, _, requeue = doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB).To(HaveValue(BeEquivalentTo(20)))
+		})
+
+		It("should not update completionTimeoutPerGiB when user customized the value", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.5")
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To[int64](800)
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB).To(HaveValue(BeEquivalentTo(800)))
+		})
 	})
 
 	Context("remove old quickstart guides", func() {
@@ -684,6 +714,7 @@ var _ = Describe("Upgrade Mode", func() {
 
 	Context("remove leftovers on upgrades", func() {
 		const cniName = "passt-binding-cni"
+		const iommufdName = "iommufd-device-plugin"
 
 		var (
 			dsToBeRemoved     *appsv1.DaemonSet
@@ -694,6 +725,10 @@ var _ = Describe("Upgrade Mode", func() {
 			nadToNotBeRemoved *unstructured.Unstructured
 			saToNotBeRemoved  *corev1.ServiceAccount
 			sccToNotBeRemoved *securityv1.SecurityContextConstraints
+
+			iommufdDsToBeRemoved  *appsv1.DaemonSet
+			iommufdSaToBeRemoved  *corev1.ServiceAccount
+			iommufdSccToBeRemoved *securityv1.SecurityContextConstraints
 
 			resources []client.Object
 		)
@@ -773,6 +808,33 @@ var _ = Describe("Upgrade Mode", func() {
 				},
 			}
 
+			iommufdDsToBeRemoved = &appsv1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      iommufdName,
+					Namespace: namespace,
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+			iommufdSaToBeRemoved = &corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      iommufdName,
+					Namespace: namespace,
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+			iommufdSccToBeRemoved = &securityv1.SecurityContextConstraints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: iommufdName,
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+
 			resources = append(expected.toArray(),
 				dsToBeRemoved,
 				nadToBeRemoved,
@@ -782,6 +844,9 @@ var _ = Describe("Upgrade Mode", func() {
 				nadToNotBeRemoved,
 				saToNotBeRemoved,
 				sccToNotBeRemoved,
+				iommufdDsToBeRemoved,
+				iommufdSaToBeRemoved,
+				iommufdSccToBeRemoved,
 			)
 		})
 		It("should remove passt objects when upgrading from < 1.19.0", func(ctx context.Context) {
@@ -927,6 +992,81 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(saToNotBeRemoved), foundSA)).To(Succeed())
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(sccToNotBeRemoved), foundSCC)).To(Succeed())
 		})
+
+		It("should remove iommufd-device-plugin objects when upgrading from < 1.19.0", func(ctx context.Context) {
+			iommufdRelatedObjects := []corev1.ObjectReference{
+				{
+					APIVersion:      "apps/v1",
+					Kind:            "DaemonSet",
+					Name:            iommufdDsToBeRemoved.Name,
+					Namespace:       iommufdDsToBeRemoved.Namespace,
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "v1",
+					Kind:            "ServiceAccount",
+					Name:            iommufdSaToBeRemoved.GetName(),
+					Namespace:       iommufdSaToBeRemoved.GetNamespace(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "security.openshift.io/v1",
+					Kind:            "SecurityContextConstraints",
+					Name:            iommufdSccToBeRemoved.GetName(),
+					ResourceVersion: "999",
+				},
+			}
+
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
+
+			for _, objRef := range iommufdRelatedObjects {
+				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+			}
+
+			cl := commontestutils.InitClient(resources)
+
+			foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			checkAvailability(foundResource, metav1.ConditionTrue)
+
+			foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			checkAvailability(foundResource, metav1.ConditionTrue)
+
+			foundDS := &appsv1.DaemonSet{}
+			foundSA := &corev1.ServiceAccount{}
+			foundSCC := &securityv1.SecurityContextConstraints{}
+
+			err := cl.Get(ctx, client.ObjectKeyFromObject(iommufdDsToBeRemoved), foundDS)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			err = cl.Get(ctx, client.ObjectKeyFromObject(iommufdSaToBeRemoved), foundSA)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			err = cl.Get(ctx, client.ObjectKeyFromObject(iommufdSccToBeRemoved), foundSCC)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			for _, objRef := range iommufdRelatedObjects {
+				Expect(foundResource.Status.RelatedObjects).ToNot(ContainElement(objRef))
+			}
+		})
+
+		It("should not remove iommufd-device-plugin objects when upgrading from >= 1.19.0", func(ctx context.Context) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.19.0")
+
+			cl := commontestutils.InitClient(resources)
+			foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeFalse())
+			checkAvailability(foundResource, metav1.ConditionTrue)
+
+			foundDS := &appsv1.DaemonSet{}
+			foundSA := &corev1.ServiceAccount{}
+			foundSCC := &securityv1.SecurityContextConstraints{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(iommufdDsToBeRemoved), foundDS)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(iommufdSaToBeRemoved), foundSA)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(iommufdSccToBeRemoved), foundSCC)).To(Succeed())
+		})
 	})
 
 	Context("remove old NetworkPolicies", func() {
@@ -992,5 +1132,192 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(foundNPs.Items).To(ContainElements(*upToDateNP1, *upToDateNP2, *nonOLMNP, *oldNPOtherNamespace))
 			Expect(foundNPs.Items).ToNot(ContainElements(*oldNP))
 		})
+	})
+
+	Context("remove wrong jsonpatch annotations", func() {
+		const (
+			wrongFGOp         = `add`
+			wrongFGPath       = "/spec/configuration/developerConfiguration/featureGates/-"
+			wrongFGName       = "Template"
+			patchTemplate     = `{"op": %q, "path": %q, "value": %q}`
+			exampleValidPatch = `{"op":"add","path":"something", "value":"something"}`
+		)
+		var (
+			wrongFGPatch    = fmt.Sprintf(patchTemplate, wrongFGOp, wrongFGPath, wrongFGName)
+			wrongFGPatchAnn = "[" + wrongFGPatch + "]"
+		)
+
+		It("sanity (not upgrade): ensure that the jsonpatch annotation adds the FG, to make sure the actual test below is valid", func(ctx context.Context) {
+			if expected.hco.Annotations == nil {
+				expected.hco.Annotations = map[string]string{}
+			}
+			expected.hco.Annotations[common.JSONPatchKVAnnotationName] = wrongFGPatchAnn
+
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(fg string) bool {
+					return fg == wrongFGName
+				},
+			)
+
+			cl := commontestutils.InitClient(expected.toArray())
+			doReconcile(cl, expected.hco, nil)
+
+			kv := &kubevirtv1.KubeVirt{}
+			hco := &hcov1.HyperConverged{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.hco), hco)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+
+			Expect(hco.Annotations).To(HaveKeyWithValue(common.JSONPatchKVAnnotationName, wrongFGPatchAnn))
+			Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(wrongFGName)) // it came from the annotation or HCO default
+		})
+
+		It("sanity (not upgrade): ensure that the jsonpatch annotation adds the FG, when HCO FG is disabling it, to make sure the actual test below is valid", func(ctx context.Context) {
+			expected.hco.Spec.FeatureGates.Disable(wrongFGName)
+
+			if expected.hco.Annotations == nil {
+				expected.hco.Annotations = map[string]string{}
+			}
+			expected.hco.Annotations[common.JSONPatchKVAnnotationName] = wrongFGPatchAnn
+
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(fg string) bool {
+					return fg == wrongFGName
+				},
+			)
+
+			cl := commontestutils.InitClient(expected.toArray())
+			doReconcile(cl, expected.hco, nil)
+
+			kv := &kubevirtv1.KubeVirt{}
+			hco := &hcov1.HyperConverged{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.hco), hco)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+
+			Expect(hco.Annotations).To(HaveKeyWithValue(common.JSONPatchKVAnnotationName, wrongFGPatchAnn))
+			Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("Template")) // it came from the annotation
+		})
+
+		It("should drop the wrong jsonPatch annotation. check when the FG itself is disabled", func(ctx context.Context) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
+
+			expected.hco.Spec.FeatureGates.Disable(wrongFGName)
+
+			if expected.hco.Annotations == nil {
+				expected.hco.Annotations = map[string]string{}
+			}
+			expected.hco.Annotations[common.JSONPatchKVAnnotationName] = wrongFGPatchAnn
+
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(fg string) bool {
+					return fg == wrongFGName
+				},
+			)
+
+			cl := commontestutils.InitClient(expected.toArray())
+			doReconcile(cl, expected.hco, nil)
+
+			kv := &kubevirtv1.KubeVirt{}
+			hco := &hcov1.HyperConverged{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.hco), hco)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+			Expect(hco.Annotations).ToNot(HaveKey(common.JSONPatchKVAnnotationName))
+			Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(wrongFGName))
+		})
+
+		It("should drop the wrong jsonPatch annotation. check when the FG itself is enabled (default)", func(ctx context.Context) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
+			if expected.hco.Annotations == nil {
+				expected.hco.Annotations = map[string]string{}
+			}
+			expected.hco.Annotations[common.JSONPatchKVAnnotationName] = wrongFGPatchAnn
+
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(fg string) bool {
+					return fg == wrongFGName
+				},
+			)
+
+			cl := commontestutils.InitClient(expected.toArray())
+			doReconcile(cl, expected.hco, nil)
+
+			kv := &kubevirtv1.KubeVirt{}
+			hco := &hcov1.HyperConverged{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.hco), hco)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+			Expect(hco.Annotations).ToNot(HaveKey(common.JSONPatchKVAnnotationName))
+			Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(wrongFGName))
+		})
+
+		DescribeTable("check the function result", func(modify func(hc *hcov1.HyperConverged), wasChange, annotationFound bool, expected string) {
+			hc := commontestutils.NewHco()
+			modify(hc)
+
+			changed, err := removeWrongJsonPatch(hc)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(Equal(wasChange))
+
+			annotation, found := hc.Annotations[common.JSONPatchKVAnnotationName]
+			Expect(found).To(Equal(annotationFound))
+			if found {
+				Expect(annotation).To(MatchJSON(expected))
+			}
+		},
+			Entry("when only the wrong patch is in the annotation, should drop the annotation",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: wrongFGPatchAnn,
+					}
+				}, true, false, ""),
+			Entry("when only the wrong patch is the first patch, should remove it from the annotation",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[` + wrongFGPatch + `,` + exampleValidPatch + `,` + exampleValidPatch + `]`,
+					}
+				}, true, true, `[`+exampleValidPatch+`,`+exampleValidPatch+`]`),
+			Entry("when only the wrong patch is not the first patch, should remove it from the annotation",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[` + exampleValidPatch + `,` + wrongFGPatch + `,` + exampleValidPatch + `]`,
+					}
+				}, true, true, `[`+exampleValidPatch+`,`+exampleValidPatch+`]`),
+			Entry("when only the wrong patch is the last patch, should remove it from the annotation",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[` + exampleValidPatch + `,` + exampleValidPatch + `,` + wrongFGPatch + `]`,
+					}
+				}, true, true, `[`+exampleValidPatch+`,`+exampleValidPatch+`]`),
+			Entry("when the FG is not Template, should not change",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[{"op":"` + wrongFGOp + `", "path":"` + wrongFGPath + `", "value": "SomeOtherFG"}]`,
+					}
+				}, false, true, `[{"op":"`+wrongFGOp+`", "path":"`+wrongFGPath+`", "value": "SomeOtherFG"}]`),
+			Entry("when only the the patch is not the wrong one, don't change",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[{"op":"` + wrongFGOp + `", "path":"/something/else", "value": "` + wrongFGName + `"}]`,
+					}
+				}, false, true, `[{"op":"`+wrongFGOp+`", "path":"/something/else", "value": "`+wrongFGName+`"}]`),
+			Entry("when the op is not the wrong one, don't change",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[{"op":"replace", "path":"` + wrongFGPath + `", "value": "` + wrongFGName + `"}]`,
+					}
+				}, false, true, `[{"op":"replace", "path":"`+wrongFGPath+`", "value": "`+wrongFGName+`"}]`),
+			Entry("when the json syntax is wrong, don't change", // not an array of patches
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: wrongFGPatch,
+					}
+				}, false, true, wrongFGPatch),
+		)
 	})
 })

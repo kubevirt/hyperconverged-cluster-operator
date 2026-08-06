@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/library-go/pkg/crypto"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -132,19 +133,21 @@ const (
 
 // KubeVirt feature gates that are exposed in HCO API
 const (
-	kvDownwardMetrics            = "DownwardMetrics"
-	kvPersistentReservation      = "PersistentReservation"
-	kvAlignCPUs                  = "AlignCPUs"
-	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
-	kvVideoConfig                = "VideoConfig"
-	kvObjectGraph                = "ObjectGraph"
-	kvUtilityVolumes             = "UtilityVolumes"
-	kvIncrementalBackup          = "IncrementalBackup"
-	kvPasstBinding               = "PasstBinding"
-	kvConfigurableHypervisor     = "ConfigurableHypervisor"
-	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
-	kvContainerPathVolumes       = "ContainerPathVolumes"
-	kvPCINUMAAwareTopology       = "PCINUMAAwareTopology"
+	kvDownwardMetrics              = "DownwardMetrics"
+	kvAlignCPUs                    = "AlignCPUs"
+	kvDecentralizedLiveMigration   = "DecentralizedLiveMigration"
+	kvObjectGraph                  = "ObjectGraph"
+	kvUtilityVolumes               = "UtilityVolumes"
+	kvIncrementalBackup            = "IncrementalBackup"
+	kvPasstBinding                 = "PasstBinding"
+	kvConfigurableHypervisor       = "ConfigurableHypervisor"
+	kvOptOutRoleAggregation        = "OptOutRoleAggregation"
+	kvContainerPathVolumes         = "ContainerPathVolumes"
+	kvPCINUMAAwareTopology         = "PCINUMAAwareTopology"
+	kvGraceIOVirtualization        = "GraceIOVirtualization"
+	kvIOMMUFD                      = "IOMMUFD"
+	kvTemplateFG                   = "Template"
+	kvExternalNetResourceInjection = "ExternalNetResourceInjection"
 )
 
 // CPU Plugin default values
@@ -278,7 +281,7 @@ func NewKubeVirt(hc *hcov1.HyperConverged, opts ...string) (*kubevirtcorev1.Kube
 
 	kvCertConfig := hcoCertConfig2KvCertificateRotateStrategy(hc.Spec.Security.CertConfig)
 
-	controlPlaneHighlyAvailable := nodeinfo.IsControlPlaneHighlyAvailable()
+	controlPlaneMultiNode := nodeinfo.IsControlPlaneMultiNode()
 	controlPlaneNodeExists := nodeinfo.IsControlPlaneNodeExists()
 	infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 
@@ -292,7 +295,7 @@ func NewKubeVirt(hc *hcov1.HyperConverged, opts ...string) (*kubevirtcorev1.Kube
 		infra = np.Infra
 		workload = np.Workload
 	}
-	kvInfra := hcoConfig2KvConfig(infra, infraHighlyAvailable, controlPlaneHighlyAvailable, controlPlaneNodeExists)
+	kvInfra := hcoConfig2KvConfig(infra, infraHighlyAvailable, controlPlaneMultiNode, controlPlaneNodeExists)
 	kvWorkloads := hcoConfig2KvConfig(workload, true, true, true)
 
 	spec := kubevirtcorev1.KubeVirtSpec{
@@ -429,6 +432,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 		MigrationConfiguration:             kvLiveMigration,
 		PermittedHostDevices:               toKvPermittedHostDevices(hc.Spec.Virtualization.PermittedHostDevices),
 		MediatedDevicesConfiguration:       toKvMediatedDevicesConfiguration(hc),
+		PersistentReservationConfiguration: toKvPersistentReservationConfiguration(hc),
 		ObsoleteCPUModels:                  obsoleteCPUs,
 		TLSConfiguration:                   hcTLSSecurityProfileToKv(tlssecprofile.GetTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile)),
 		APIConfiguration:                   rateLimiter,
@@ -619,9 +623,9 @@ func getObsoleteCPUConfig(hcObsoleteCPUModels []string) map[string]bool {
 
 func toKvMediatedDevicesConfiguration(hc *hcov1.HyperConverged) *kubevirtcorev1.MediatedDevicesConfiguration {
 	mdevsConfig := hc.Spec.Virtualization.MediatedDevicesConfiguration
-	disabled := hc.Spec.FeatureGates.IsEnabled("disableMDevConfiguration")
+	disabledByFG := hc.Spec.FeatureGates.IsEnabled("disableMDevConfiguration")
 
-	if mdevsConfig == nil && !disabled {
+	if mdevsConfig == nil && !disabledByFG {
 		return nil
 	}
 
@@ -637,11 +641,33 @@ func toKvMediatedDevicesConfiguration(hc *hcov1.HyperConverged) *kubevirtcorev1.
 		kvMdev.NodeMediatedDeviceTypes = toKvNodeMediatedDevicesConfiguration(mdevsConfig.NodeMediatedDeviceTypes)
 	}
 
-	if disabled {
-		kvMdev.Enabled = ptr.To(false)
+	if mdevsConfig != nil && mdevsConfig.Enabled != nil {
+		kvMdev.Enabled = mdevsConfig.Enabled
+	} else if disabledByFG {
+		kvMdev.Enabled = new(false)
 	}
 
 	return kvMdev
+}
+
+func toKvPersistentReservationConfiguration(hc *hcov1.HyperConverged) *kubevirtcorev1.PersistentReservationConfiguration {
+	var enabled *bool
+
+	if hc.Spec.Storage != nil &&
+		hc.Spec.Storage.PersistentReservationConfiguration != nil &&
+		hc.Spec.Storage.PersistentReservationConfiguration.Enabled != nil {
+		enabled = new(*hc.Spec.Storage.PersistentReservationConfiguration.Enabled)
+	} else if hc.Spec.FeatureGates.IsEnabled("persistentReservation") {
+		enabled = new(true)
+	}
+
+	if enabled == nil {
+		return nil
+	}
+
+	return &kubevirtcorev1.PersistentReservationConfiguration{
+		Enabled: enabled,
+	}
 }
 
 func toKvNodeMediatedDevicesConfiguration(hcoNodeMdevTypesConf []hcov1.NodeMediatedDeviceTypesConfig) []kubevirtcorev1.NodeMediatedDeviceTypesConfig {
@@ -757,6 +783,7 @@ func hcLiveMigrationToKv(lm hcov1.LiveMigrationConfigurations) (*kubevirtcorev1.
 		Network:                           lm.Network,
 		AllowAutoConverge:                 lm.AllowAutoConverge,
 		AllowPostCopy:                     lm.AllowPostCopy,
+		AllowWorkloadDisruption:           lm.AllowWorkloadDisruption,
 	}, nil
 }
 
@@ -862,8 +889,8 @@ func NewKubeVirtWithNameOnly() *kubevirtcorev1.KubeVirt {
 }
 
 func hcoConfig2KvConfig(
-	nodePlacement *api.NodePlacement, infraHighlyAvailable, controlPlaneHighlyAvailable, controlPlaneNodeExists bool) *kubevirtcorev1.ComponentConfig {
-	if nodePlacement == nil && controlPlaneHighlyAvailable {
+	nodePlacement *api.NodePlacement, infraHighlyAvailable, controlPlaneMultiNode, controlPlaneNodeExists bool) *kubevirtcorev1.ComponentConfig {
+	if nodePlacement == nil && controlPlaneMultiNode {
 		return nil
 	}
 
@@ -882,8 +909,8 @@ func hcoConfig2KvConfig(
 		return kvConfig
 	}
 
-	if !controlPlaneHighlyAvailable {
-		kvConfig.Replicas = ptr.To[uint8](1)
+	if !controlPlaneMultiNode {
+		kvConfig.Replicas = new(uint8(1))
 	}
 
 	if nodePlacement == nil {
@@ -917,14 +944,8 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	if featureGates.IsEnabled("downwardMetrics") {
 		fgs = append(fgs, kvDownwardMetrics)
 	}
-	if featureGates.IsEnabled("persistentReservation") {
-		fgs = append(fgs, kvPersistentReservation)
-	}
 	if featureGates.IsEnabled("alignCPUs") {
 		fgs = append(fgs, kvAlignCPUs)
-	}
-	if featureGates.IsEnabled("videoConfig") {
-		fgs = append(fgs, kvVideoConfig)
 	}
 
 	if featureGates.IsEnabled("objectGraph") {
@@ -936,10 +957,10 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	}
 
 	// Add the appropriate volume hotplug featuregate based on DeclarativeHotplugVolumes setting
-	if featureGates.IsEnabled("declarativeHotplugVolumes") {
+	if featureGates.IsEnabled("declarativeHotplugVolumes") { // the default behavior
 		fgs = append(fgs, kvDeclarativeHotplugVolumesGate)
 	} else {
-		// Default behavior: use the original HotplugVolumes featuregate
+		// Fallback behavior: use the original HotplugVolumes featuregate
 		fgs = append(fgs, kvHotplugVolumesGate)
 	}
 
@@ -948,7 +969,7 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	}
 
 	if hc.Annotations[aie.DeployAIEAnnotation] == "true" {
-		fgs = append(fgs, kvPCINUMAAwareTopology)
+		fgs = append(fgs, kvGraceIOVirtualization, kvIOMMUFD, kvPCINUMAAwareTopology)
 	}
 
 	if slices.Contains(nodeinfo.GetWorkloadsArchitectures(), nodeinfo.S390X) {
@@ -970,6 +991,15 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled("containerPathVolumes") {
 		fgs = append(fgs, kvContainerPathVolumes)
+	}
+
+	if featureGates.IsEnabled(kvTemplateFG) {
+		fgs = append(fgs, kvTemplateFG)
+	}
+
+	if common.ShouldDeployNetworkResourcesInjector(hc) &&
+		meta.IsStatusConditionTrue(hc.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady) {
+		fgs = append(fgs, kvExternalNetResourceInjection)
 	}
 
 	return fgs

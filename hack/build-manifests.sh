@@ -243,6 +243,19 @@ create_autopilot_csv() {
   echo "${operatorName}"
 }
 
+function create_vm_file_restore_operator_csv() {
+  local operatorName="vm-file-restore-operator"
+  local dumpCRDsArg="--dump-crds"
+  local operatorArgs=" \
+    --csv-version=${CSV_VERSION} \
+    --namespace=${OPERATOR_NAMESPACE} \
+    --operator-version=${VM_FILE_RESTORE_OPERATOR_VERSION} \
+    --operator-image=${VM_FILE_RESTORE_OPERATOR_IMAGE} \
+    --pull-policy=IfNotPresent \
+  "
+  gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${VM_FILE_RESTORE_OPERATOR_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
+  echo "${operatorName}"
+}
 
 function create_inflight_operations_csv() {
   local operatorName="inflightoperations"
@@ -257,10 +270,6 @@ function create_inflight_operations_csv() {
   gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${INFLIGHT_OPERATIONS_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
   echo "${operatorName}"
 }
-
-# Write HCO CRDs
-hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
-${TOOLS}/crd-creator --output-file=${hco_crds}
 
 (cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go build)
 
@@ -282,6 +291,8 @@ migrationOperatorFile=$(create_migration_operator_csv)
 migrationOperatorCsv="${TEMPDIR}/${migrationOperatorFile}.${CSV_EXT}"
 autopilotFile=$(create_autopilot_csv)
 autopilotCsv="${TEMPDIR}/${autopilotFile}.${CSV_EXT}"
+vmFileRestoreOperatorFile=$(create_vm_file_restore_operator_csv)
+vmFileRestoreOperatorCsv="${TEMPDIR}/${vmFileRestoreOperatorFile}.${CSV_EXT}"
 inFlightOperationsFile=$(create_inflight_operations_csv)
 inFlightOperationsCsv="${TEMPDIR}/${inFlightOperationsFile}.${CSV_EXT}"
 csvOverrides="${TEMPDIR}/csv_overrides.${CSV_EXT}"
@@ -295,10 +306,9 @@ spec:
 $keywords
 EOM
 
-cat ${hco_crds} | ${TOOLS}/manifest-splitter --operator-name="hco"
+cat "${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml" | "${TOOLS}/manifest-splitter" --operator-name="hco"
 
 popd
-
 
 rm -fr "${CSV_DIR}"
 mkdir -p "${CSV_DIR}/metadata" "${CSV_DIR}/manifests"
@@ -323,7 +333,7 @@ EOM
 )
 
 # validate CSVs. Make sure each one of them contain an image (and so, also not empty):
-csvs=("${cnaCsv}" "${virtCsv}" "${sspCsv}" "${cdiCsv}" "${hppCsv}" "${aaqCsv}" "${migrationOperatorCsv}" "${autopilotCsv}" "${inFlightOperationsCsv}")
+csvs=("${cnaCsv}" "${virtCsv}" "${sspCsv}" "${cdiCsv}" "${hppCsv}" "${aaqCsv}" "${migrationOperatorCsv}" "${autopilotCsv}" "${vmFileRestoreOperatorCsv}" "${inFlightOperationsCsv}")
 for csv in "${csvs[@]}"; do
   grep -E "^ *image: [_a-zA-Z0-9/\.:@\-]+$" ${csv}
 done
@@ -339,6 +349,7 @@ ${TOOLS}/manifest-templator \
   --aaq-csv-file="${aaqCsv}" \
   --migration-operator-csv-file="${migrationOperatorCsv}" \
   --autopilot-csv-file="${autopilotCsv}" \
+  --vm-file-restore-operator-csv-file="${vmFileRestoreOperatorCsv}" \
   --inflight-operations-csv-file="${inFlightOperationsCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
@@ -355,6 +366,7 @@ ${TOOLS}/manifest-templator \
   --aaq-version="${AAQ_VERSION}" \
   --migration-operator-version="${MIGRATION_OPERATOR_VERSION}" \
   --autopilot-version="${AUTOPILOT_VERSION}" \
+  --vm-file-restore-operator-version="${VM_FILE_RESTORE_OPERATOR_VERSION}" \
   --inflight-operations-version="${INFLIGHT_OPERATIONS_VERSION}" \
   --operator-image="${HCO_OPERATOR_IMAGE}" \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
@@ -362,7 +374,7 @@ ${TOOLS}/manifest-templator \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
-  --iommufd-device-plugin-image-name="${IOMMUFD_DEVICE_PLUGIN_IMAGE}"
+  --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}"
 
 if [[ "${UNIQUE}" == "true"  ]]; then
   CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
@@ -392,6 +404,7 @@ ${TOOLS}/csv-merger \
   --aaq-csv-file="${aaqCsv}" \
   --migration-operator-csv-file="${migrationOperatorCsv}" \
   --autopilot-csv-file="${autopilotCsv}" \
+  --vm-file-restore-operator-csv-file="${vmFileRestoreOperatorCsv}" \
   --inflight-operations-csv-file="${inFlightOperationsCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --csv-version=${CSV_VERSION_PARAM} \
@@ -416,6 +429,7 @@ ${TOOLS}/csv-merger \
   --aaq-version="${AAQ_VERSION}" \
   --migration-operator-version="${MIGRATION_OPERATOR_VERSION}" \
   --autopilot-version="${AUTOPILOT_VERSION}" \
+  --vm-file-restore-operator-version="${VM_FILE_RESTORE_OPERATOR_VERSION}" \
   --inflight-operations-version="${INFLIGHT_OPERATIONS_VERSION}" \
   --related-images-list="${DIGEST_LIST}" \
   --operator-image-name="${HCO_OPERATOR_IMAGE}" \
@@ -426,7 +440,7 @@ ${TOOLS}/csv-merger \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
-  --iommufd-device-plugin-image-name="${IOMMUFD_DEVICE_PLUGIN_IMAGE}" \
+  --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
   ${NETWORK_POLICIES_PARAMS} \
   > temp_manifests.yaml
 

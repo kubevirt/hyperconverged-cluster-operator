@@ -1456,7 +1456,14 @@ type Interface struct {
 	// version: 1alphav1
 	Binding *PluginBinding `json:"binding,omitempty"`
 	// List of ports to be forwarded to the virtual machine.
+	// Mutually exclusive with portRanges.
 	Ports []Port `json:"ports,omitempty"`
+	// List of port ranges to be forwarded to the virtual machine.
+	// Mutually exclusive with ports. Only supported on masquerade interfaces.
+	// This feature is in Alpha.
+	// +optional
+	// +listType=atomic
+	PortRanges []PortRange `json:"portRanges,omitempty"`
 	// Interface MAC address. For example: de:ad:00:00:be:af or DE-AD-00-00-BE-AF.
 	MacAddress string `json:"macAddress,omitempty"`
 	// BootOrder is an integer value > 0, used to determine ordering of boot devices.
@@ -1614,6 +1621,20 @@ type Port struct {
 	Port int32 `json:"port"`
 }
 
+// PortRange represents a range of ports to be forwarded to the virtual machine.
+// All fields are mandatory.
+type PortRange struct {
+	// Required. Must be UDP or TCP.
+	Protocol string `json:"protocol"`
+	// First port of the range to expose for the virtual machine.
+	// This must be a valid port number, 0 < x < 65536.
+	Start int32 `json:"start"`
+	// Last port of the range to expose for the virtual machine.
+	// This must be a valid port number, 0 < x < 65536.
+	// Must be greater than or equal to start.
+	End int32 `json:"end"`
+}
+
 type AccessCredentialSecretSource struct {
 	// SecretName represents the name of the secret in the VMI's namespace
 	SecretName string `json:"secretName"`
@@ -1741,6 +1762,12 @@ type Network struct {
 type NetworkSource struct {
 	Pod    *PodNetwork    `json:"pod,omitempty"`
 	Multus *MultusNetwork `json:"multus,omitempty"`
+	// ResourceClaim represents a network resource requested
+	// via a VMI spec.resourceClaims[] entry, backed by either a
+	// Kubernetes ResourceClaim or ResourceClaimTemplate.
+	// This field should only be configured if the NetworkDevicesWithDRA feature-gate is enabled.
+	// This feature is in alpha.
+	ResourceClaim *ClaimRequest `json:"resourceClaim,omitempty"`
 }
 
 // Represents the stock pod network interface.

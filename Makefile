@@ -37,7 +37,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate gogenerate gogenerate-crd-creator generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring
+sanity: generate gogenerate prepare-tools-crd generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring update-kv-fg-file
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -50,6 +50,8 @@ goimport:
 	go install golang.org/x/tools/cmd/goimports@latest
 	goimports -w -local="kubevirt.io,github.com/kubevirt,github.com/kubevirt/hyperconverged-cluster-operator"  $(shell find . -type f -name '*.go' ! -path "*/vendor/*" ! -path "./_kubevirtci/*" ! -path "*zz_generated*" )
 
+update-kv-fg-file:
+	./hack/update-kv-fg-file.sh
 
 lint:
 	GOTOOLCHAIN=go1.26.3 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANDCI_LINT_VERSION}
@@ -66,10 +68,14 @@ build-csv-merger: ## Build binary from source
 build-manifest-templator: ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/manifest-templator ./tools/manifest-templator
 
-generate-feature-gates:
+generate-feature-gates: sort-feature-gates
 	cd api/v1beta1 && go generate .
 	go build -o _out/fg-v1-comments ./tools/fg-v1-comments
 	./_out/fg-v1-comments
+
+sort-feature-gates:
+	jq 'sort_by((if .phase == "beta" then 0 elif .phase == "alpha" then 1 else 2 end), .name)' pkg/featuregatedetails/feature-gates.json > pkg/featuregatedetails/feature-gates.temp
+	mv pkg/featuregatedetails/feature-gates.temp pkg/featuregatedetails/feature-gates.json
 
 build-crd-creator: generate
 	go build -ldflags="${LDFLAGS}" -o _out/crd-creator ./tools/crd-creator
@@ -80,7 +86,7 @@ build-manifest-splitter:
 build-webhook: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
-build-manifests: gogenerate-crd-creator build-crd-creator build-csv-merger build-manifest-splitter build-manifest-templator
+build-manifests: prepare-tools-crd build-csv-merger build-manifest-splitter build-manifest-templator
 	DUMP_NETWORK_POLICIES=$(DUMP_NETWORK_POLICIES) ./hack/build-manifests.sh
 
 build-manifests-prev:
@@ -118,10 +124,10 @@ container-build: container-build-operator container-build-webhook container-buil
 
 build-push-multi-arch-images: build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-functest-image build-push-multi-arch-artifacts-server
 
-container-build-operator: gogenerate gogenerate-crd-creator
+container-build-operator: gogenerate prepare-tools-crd
 	. "hack/cri-bin.sh" && $$CRI_BIN build --platform=linux/$(ARCH) -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
-build-push-multi-arch-operator-image: gogenerate gogenerate-crd-creator
+build-push-multi-arch-operator-image: gogenerate prepare-tools-crd
 	IMAGE_NAME=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) SHA=SHA DOCKER_FILE=build/Dockerfile ./hack/build-push-multi-arch-images.sh
 
 container-build-webhook:
@@ -245,16 +251,20 @@ bump-kubevirtci:
 gogenerate: generate
 	go generate ./pkg/upgradepatch
 
-gogenerate-crd-creator: generate
-	go generate ./tools/csv-merger
-	go generate ./tools/manifest-templator
+generate-crd: generate build-crd-creator
+	./_out/crd-creator --output-file=config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
+	@echo "the CRD file was generated in config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml"
+
+prepare-tools-crd: generate-crd
+	cp config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml ./tools/csv-merger/generated-crd.yaml
+	cp config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml ./tools/manifest-templator/generated-crd.yaml
 
 generate: generate-feature-gates
 	./hack/generate.sh
 
 generate-doc: build-docgen
-	_out/docgen --in=./api/v1beta1/hyperconverged_types.go > docs/api.md
-	_out/docgen --in=./api/v1/hyperconverged_types.go --feature-gates=pkg/featuregatedetails/feature-gates.json > docs/api-v1.md
+	_out/docgen --in=./api/v1/hyperconverged_types.go --feature-gates=pkg/featuregatedetails/feature-gates.json > docs/api.md
+	_out/docgen --in=./api/v1beta1/hyperconverged_types.go > docs/api-v1beta1.md
 	_out/metricsdocs > docs/metrics.md
 
 build-docgen:
@@ -270,8 +280,11 @@ help: ## Show this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ''
 
-test-unit: gogenerate gogenerate-crd-creator
-	JOB_TYPE="travis" ./hack/build-tests.sh
+test-unit: gogenerate prepare-tools-crd
+	./hack/unit-test.sh
+
+test-unit-coverage: gogenerate prepare-tools-crd
+	./hack/unit-test-coverage.sh
 
 test-fuzz-api-conversion: generate
 	go test -v ./api/v1beta1/ -run "FuzzV1beta1ToV1RoundTrip" -fuzz="FuzzV1beta1ToV1RoundTrip" -fuzztime=5s 2>&1
@@ -304,7 +317,7 @@ lint-metrics:
 
 lint-monitoring:
 	go install github.com/kubevirt/monitoring/monitoringlinter/cmd/monitoringlinter@a697c0c
-	monitoringlinter ./...
+	monitoringlinter ./api/... ./pkg/... ./controllers/...
 
 bump-hco:
 	./hack/bump-hco.sh ${HCO_BUMP_LEVEL}
@@ -330,6 +343,7 @@ push-builder-image: retag-builder-image
 		build-operator \
 		build-csv-merger \
 		build-manifest-templator \
+		sort-feature-gates \
 		generate-feature-gates \
 		build-crd-creator \
 		build-manifest-splitter \
@@ -367,6 +381,8 @@ push-builder-image: retag-builder-image
 		test-functional-prow \
 		test-functional-in-container \
 		test-kv-smoke-prow \
+		test-unit \
+		test-unit-coverage \
 		charts \
 		kubevirt-nightly-test \
 		local \
@@ -381,6 +397,7 @@ push-builder-image: retag-builder-image
 		lint-monitoring \
 		sanity \
 		goimport \
+		update-kv-fg-file \
 		bump-hco \
 		bump-kubevirtci \
 		build-push-multi-arch-operator-image \

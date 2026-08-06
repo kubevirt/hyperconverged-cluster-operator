@@ -41,6 +41,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/manifests"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
 
@@ -57,9 +58,12 @@ var (
 	cliDownloadsImage             = flag.String("cli-downloads-image", "", "Downloads Server image")
 	networkResourcesInjectorImage = flag.String("network-resources-injector-image-name", "", "Network Resources Injector image")
 	kvVirtIOWinImage              = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
+	kvVirtIOWinDataFile           = flag.String("kv-virtiowin-data-file", "", "Path to the data file inside the VirtIO Win image")
+	kvVirtIOWinMountPath          = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
 	waspAgentImage                = flag.String("wasp-agent-image-name", "", "wasp-agent image")
 	aieWebhookImage               = flag.String("aie-webhook-image-name", "", "AIE webhook image")
-	iommufdDevicePluginImage      = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
+	_                             = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
+	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
 	machinetype                   = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
 	amd64MachineType              = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
@@ -75,6 +79,7 @@ var (
 	aaqVersion                    = flag.String("aaq-version", "", "AAQ operator version")
 	migrationOperatorVersion      = flag.String("migration-operator-version", "", "Migration operator version")
 	autopilotVersion              = flag.String("autopilot-version", "", "Autopilot version")
+	vmFileRestoreOperatorVersion  = flag.String("vm-file-restore-operator-version", "", "VM File Restore Operator version")
 	inFlightOperationsVersion     = flag.String("inflight-operations-version", "", "InFlightOperations version")
 	_                             = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
 	_                             = flag.String("api-sources", "", "ignored")
@@ -208,7 +213,7 @@ var deploymentType = metav1.TypeMeta{
 	Kind:       "Deployment",
 }
 
-func getDeploymentOperator(params *components.DeploymentOperatorParams) appsv1.Deployment {
+func getDeploymentOperator(params *manifests.DeploymentOperatorParams) appsv1.Deployment {
 	return appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
@@ -217,11 +222,11 @@ func getDeploymentOperator(params *components.DeploymentOperatorParams) appsv1.D
 				"name": hcoutil.HCOOperatorName,
 			},
 		},
-		Spec: components.GetDeploymentSpecOperator(params),
+		Spec: manifests.GetDeploymentSpecOperator(params),
 	}
 }
 
-func getDeploymentWebhook(params *components.DeploymentOperatorParams) appsv1.Deployment {
+func getDeploymentWebhook(params *manifests.DeploymentOperatorParams) appsv1.Deployment {
 	deploy := appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
@@ -230,14 +235,14 @@ func getDeploymentWebhook(params *components.DeploymentOperatorParams) appsv1.De
 				"name": hcoutil.HCOWebhookName,
 			},
 		},
-		Spec: components.GetDeploymentSpecWebhook(params),
+		Spec: manifests.GetDeploymentSpecWebhook(params),
 	}
 
 	injectVolumesForWebHookCerts(&deploy)
 	return deploy
 }
 
-func getDeploymentCliDownloads(params *components.DeploymentOperatorParams) appsv1.Deployment {
+func getDeploymentCliDownloads(params *manifests.DeploymentOperatorParams) appsv1.Deployment {
 	return appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
@@ -246,7 +251,7 @@ func getDeploymentCliDownloads(params *components.DeploymentOperatorParams) apps
 				"name": hcoutil.CLIDownloadsName,
 			},
 		},
-		Spec: components.GetDeploymentSpecCliDownloads(params),
+		Spec: manifests.GetDeploymentSpecCliDownloads(params),
 	}
 }
 
@@ -433,8 +438,8 @@ func createService(webhook csvv1alpha1.WebhookDescription, csvStruct *csvv1alpha
 	}
 }
 
-func getOperatorParameters() *components.DeploymentOperatorParams {
-	params := &components.DeploymentOperatorParams{
+func getOperatorParameters() *manifests.DeploymentOperatorParams {
+	params := &manifests.DeploymentOperatorParams{
 		Namespace:                     *operatorNamespace,
 		Image:                         *operatorImage,
 		WebhookImage:                  *webhookImage,
@@ -442,9 +447,11 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		NetworkResourcesInjectorImage: *networkResourcesInjectorImage,
 		ImagePullPolicy:               "IfNotPresent",
 		VirtIOWinContainer:            *kvVirtIOWinImage,
+		VirtIOWinDataFile:             *kvVirtIOWinDataFile,
+		VirtIOWinMountPath:            *kvVirtIOWinMountPath,
 		WaspAgentImage:                *waspAgentImage,
 		AIEWebhookImage:               *aieWebhookImage,
-		IOMMUFDDevicePluginImage:      *iommufdDevicePluginImage,
+		ObservabilityControllerImage:  *observabilityControllerImage,
 		Smbios:                        *smbios,
 		Machinetype:                   *machinetype,
 		Amd64MachineType:              *amd64MachineType,
@@ -460,6 +467,7 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		AaqVersion:                    *aaqVersion,
 		MigrationOperatorVersion:      *migrationOperatorVersion,
 		AutopilotVersion:              *autopilotVersion,
+		VMFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		Env:                           []corev1.EnvVar{},
 	}
@@ -622,7 +630,7 @@ func getClusterRole() rbacv1.ClusterRole {
 				"name": hcoutil.HCOOperatorName,
 			},
 		},
-		Rules: components.GetClusterPermissions(),
+		Rules: manifests.GetClusterPermissions(),
 	}
 }
 

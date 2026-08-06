@@ -67,14 +67,14 @@ type HyperConvergedSpec struct {
 
 	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
-	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}
+	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}
 	// +optional
 	// +k8s:conversion-gen=false
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// Live migration limits and timeouts are applied so that migration processes do not
 	// overwhelm the cluster.
-	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
+	// +kubebuilder:default={"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
 	// +optional
 	// +k8s:conversion-gen=false
 	LiveMigrationConfig hcov1.LiveMigrationConfigurations `json:"liveMigrationConfig,omitempty"`
@@ -415,18 +415,15 @@ type HyperConvergedFeatureGates struct {
 	NonRoot *bool `json:"nonRoot,omitempty"`
 
 	// Disable mediated devices handling on KubeVirt
+	// Deprecated: use v1's spec.virtualization.mediatedDevicesConfiguration.enabled instead. This feature gate will be removed in a future release.
 	// +optional
-	// +kubebuilder:default=false
-	// +default=false
+	// +hco:fgphase:deprecated
 	DisableMDevConfiguration *bool `json:"disableMDevConfiguration,omitempty"`
 
-	// Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt.
-	// In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag.
-	// Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod.
-	// Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.
+	// This feature gate has graduated to a dedicated configuration field.
+	// Deprecated: use v1's spec.storage.persistentReservationConfiguration.enabled instead. This feature gate will be removed in a future release.
 	// +optional
-	// +kubebuilder:default=false
-	// +default=false
+	// +hco:fgphase:deprecated
 	PersistentReservation *bool `json:"persistentReservation,omitempty"`
 
 	// Deprecated: This feature gate is ignored.
@@ -458,17 +455,16 @@ type HyperConvergedFeatureGates struct {
 
 	// EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
 	// Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.
-	//
-	// This feature is in Developer Preview.
-	//
+	// This feature gate has graduated to a dedicated configuration field.
+	// Deprecated: use v1's spec.workloadSources.enableMultiArchBootImageImport instead. This feature gate will be removed in
+	// a future release.
 	// +optional
-	// +kubebuilder:default=false
-	// +default=false
+	// +hco:fgphase:deprecated
 	EnableMultiArchBootImageImport *bool `json:"enableMultiArchBootImageImport,omitempty"`
 
 	// DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature.
 	// This feature allows live migration of VirtualMachineInstances between different clusters.
-	// This feature is in Developer Preview.
+	// This feature is in Tech Preview.
 	//
 	// +optional
 	// +kubebuilder:default=true
@@ -476,21 +472,18 @@ type HyperConvergedFeatureGates struct {
 	DecentralizedLiveMigration *bool `json:"decentralizedLiveMigration,omitempty"`
 
 	// DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt.
-	// When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes".
-	// When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior).
-	// This feature is in Developer Preview.
+	// When set to true or nil, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes" (default behavior).
+	// When set to false, the "HotplugVolumes" feature gate is enabled.
+	// This feature is in Technical Preview.
 	//
-	// +optional
-	// +kubebuilder:default=false
-	// +default=false
-	DeclarativeHotplugVolumes *bool `json:"declarativeHotplugVolumes,omitempty"`
-
-	// VideoConfig allows users to configure video device types for their virtual machines.
-	// This can be useful for workloads that require specific video capabilities or architectures.
-	// Note: This feature is in Tech Preview.
 	// +optional
 	// +kubebuilder:default=true
 	// +default=true
+	DeclarativeHotplugVolumes *bool `json:"declarativeHotplugVolumes,omitempty"`
+
+	// VideoConfig - the feature is GA
+	// Deprecated: this feature gate is ignored
+	// +hco:fgphase:discontinued
 	VideoConfig *bool `json:"videoConfig,omitempty"`
 
 	// ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.
@@ -503,7 +496,7 @@ type HyperConvergedFeatureGates struct {
 
 	// IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt.
 	// When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR.
-	// Note: This feature is in Tech Preview.
+	// Note: This feature is in Developer Preview.
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
@@ -634,7 +627,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec         `json:"spec,omitempty"`
 	Status hcov1.HyperConvergedStatus `json:"status,omitempty"`

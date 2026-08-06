@@ -1,4 +1,4 @@
-package aie
+package observabilitycontroller
 
 import (
 	corev1 "k8s.io/api/core/v1"
@@ -11,22 +11,22 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func NewIOMMUFDDevicePluginServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+func NewServiceAccountHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewServiceAccountHandler(Client, Scheme, newIOMMUFDDevicePluginServiceAccount),
-		shouldDeployAIE,
+		operands.NewServiceAccountHandler(cli, scheme, newServiceAccount),
+		shouldDeploy,
 		func(hc *hcov1.HyperConverged) client.Object {
-			return newIOMMUFDDevicePluginServiceAccount()
+			return newServiceAccount()
 		},
 	)
 }
 
-func newIOMMUFDDevicePluginServiceAccount() *corev1.ServiceAccount {
+func newServiceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      iommufdDevicePluginServiceAccountName,
+			Name:      serviceAccountName,
 			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
-			Labels:    operands.GetLabels(iommufdDevicePluginAppComponent),
+			Labels:    operands.GetLabels(hcoutil.AppComponentObservability),
 		},
 	}
 }

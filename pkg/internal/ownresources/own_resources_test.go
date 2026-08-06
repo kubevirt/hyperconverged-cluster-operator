@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -15,11 +16,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	fakeclusterinfo "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util/fake/clusterinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
 
 func TestUtil(t *testing.T) {
@@ -60,6 +61,11 @@ var _ = Describe("Test OwnResources", func() {
 		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, namespace)).To(Succeed())
 		Expect(os.Setenv(hcoutil.PodNameEnvVar, podName)).To(Succeed())
 
+		origGetOperatorNamespace := hcoutil.GetOperatorNamespace
+		hcoutil.GetOperatorNamespace = func(_ logr.Logger) (string, error) {
+			return namespace, nil
+		}
+
 		testScheme = scheme.Scheme
 		Expect(csvv1alpha1.AddToScheme(testScheme)).To(Succeed())
 
@@ -71,6 +77,7 @@ var _ = Describe("Test OwnResources", func() {
 			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNamespcase)).To(Succeed())
 			Expect(os.Setenv(hcoutil.PodNameEnvVar, origPodName)).To(Succeed())
 			hcoutil.GetClusterInfo = origGetClusterInfo
+			hcoutil.GetOperatorNamespace = origGetOperatorNamespace
 		})
 	})
 
@@ -87,7 +94,7 @@ var _ = Describe("Test OwnResources", func() {
 			APIVersion: csvv1alpha1.ClusterServiceVersionAPIVersion,
 			Kind:       csvv1alpha1.ClusterServiceVersionKind,
 			Name:       rsName,
-			Controller: ptr.To(true),
+			Controller: new(true),
 		}
 
 		dep := createDeployment(csvOwnerRef)
@@ -135,6 +142,80 @@ var _ = Describe("Test OwnResources", func() {
 		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
 		Expect(GetCSVRef()).To(BeNil())
 	})
+
+	It("should return the current operator version", func() {
+		savedVersion := ownVersion
+		DeferCleanup(func() {
+			ownVersion = savedVersion
+		})
+		const testVersion = "v1.2.3-test"
+		ownVersion = testVersion
+		Expect(Version()).To(Equal(testVersion))
+	})
+
+	It("should use HcoKvIoVersionName env var when set", func() {
+		const testVersion = "v9.9.9"
+		orig := os.Getenv(hcoutil.HcoKvIoVersionName)
+		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, testVersion)).To(Succeed())
+		DeferCleanup(func() { Expect(os.Setenv(hcoutil.HcoKvIoVersionName, orig)).To(Succeed()) })
+		Expect(findOwnVersion()).To(Equal(testVersion))
+	})
+
+	It("should fall back to version.Version when env var is not set", func() {
+		orig := os.Getenv(hcoutil.HcoKvIoVersionName)
+		Expect(os.Unsetenv(hcoutil.HcoKvIoVersionName)).To(Succeed())
+		DeferCleanup(func() { Expect(os.Setenv(hcoutil.HcoKvIoVersionName, orig)).To(Succeed()) })
+		Expect(findOwnVersion()).To(Equal(version.Version))
+	})
+
+	It("should run on a non-standard but allowed namespaces", func(ctx context.Context) {
+		// Note: the allowed namespaces are checked in the cmd/cdmcommon package.
+		// For this function, any namespace will dou.
+		const nonStandardNS = "community-kubevirt-hyperconverged"
+
+		hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(
+			fakeclusterinfo.WithIsOpenshift(true),
+			fakeclusterinfo.WithIsManagedByOLM(true),
+			fakeclusterinfo.WithRunningLocally(false),
+		)
+
+		hcoutil.GetOperatorNamespace = func(_ logr.Logger) (string, error) {
+			return nonStandardNS, nil
+		}
+
+		csv := cretateCSV()
+		csv.Namespace = nonStandardNS
+
+		csvOwnerRef := &metav1.OwnerReference{
+			APIVersion: csvv1alpha1.ClusterServiceVersionAPIVersion,
+			Kind:       csvv1alpha1.ClusterServiceVersionKind,
+			Name:       rsName,
+			Controller: new(true),
+		}
+
+		dep := createDeployment(csvOwnerRef)
+		dep.Namespace = nonStandardNS
+
+		rs := createReplicaSet()
+		rs.Namespace = nonStandardNS
+
+		pod := createPod()
+		pod.Namespace = nonStandardNS
+
+		cl := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(csv, dep, rs, pod).
+			WithStatusSubresource(csv, dep, rs, pod).
+			Build()
+
+		Init(ctx, cl, testScheme, GinkgoLogr)
+		Expect(GetPod()).To(Equal(pod))
+		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
+		csvObj := GetCSVRef()
+		ref, err := reference.GetReference(testScheme, csvObj)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ref).To(HaveValue(Equal(*csvRef)))
+	})
 })
 
 func createPod() *corev1.Pod {
@@ -151,7 +232,7 @@ func createPod() *corev1.Pod {
 					APIVersion: "apps/v1",
 					Kind:       "ReplicaSet",
 					Name:       rsName,
-					Controller: ptr.To(true),
+					Controller: new(true),
 				},
 			},
 		},
@@ -172,7 +253,7 @@ func createReplicaSet() *appsv1.ReplicaSet {
 					APIVersion: "apps/v1",
 					Kind:       "Deployment",
 					Name:       rsName,
-					Controller: ptr.To(true),
+					Controller: new(true),
 				},
 			},
 		},
