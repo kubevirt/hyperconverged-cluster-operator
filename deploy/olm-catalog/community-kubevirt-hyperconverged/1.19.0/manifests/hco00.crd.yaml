@@ -3542,7 +3542,7 @@ spec:
                             retentionPolicy:
                               description: RetentionPolicy specifies whether the created
                                 DataVolumes and DataSources are retained when their
-                                DataImportCron is deleted. Default is RatainAll.
+                                DataImportCron is deleted. Default is RetainAll.
                               type: string
                             schedule:
                               description: Schedule specifies in cron format when
@@ -3893,6 +3893,11 @@ spec:
                                               items:
                                                 type: string
                                               type: array
+                                            insecureSkipVerify:
+                                              description: InsecureSkipVerify is a
+                                                flag to skip certificate verification
+                                                for the HTTP endpoint
+                                              type: boolean
                                             secretExtraHeaders:
                                               description: SecretExtraHeaders is a
                                                 list of Secret references, each containing
@@ -4053,6 +4058,12 @@ spec:
                                               description: BackingFile is the path
                                                 to the virtual hard disk to migrate
                                                 from vCenter/ESXi
+                                              type: string
+                                            certConfigMap:
+                                              description: CertConfigMap provides
+                                                a reference to a ConfigMap containing
+                                                the certificate authority (CA) certificate
+                                                for the vCenter or ESXi host
                                               type: string
                                             extraArgs:
                                               description: ExtraArgs is a reference
@@ -4475,7 +4486,7 @@ spec:
                         retentionPolicy:
                           description: RetentionPolicy specifies whether the created
                             DataVolumes and DataSources are retained when their DataImportCron
-                            is deleted. Default is RatainAll.
+                            is deleted. Default is RetainAll.
                           type: string
                         schedule:
                           description: Schedule specifies in cron format when and
@@ -4819,6 +4830,11 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                        insecureSkipVerify:
+                                          description: InsecureSkipVerify is a flag
+                                            to skip certificate verification for the
+                                            HTTP endpoint
+                                          type: boolean
                                         secretExtraHeaders:
                                           description: SecretExtraHeaders is a list
                                             of Secret references, each containing
@@ -4972,6 +4988,12 @@ spec:
                                           description: BackingFile is the path to
                                             the virtual hard disk to migrate from
                                             vCenter/ESXi
+                                          type: string
+                                        certConfigMap:
+                                          description: CertConfigMap provides a reference
+                                            to a ConfigMap containing the certificate
+                                            authority (CA) certificate for the vCenter
+                                            or ESXi host
                                           type: string
                                         extraArgs:
                                           description: ExtraArgs is a reference to
@@ -5789,7 +5811,7 @@ spec:
                         retentionPolicy:
                           description: RetentionPolicy specifies whether the created
                             DataVolumes and DataSources are retained when their DataImportCron
-                            is deleted. Default is RatainAll.
+                            is deleted. Default is RetainAll.
                           type: string
                         schedule:
                           description: Schedule specifies in cron format when and
@@ -6133,6 +6155,11 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                        insecureSkipVerify:
+                                          description: InsecureSkipVerify is a flag
+                                            to skip certificate verification for the
+                                            HTTP endpoint
+                                          type: boolean
                                         secretExtraHeaders:
                                           description: SecretExtraHeaders is a list
                                             of Secret references, each containing
@@ -6286,6 +6313,12 @@ spec:
                                           description: BackingFile is the path to
                                             the virtual hard disk to migrate from
                                             vCenter/ESXi
+                                          type: string
+                                        certConfigMap:
+                                          description: CertConfigMap provides a reference
+                                            to a ConfigMap containing the certificate
+                                            authority (CA) certificate for the vCenter
+                                            or ESXi host
                                           type: string
                                         extraArgs:
                                           description: ExtraArgs is a reference to
@@ -9806,7 +9839,7 @@ spec:
                         retentionPolicy:
                           description: RetentionPolicy specifies whether the created
                             DataVolumes and DataSources are retained when their DataImportCron
-                            is deleted. Default is RatainAll.
+                            is deleted. Default is RetainAll.
                           type: string
                         schedule:
                           description: Schedule specifies in cron format when and
@@ -10150,6 +10183,11 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                        insecureSkipVerify:
+                                          description: InsecureSkipVerify is a flag
+                                            to skip certificate verification for the
+                                            HTTP endpoint
+                                          type: boolean
                                         secretExtraHeaders:
                                           description: SecretExtraHeaders is a list
                                             of Secret references, each containing
@@ -10303,6 +10341,12 @@ spec:
                                           description: BackingFile is the path to
                                             the virtual hard disk to migrate from
                                             vCenter/ESXi
+                                          type: string
+                                        certConfigMap:
+                                          description: CertConfigMap provides a reference
+                                            to a ConfigMap containing the certificate
+                                            authority (CA) certificate for the vCenter
+                                            or ESXi host
                                           type: string
                                         extraArgs:
                                           description: ExtraArgs is a reference to
