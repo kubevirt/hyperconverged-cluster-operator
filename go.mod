@@ -20,7 +20,7 @@ require (
 	github.com/openshift/api v0.0.1
 	github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20260214173033-e860b7975c2c
 	github.com/openshift/custom-resource-status v1.1.2
-	github.com/openshift/library-go v0.0.0-20260318142011-72bf34f474bc
+	github.com/openshift/library-go v0.0.0-20260730085458-26e4f3728f73
 	github.com/operator-framework/api v0.39.0
 	github.com/operator-framework/operator-lib v0.19.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.89.0
@@ -42,7 +42,7 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-helpers v0.34.3
 	k8s.io/kube-openapi v0.36.2
-	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
+	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
 	kubevirt.io/api v1.9.0
 	kubevirt.io/application-aware-quota v1.8.0
 	kubevirt.io/containerized-data-importer-api v1.66.0
@@ -234,4 +234,4 @@ replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9
 
 replace bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 
-replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260325070019-86893981287e
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260601143908-70f01b82bb53
