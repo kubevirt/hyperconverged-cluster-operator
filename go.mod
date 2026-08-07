@@ -234,4 +234,4 @@ replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9
 
 replace bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 
-replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260325070019-86893981287e
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260601143908-70f01b82bb53
