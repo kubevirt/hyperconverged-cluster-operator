@@ -29,6 +29,7 @@ func GetStdContainerSecurityContext() *corev1.SecurityContext {
 		Capabilities: &corev1.Capabilities{
 			Drop: []corev1.Capability{"ALL"},
 		},
+		ReadOnlyRootFilesystem: new(true),
 	}
 }
 
