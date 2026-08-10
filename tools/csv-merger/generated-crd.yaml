@@ -5364,6 +5364,10 @@ spec:
                     items:
                       type: string
                     type: array
+                  defaultWorkloadArchitecture:
+                    description: DefaultWorkloadArchitecture is chosen automatically
+                      by HCO. This field reports the architecture selected by HCO.
+                    type: string
                   workloadsArchitectures:
                     description: WorkloadsArchitectures is a distinct list of the
                       CPU architectures of the workloads nodes in the cluster.
@@ -10717,6 +10721,10 @@ spec:
                     items:
                       type: string
                     type: array
+                  defaultWorkloadArchitecture:
+                    description: DefaultWorkloadArchitecture is chosen automatically
+                      by HCO. This field reports the architecture selected by HCO.
+                    type: string
                   workloadsArchitectures:
                     description: WorkloadsArchitectures is a distinct list of the
                       CPU architectures of the workloads nodes in the cluster.
