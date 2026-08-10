@@ -307,6 +307,7 @@ NodeInfoStatus holds information about the cluster nodes
 | ----- | ----------- | ------ | ------- | -------- |
 | workloadsArchitectures | WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster. | []string |  | false |
 | controlPlaneArchitectures | ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes. | []string |  | false |
+| defaultWorkloadArchitecture | DefaultWorkloadArchitecture is chosen automatically by HCO. This field reports the architecture selected by HCO. | string |  | false |
 
 [Back to TOC](#table-of-contents)
 

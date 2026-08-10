@@ -39,6 +39,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -2615,6 +2616,60 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(*ssp.Spec.TemplateValidator.Replicas).To(Equal(int32(5)))
 					})
 				})
+			})
+		})
+
+		Context("nodeInfo status", func() {
+			AfterEach(func() {
+				commontestutils.ResetNodeInfoMocks()
+			})
+
+			It("should report the control plane architectures in the status", func(ctx context.Context) {
+				arches := []string{"aaa", "bbb", "ccc"}
+				nodeinfo.GetControlPlaneArchitectures = func() []string {
+					return arches
+				}
+
+				hco := commontestutils.NewHco()
+				hco.Status.NodeInfo.ControlPlaneArchitectures = []string{"something", "else"}
+				cl := commontestutils.InitClient([]client.Object{hco})
+				r := initReconciler(cl, nil)
+
+				newHCO, _, _ := doReconcile(cl, hco, r)
+
+				Expect(newHCO.Status.NodeInfo.ControlPlaneArchitectures).To(Equal(arches))
+			})
+
+			It("should report the workload architectures in the status", func(ctx context.Context) {
+				arches := []string{"aaa", "bbb", "ccc"}
+				nodeinfo.GetWorkloadsArchitectures = func() []string {
+					return arches
+				}
+
+				hco := commontestutils.NewHco()
+				hco.Status.NodeInfo.WorkloadsArchitectures = []string{"something", "else"}
+				cl := commontestutils.InitClient([]client.Object{hco})
+				r := initReconciler(cl, nil)
+
+				newHCO, _, _ := doReconcile(cl, hco, r)
+
+				Expect(newHCO.Status.NodeInfo.WorkloadsArchitectures).To(Equal(arches))
+			})
+
+			It("should report the default workload architecture in the status", func(ctx context.Context) {
+				const defaultArch = "defaultArch"
+				nodeinfo.GetDefaultArchitecture = func() string {
+					return defaultArch
+				}
+
+				hco := commontestutils.NewHco()
+				hco.Status.NodeInfo.DefaultWorkloadArchitecture = "something-else"
+				cl := commontestutils.InitClient([]client.Object{hco})
+				r := initReconciler(cl, nil)
+
+				newHCO, _, _ := doReconcile(cl, hco, r)
+
+				Expect(newHCO.Status.NodeInfo.DefaultWorkloadArchitecture).To(Equal(defaultArch))
 			})
 		})
 	})

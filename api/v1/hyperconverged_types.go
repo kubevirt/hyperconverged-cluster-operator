@@ -925,6 +925,9 @@ type NodeInfoStatus struct {
 	WorkloadsArchitectures []string `json:"workloadsArchitectures,omitempty"`
 	// ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes.
 	ControlPlaneArchitectures []string `json:"controlPlaneArchitectures,omitempty"`
+
+	// DefaultWorkloadArchitecture is chosen automatically by HCO. This field reports the architecture selected by HCO.
+	DefaultWorkloadArchitecture string `json:"defaultWorkloadArchitecture,omitempty"`
 }
 
 // ApplicationAwareConfigurations holds the AAQ configurations

@@ -495,6 +495,11 @@ func updateStatus(req *common.HcoRequest) {
 		req.Instance.Status.NodeInfo.WorkloadsArchitectures = workloadsArch
 		req.StatusDirty = true
 	}
+
+	if defaultArch := nodeinfo.GetDefaultArchitecture(); defaultArch != req.Instance.Status.NodeInfo.DefaultWorkloadArchitecture {
+		req.Instance.Status.NodeInfo.DefaultWorkloadArchitecture = defaultArch
+		req.StatusDirty = true
+	}
 }
 
 // getHyperConverged gets the HyperConverged resource from the Kubernetes API.
