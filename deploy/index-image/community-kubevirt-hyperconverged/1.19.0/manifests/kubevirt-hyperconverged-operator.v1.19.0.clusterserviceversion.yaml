@@ -4389,7 +4389,7 @@ spec:
                 - name: AUTOPILOT_VERSION
                   value: v0.0.10
                 - name: VM_FILE_RESTORE_OPERATOR_VERSION
-                  value: v0.0.4
+                  value: v0.0.5
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5531,10 +5531,10 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
                 - name: OPERATOR_VERSION
-                  value: v0.0.4
+                  value: v0.0.5
                 - name: VERBOSITY
                   value: "1"
-                image: quay.io/kubevirt/vm-file-restore-operator@sha256:26417301a23e89b82cf10ea18036ad38cb6852cd8f1fe088e50af2e0957822b7
+                image: quay.io/kubevirt/vm-file-restore-operator@sha256:ac17e065b0dc22c9af08ec6d9d9bcc1a5c9accbc16a7ba2fd732c0a53428e40d
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6573,7 +6573,7 @@ spec:
     name: virt-template-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838
     name: virtio-container-disk
-  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:26417301a23e89b82cf10ea18036ad38cb6852cd8f1fe088e50af2e0957822b7
+  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:ac17e065b0dc22c9af08ec6d9d9bcc1a5c9accbc16a7ba2fd732c0a53428e40d
     name: vm-file-restore-operator
   - image: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
     name: wasp-agent
