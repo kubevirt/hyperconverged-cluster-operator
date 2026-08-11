@@ -140,6 +140,11 @@ func NewKvUIPluginDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	deployment := getKvUIDeployment(hc, kvUIPluginDeploymentName, kvUIPluginImage,
 		kvUIPluginServingCertName, kvUIPluginServingCertPath, hcoutil.UIPluginServerPort, hcoutil.AppComponentUIPlugin)
 
+	// The nginx entrypoint, the /usr/libexec/s2i/run script, calls the generate_container_user that writes to the root
+	// file system. We can't set the ReadOnlyRootFilesystem field for this container.
+	// TODO: remove this when the image is fixed.
+	deployment.Spec.Template.Spec.Containers[0].SecurityContext.ReadOnlyRootFilesystem = nil
+
 	nginxVolumeMount := corev1.VolumeMount{
 		Name:      nginxConfigMapName,
 		MountPath: "/etc/nginx/nginx.conf",

@@ -307,6 +307,19 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 						ReadinessProbe:           getReadinessProbe("/health", util.CliDownloadsServerPort),
 						LivenessProbe:            getLivenessProbe("/health", util.CliDownloadsServerPort),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						VolumeMounts: []corev1.VolumeMount{
+							{Name: "nginx-tmp", MountPath: "/tmp"},
+						},
+					},
+				},
+				Volumes: []corev1.Volume{
+					{
+						Name: "nginx-tmp",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{
+								SizeLimit: new(resource.MustParse("256Mi")),
+							},
+						},
 					},
 				},
 				PriorityClassName: "system-cluster-critical",

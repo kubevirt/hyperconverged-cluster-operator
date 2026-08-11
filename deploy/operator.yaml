@@ -120,6 +120,7 @@ spec:
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
       priorityClassName: system-cluster-critical
       securityContext:
@@ -207,6 +208,7 @@ spec:
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /apiserver.local.config/certificates
@@ -285,13 +287,21 @@ spec:
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /tmp
+          name: nginx-tmp
       priorityClassName: system-cluster-critical
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: hyperconverged-cluster-cli-download
+      volumes:
+      - emptyDir:
+          sizeLimit: 256Mi
+        name: nginx-tmp
 ---
 apiVersion: apps/v1
 kind: Deployment
