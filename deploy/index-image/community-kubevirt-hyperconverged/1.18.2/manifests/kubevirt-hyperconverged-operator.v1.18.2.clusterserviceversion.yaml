@@ -3961,6 +3961,63 @@ spec:
           - list
           - watch
         - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - storageprofiles
+          verbs:
+          - list
+        - apiGroups:
+          - ""
+          resources:
+          - persistentvolumeclaims
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachineinstances
+          verbs:
+          - get
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          - serviceaccounts
+          - services
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - daemonsets
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - forklift.konveyor.io
           resources:
           - forkliftcontrollers
@@ -3994,6 +4051,17 @@ spec:
           - update
           - watch
         - apiGroups:
+          - loki.grafana.com
+          resources:
+          - lokistacks
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - machineconfiguration.openshift.io
           resources:
           - kubeletconfigs
@@ -4019,7 +4087,9 @@ spec:
         - apiGroups:
           - monitoring.coreos.com
           resources:
+          - podmonitors
           - prometheusrules
+          - servicemonitors
           verbs:
           - create
           - get
@@ -4030,9 +4100,11 @@ spec:
         - apiGroups:
           - observability.openshift.io
           resources:
+          - clusterlogforwarders
           - uiplugins
           verbs:
           - create
+          - delete
           - get
           - list
           - patch
@@ -4050,9 +4122,56 @@ spec:
           - update
           - watch
         - apiGroups:
+          - perses.dev
+          resources:
+          - persesdashboards
+          - persesdatasources
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          - clusterroles
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - remediation.medik8s.io
           resources:
           - nodehealthchecks
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - storage-based-remediation.medik8s.io
+          resources:
+          - storagebasedremediationconfigs
           verbs:
           - create
           - get
@@ -4135,7 +4254,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.2.0
                 - name: AUTOPILOT_VERSION
-                  value: v0.0.10
+                  value: v0.1.0
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5212,7 +5331,7 @@ spec:
                 - --namespace=kubevirt-hyperconverged
                 command:
                 - /manager
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:ba94138eb74ebf3508dd1f2722773d0f1091aa683947ff1a1a5690168fed6384
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:5ba94d577537588f6bb83833e9af4cc5500b10cc80005473942a0aa4645a00c1
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6204,7 +6323,7 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:65d23c9ad91707a4fb5f0103e04c12d02343437ac44e3a31608d7a1fff003d55
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:ba94138eb74ebf3508dd1f2722773d0f1091aa683947ff1a1a5690168fed6384
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:5ba94d577537588f6bb83833e9af4cc5500b10cc80005473942a0aa4645a00c1
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:631ade5aced9ffb248f2725759c7d37376d596875b05f6a331a12342a281a1ce
     name: virt-synchronization-controller

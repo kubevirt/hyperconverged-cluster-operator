@@ -4684,6 +4684,63 @@ rules:
   - list
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - storageprofiles
+  verbs:
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachineinstances
+  verbs:
+  - get
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - serviceaccounts
+  - services
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - forklift.konveyor.io
   resources:
   - forkliftcontrollers
@@ -4717,6 +4774,17 @@ rules:
   - update
   - watch
 - apiGroups:
+  - loki.grafana.com
+  resources:
+  - lokistacks
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - machineconfiguration.openshift.io
   resources:
   - kubeletconfigs
@@ -4742,7 +4810,9 @@ rules:
 - apiGroups:
   - monitoring.coreos.com
   resources:
+  - podmonitors
   - prometheusrules
+  - servicemonitors
   verbs:
   - create
   - get
@@ -4753,9 +4823,11 @@ rules:
 - apiGroups:
   - observability.openshift.io
   resources:
+  - clusterlogforwarders
   - uiplugins
   verbs:
   - create
+  - delete
   - get
   - list
   - patch
@@ -4773,9 +4845,56 @@ rules:
   - update
   - watch
 - apiGroups:
+  - perses.dev
+  resources:
+  - persesdashboards
+  - persesdatasources
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterrolebindings
+  - clusterroles
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - remediation.medik8s.io
   resources:
   - nodehealthchecks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - storage-based-remediation.medik8s.io
+  resources:
+  - storagebasedremediationconfigs
   verbs:
   - create
   - get
