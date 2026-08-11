@@ -4111,6 +4111,65 @@ spec:
           - list
           - watch
         - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - storageprofiles
+          verbs:
+          - list
+        - apiGroups:
+          - ""
+          resources:
+          - persistentvolumeclaims
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachineinstances
+          verbs:
+          - get
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - kubevirt-metrics-exporter
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          - serviceaccounts
+          - services
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - daemonsets
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - forklift.konveyor.io
           resources:
           - forkliftcontrollers
@@ -4144,6 +4203,17 @@ spec:
           - update
           - watch
         - apiGroups:
+          - loki.grafana.com
+          resources:
+          - lokistacks
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - machineconfiguration.openshift.io
           resources:
           - kubeletconfigs
@@ -4169,7 +4239,9 @@ spec:
         - apiGroups:
           - monitoring.coreos.com
           resources:
+          - podmonitors
           - prometheusrules
+          - servicemonitors
           verbs:
           - create
           - get
@@ -4180,9 +4252,11 @@ spec:
         - apiGroups:
           - observability.openshift.io
           resources:
+          - clusterlogforwarders
           - uiplugins
           verbs:
           - create
+          - delete
           - get
           - list
           - patch
@@ -4200,9 +4274,93 @@ spec:
           - update
           - watch
         - apiGroups:
+          - perses.dev
+          resources:
+          - persesdashboards
+          - persesdatasources
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          verbs:
+          - create
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resourceNames:
+          - kubevirt-metrics-exporter
+          - kubevirt-metrics-exporter-scc
+          - logging-collector-application
+          - logging-collector-audit
+          - logging-collector-infrastructure
+          - logging-collector-logs-writer
+          resources:
+          - clusterrolebindings
+          verbs:
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterroles
+          verbs:
+          - create
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resourceNames:
+          - kubevirt-metrics-exporter
+          - kubevirt-metrics-exporter-scc
+          resources:
+          - clusterroles
+          verbs:
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - remediation.medik8s.io
           resources:
           - nodehealthchecks
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - create
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - kubevirt-metrics-exporter
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - storage-based-remediation.medik8s.io
+          resources:
+          - storagebasedremediationconfigs
           verbs:
           - create
           - get
@@ -4400,7 +4558,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.2.0
                 - name: AUTOPILOT_VERSION
-                  value: v0.0.10
+                  value: v0.1.1
                 - name: VM_FILE_RESTORE_OPERATOR_VERSION
                   value: v0.0.5
                 - name: INFLIGHT_OPERATIONS_VERSION
@@ -5487,7 +5645,10 @@ spec:
                 - --namespace=kubevirt-hyperconverged
                 command:
                 - /manager
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:ba94138eb74ebf3508dd1f2722773d0f1091aa683947ff1a1a5690168fed6384
+                env:
+                - name: RELATED_IMAGE_KUBEVIRT_METRICS_EXPORTER
+                  value: quay.io/openshift-virtualization/kubevirt-metrics-exporter@sha256:a6337b9bbaa0b66835b2b09afffa39766b1fa283d1c29c02087873e9b8097121
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:242b054acd0e2f9825fe44caebf1f0a23fab7c0dbefb786e06106f2d108a9d96
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6538,6 +6699,8 @@ spec:
     name: kubevirt-aie-webhook
   - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:147a0a9fbd8169bdf150242d8a7aaf4587634bf30e588639a0f854777aba62d1
     name: kubevirt-apiserver-proxy
+  - image: quay.io/openshift-virtualization/kubevirt-metrics-exporter@sha256:a6337b9bbaa0b66835b2b09afffa39766b1fa283d1c29c02087873e9b8097121
+    name: kubevirt-metrics-exporter
   - image: quay.io/kubevirt/kubevirt-migration-controller@sha256:d235178862451a14826894d9ddf8af96898fc098ae6e7af56987f694cfd57c5b
     name: kubevirt-migration-controller
   - image: quay.io/kubevirt/kubevirt-migration-operator@sha256:54bd78472e336f176db777df1c02fbebeb34049bad067949666c76ea15f84141
@@ -6586,7 +6749,7 @@ spec:
     name: virt-observability-controller
   - image: quay.io/kubevirt/virt-operator@sha256:d08b5b5ad1c0d694fad13279e44b44b6fad961aa7508acd53b87ce6ef468cbae
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:ba94138eb74ebf3508dd1f2722773d0f1091aa683947ff1a1a5690168fed6384
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:242b054acd0e2f9825fe44caebf1f0a23fab7c0dbefb786e06106f2d108a9d96
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:6163d1108317d2abc4fef3213b4a00acfc8e066625d22882671fcb032859e062
     name: virt-synchronization-controller
