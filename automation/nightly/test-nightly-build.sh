@@ -129,8 +129,8 @@ INDEX_IMAGE_NAME="${HCO_INDEX_IMAGE_REPO}:${IMAGE_TAG}"
 hco_bucket="kubevirt-prow/devel/nightly/release/kubevirt/hyperconverged-cluster-operator"
 echo "${BUNDLE_IMAGE_NAME}" > hco-bundle
 echo "${INDEX_IMAGE_NAME}" > hco-index
-gsutil cp ./hco-bundle "gs://${hco_bucket}/${build_date}/hco-bundle-image"
-gsutil cp ./hco-index "gs://${hco_bucket}/${build_date}/hco-index-image"
+gcloud storage cp ./hco-bundle "gs://${hco_bucket}/${build_date}/hco-bundle-image"
+gcloud storage cp ./hco-index "gs://${hco_bucket}/${build_date}/hco-index-image"
 
 # download operator-sdk
 sdk_url=$(curl https://api.github.com/repos/operator-framework/operator-sdk/releases/latest | jq -rM '.assets[] | select(.name == "operator-sdk_linux_amd64") | .browser_download_url')
@@ -180,7 +180,7 @@ fi
 
 # functional test passed: publish latest nightly build
 echo "${build_date}" > build-date
-gsutil cp ./build-date gs://${hco_bucket}/latest
+gcloud storage cp ./build-date gs://${hco_bucket}/latest
 
 IMAGE_REPO=${HCO_OPERATOR_IMAGE_REPO} CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
 IMAGE_REPO=${HCO_WEBHOOK_IMAGE_REPO}  CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
