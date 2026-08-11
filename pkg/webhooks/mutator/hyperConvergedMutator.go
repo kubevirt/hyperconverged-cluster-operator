@@ -2,6 +2,8 @@ package mutator
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -10,6 +12,8 @@ import (
 	"github.com/go-logr/logr"
 	"gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -100,9 +104,22 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, lo
 		}
 
 		oldHC = &hcov1.HyperConverged{}
+
 		if err = hcm.decoder.DecodeRaw(req.OldObject, oldHC); err != nil {
 			logger.Error(err, "failed to read the old HyperConverged custom resource")
-			return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the old HyperConverged"))
+			if jsonErr, ok := errors.AsType[*json.UnmarshalTypeError](err); ok && jsonErr.Field == "spec.featureGates" {
+				// For some unknown reasons, sometimes during an upgrade from v1.18, the featureGates becomes an empty
+				// object instead of an empty array.
+				// Trying to recover from this edge case by removing the featureGates field.
+				logger.Info("trying to recover from featureGates with wrong format")
+				var recoverErr error
+				if patches, recoverErr = hcm.recoverBadFeatureGates(req, hc, oldHC, logger, patches); recoverErr != nil {
+					logger.Error(recoverErr, "failed to recover old object's featureGates with wrong format")
+					return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the old HyperConverged"))
+				}
+			} else {
+				return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the old HyperConverged"))
+			}
 		}
 
 		for _, fieldAndFG := range fieldFGDetails {
@@ -358,4 +375,47 @@ func compareFGPatches(a, b jsonpatch.JsonPatchOperation) int {
 	}
 
 	return bIdx - aIdx
+}
+
+func (hcm *HyperConvergedMutator) recoverBadFeatureGates(req admission.Request, hc, oldHC *hcov1.HyperConverged, logger logr.Logger, patches []jsonpatch.JsonPatchOperation) ([]jsonpatch.JsonPatchOperation, error) {
+	unstructuredObj := &unstructured.Unstructured{}
+	if err := hcm.decoder.DecodeRaw(req.OldObject, unstructuredObj); err != nil {
+		return nil, err
+	}
+
+	spec, ok := unstructuredObj.Object["spec"]
+	if !ok {
+		// should never get here
+		return nil, errors.New("spec field is missing")
+	}
+
+	specMap, ok := spec.(map[string]any)
+	if !ok {
+		return nil, errors.New("spec field is not an object")
+	}
+
+	fgs := specMap["featureGates"]
+	if fgs == nil {
+		return nil, errors.New("featureGates field is missing")
+	}
+
+	if fgsObj, ok := fgs.(map[string]any); ok && len(fgsObj) == 0 {
+		logger.Info("featureGates field is in wrong format; fixing it")
+		specMap["featureGates"] = nil
+		if len(hc.Spec.FeatureGates) == 0 {
+			patches = append(patches, jsonpatch.JsonPatchOperation{
+				Operation: "remove",
+				Path:      featureGatesPath,
+			})
+		}
+	} else {
+		fgsBytes, err := json.Marshal(specMap["featureGates"])
+		if err != nil {
+			logger.Info("can't find the known featureGates issue")
+		} else {
+			logger.Info("can't find the known featureGates issue; the featureGates field is " + string(fgsBytes))
+		}
+	}
+
+	return patches, runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, oldHC)
 }

@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -11,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -47,7 +47,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			},
 			Spec: hcov1.HyperConvergedSpec{
 				Virtualization: hcov1.VirtualizationConfig{
-					EvictionStrategy: ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
+					EvictionStrategy: new(kubevirtcorev1.EvictionStrategyLiveMigrate),
 				},
 			},
 		}
@@ -142,7 +142,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					Value:     1,
 				},
 			}),
-			Entry("retentionPolicy is missing", &cdiv1beta1.DataImportCronSpec{ImportsToKeep: ptr.To[int32](1)}, []jsonpatch.JsonPatchOperation{
+			Entry("retentionPolicy is missing", &cdiv1beta1.DataImportCronSpec{ImportsToKeep: new(int32(1))}, []jsonpatch.JsonPatchOperation{
 				{
 					Operation: "add",
 					Path:      fmt.Sprintf(dictsPathTemplate+retentionPolicyPath, 0),
@@ -151,7 +151,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			}),
 			Entry("importsToKeep is missing",
 				&cdiv1beta1.DataImportCronSpec{
-					RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
+					RetentionPolicy: new(cdiv1beta1.DataImportCronRetainNone),
 				},
 				[]jsonpatch.JsonPatchOperation{
 					{
@@ -193,7 +193,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
 					},
 					Spec: &cdiv1beta1.DataImportCronSpec{
-						ImportsToKeep: ptr.To[int32](1),
+						ImportsToKeep: new(int32(1)),
 					},
 				},
 				{
@@ -202,7 +202,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
 					},
 					Spec: &cdiv1beta1.DataImportCronSpec{
-						RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
+						RetentionPolicy: new(cdiv1beta1.DataImportCronRetainNone),
 					},
 				},
 				{
@@ -258,7 +258,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		Context("Check defaults for cluster level EvictionStrategy", func() {
 
 			DescribeTable("check EvictionStrategy default", func(ctx context.Context, SNO bool, strategy *kubevirtcorev1.EvictionStrategy, patches []jsonpatch.JsonPatchOperation) {
-				cr.Status.InfrastructureHighlyAvailable = ptr.To(!SNO)
+				cr.Status.InfrastructureHighlyAvailable = new(!SNO)
 
 				cr.Spec.Virtualization.EvictionStrategy = strategy
 
@@ -281,17 +281,17 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				),
 				Entry("should not override EvictionStrategy if set and on SNO - 1",
 					true,
-					ptr.To(kubevirtcorev1.EvictionStrategyNone),
+					new(kubevirtcorev1.EvictionStrategyNone),
 					nil,
 				),
 				Entry("should not override EvictionStrategy if set and on SNO - 2",
 					true,
-					ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
+					new(kubevirtcorev1.EvictionStrategyLiveMigrate),
 					nil,
 				),
 				Entry("should not override EvictionStrategy if set and on SNO - 3",
 					true,
-					ptr.To(kubevirtcorev1.EvictionStrategyExternal),
+					new(kubevirtcorev1.EvictionStrategyExternal),
 					nil,
 				),
 				Entry("should set EvictionStrategyLiveMigrate if not set and not on SNO",
@@ -305,17 +305,17 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				),
 				Entry("should not override EvictionStrategy if set and not on SNO - 1",
 					false,
-					ptr.To(kubevirtcorev1.EvictionStrategyNone),
+					new(kubevirtcorev1.EvictionStrategyNone),
 					nil,
 				),
 				Entry("should not override EvictionStrategy if set and not on SNO - 2",
 					false,
-					ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
+					new(kubevirtcorev1.EvictionStrategyLiveMigrate),
 					nil,
 				),
 				Entry("should not override EvictionStrategy if set and not on SNO - 3",
 					false,
-					ptr.To(kubevirtcorev1.EvictionStrategyExternal),
+					new(kubevirtcorev1.EvictionStrategyExternal),
 					nil,
 				),
 			)
@@ -455,7 +455,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					Value:     1,
 				},
 			}),
-			Entry("retentionPolicy is missing", &cdiv1beta1.DataImportCronSpec{ImportsToKeep: ptr.To[int32](1)}, []jsonpatch.JsonPatchOperation{
+			Entry("retentionPolicy is missing", &cdiv1beta1.DataImportCronSpec{ImportsToKeep: new(int32(1))}, []jsonpatch.JsonPatchOperation{
 				{
 					Operation: "add",
 					Path:      fmt.Sprintf(dictsPathTemplate+retentionPolicyPath, 0),
@@ -464,7 +464,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			}),
 			Entry("importsToKeep is missing",
 				&cdiv1beta1.DataImportCronSpec{
-					RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
+					RetentionPolicy: new(cdiv1beta1.DataImportCronRetainNone),
 				},
 				[]jsonpatch.JsonPatchOperation{
 					{
@@ -485,8 +485,8 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					},
 					Spec: &cdiv1beta1.DataImportCronSpec{
 						// same as the HCO's default values; should not override existing value
-						RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
-						ImportsToKeep:   ptr.To[int32](1),
+						RetentionPolicy: new(cdiv1beta1.DataImportCronRetainNone),
+						ImportsToKeep:   new(int32(1)),
 					},
 				},
 				{
@@ -496,8 +496,8 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					},
 					Spec: &cdiv1beta1.DataImportCronSpec{
 						// same as the CDI's default values; should not override existing value
-						RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainAll),
-						ImportsToKeep:   ptr.To[int32](3),
+						RetentionPolicy: new(cdiv1beta1.DataImportCronRetainAll),
+						ImportsToKeep:   new(int32(3)),
 					},
 				},
 				{
@@ -507,8 +507,8 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					},
 					Spec: &cdiv1beta1.DataImportCronSpec{
 						// same as the HCO's default values; should not override existing value
-						RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
-						ImportsToKeep:   ptr.To[int32](1),
+						RetentionPolicy: new(cdiv1beta1.DataImportCronRetainNone),
+						ImportsToKeep:   new(int32(1)),
 					},
 				},
 				{
@@ -518,8 +518,8 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					},
 					Spec: &cdiv1beta1.DataImportCronSpec{
 						// same as the HCO's default values; should not override existing value
-						RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
-						ImportsToKeep:   ptr.To[int32](1),
+						RetentionPolicy: new(cdiv1beta1.DataImportCronRetainNone),
+						ImportsToKeep:   new(int32(1)),
 					},
 				},
 				{
@@ -528,7 +528,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
 					},
 					Spec: &cdiv1beta1.DataImportCronSpec{
-						ImportsToKeep: ptr.To[int32](1),
+						ImportsToKeep: new(int32(1)),
 					},
 				},
 				{
@@ -537,7 +537,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
 					},
 					Spec: &cdiv1beta1.DataImportCronSpec{
-						RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
+						RetentionPolicy: new(cdiv1beta1.DataImportCronRetainNone),
 					},
 				},
 				{
@@ -589,11 +589,51 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			}))
 		})
 
+		It("should recover from a bad featureGate format", func(ctx context.Context) {
+			origCR := cr.DeepCopy()
+
+			req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+
+			unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&origCR)
+			Expect(err).NotTo(HaveOccurred())
+			unstructuredObj["spec"].(map[string]any)["featureGates"] = map[string]any{}
+			badOrigHC, err := json.Marshal(unstructuredObj)
+			Expect(err).NotTo(HaveOccurred())
+
+			req.OldObject.Raw = badOrigHC
+
+			res := mutator.Handle(ctx, req)
+			Expect(res.Allowed).To(BeTrue())
+
+			Expect(res.Patches).ToNot(BeEmpty())
+			Expect(res.Patches).To(ContainElement(jsonpatch.JsonPatchOperation{Operation: "remove", Path: featureGatesPath}))
+		})
+
+		It("should recover from a bad featureGate format, if new HC contains FGs", func(ctx context.Context) {
+			origCR := cr.DeepCopy()
+			cr.Spec.FeatureGates.Enable("some-fake-fg")
+
+			req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+
+			unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&origCR)
+			Expect(err).NotTo(HaveOccurred())
+			unstructuredObj["spec"].(map[string]any)["featureGates"] = map[string]any{}
+			badOrigHC, err := json.Marshal(unstructuredObj)
+			Expect(err).NotTo(HaveOccurred())
+
+			req.OldObject.Raw = badOrigHC
+
+			res := mutator.Handle(ctx, req)
+			Expect(res.Allowed).To(BeTrue())
+
+			Expect(res.Patches).ToNot(ContainElement(jsonpatch.JsonPatchOperation{Operation: "remove", Path: featureGatesPath}))
+		})
+
 		Context("Check defaults for cluster level EvictionStrategy", func() {
 
 			DescribeTable("check EvictionStrategy default", func(ctx context.Context, SNO bool, strategy *kubevirtcorev1.EvictionStrategy, patches []jsonpatch.JsonPatchOperation) {
 				origCR := cr.DeepCopy()
-				cr.Status.InfrastructureHighlyAvailable = ptr.To(!SNO)
+				cr.Status.InfrastructureHighlyAvailable = new(!SNO)
 
 				cr.Spec.Virtualization.EvictionStrategy = strategy
 
@@ -615,17 +655,17 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				),
 				Entry("should not override EvictionStrategy if set and on SNO - 1",
 					true,
-					ptr.To(kubevirtcorev1.EvictionStrategyNone),
+					new(kubevirtcorev1.EvictionStrategyNone),
 					nil,
 				),
 				Entry("should not override EvictionStrategy if set and on SNO - 2",
 					true,
-					ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
+					new(kubevirtcorev1.EvictionStrategyLiveMigrate),
 					nil,
 				),
 				Entry("should not override EvictionStrategy if set and on SNO - 3",
 					true,
-					ptr.To(kubevirtcorev1.EvictionStrategyExternal),
+					new(kubevirtcorev1.EvictionStrategyExternal),
 					nil,
 				),
 				Entry("should set EvictionStrategyLiveMigrate if not set and not on SNO",
@@ -639,17 +679,17 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				),
 				Entry("should not override EvictionStrategy if set and not on SNO - 1",
 					false,
-					ptr.To(kubevirtcorev1.EvictionStrategyNone),
+					new(kubevirtcorev1.EvictionStrategyNone),
 					nil,
 				),
 				Entry("should not override EvictionStrategy if set and not on SNO - 2",
 					false,
-					ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
+					new(kubevirtcorev1.EvictionStrategyLiveMigrate),
 					nil,
 				),
 				Entry("should not override EvictionStrategy if set and not on SNO - 3",
 					false,
-					ptr.To(kubevirtcorev1.EvictionStrategyExternal),
+					new(kubevirtcorev1.EvictionStrategyExternal),
 					nil,
 				),
 			)
