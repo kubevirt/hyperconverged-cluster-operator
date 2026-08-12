@@ -41,7 +41,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -353,9 +352,9 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 		DeploymentName:          hcoWhDeploymentName,
 		ContainerPort:           hcoutil.WebhookPort,
 		AdmissionReviewVersions: admissionReviewVersions,
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNoneOnDryRun),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
+		SideEffects:             new(admissionregistrationv1.SideEffectClassNoneOnDryRun),
+		FailurePolicy:           new(admissionregistrationv1.Fail),
+		TimeoutSeconds:          new(int32(10)),
 		ObjectSelector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{hcoutil.KubernetesMetadataName: params.Namespace},
 		},
@@ -371,7 +370,7 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 				},
 			},
 		},
-		WebhookPath: ptr.To(hcoutil.HCONSWebhookPath),
+		WebhookPath: new(hcoutil.HCONSWebhookPath),
 	}
 
 	v1Beta1MutatingHyperConvergedWebhook := createHCMutatingWebhook(
@@ -609,9 +608,9 @@ func createCommonHCWebhook(whType csvv1alpha1.WebhookAdmissionType, sideEffect a
 		ContainerPort:           hcoutil.WebhookPort,
 		AdmissionReviewVersions: admissionReviewVersions,
 		SideEffects:             &sideEffect,
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		MatchPolicy:             ptr.To(admissionregistrationv1.Exact),
-		TimeoutSeconds:          ptr.To[int32](10),
+		FailurePolicy:           new(admissionregistrationv1.Fail),
+		MatchPolicy:             new(admissionregistrationv1.Exact),
+		TimeoutSeconds:          new(int32(10)),
 		Rules: []admissionregistrationv1.RuleWithOperations{
 			{
 				Operations: ops,
@@ -746,7 +745,7 @@ func getReplacesVersion() string {
 func getRelatedImages() []csvv1alpha1.RelatedImage {
 	var ris []csvv1alpha1.RelatedImage
 
-	for _, image := range strings.Split(*relatedImagesList, ",") {
+	for image := range strings.SplitSeq(*relatedImagesList, ",") {
 		if image != "" {
 			ris = addRelatedImage(ris, image)
 		}

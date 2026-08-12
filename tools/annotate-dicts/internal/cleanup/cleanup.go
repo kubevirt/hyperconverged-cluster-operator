@@ -59,7 +59,7 @@ func CleanOutput(out []byte) []byte {
 
 		submatch := cronRegex.FindAllStringSubmatch(string(line), -1)
 		if len(submatch) > 0 {
-			line = []byte(fmt.Sprintf("%s%q", submatch[0][1], submatch[0][2]))
+			line = fmt.Appendf(nil, "%s%q", submatch[0][1], submatch[0][2])
 		}
 
 		buf.Write(line)

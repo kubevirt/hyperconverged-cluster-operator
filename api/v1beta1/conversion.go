@@ -161,7 +161,7 @@ func convertVirtualizationV1ToV1beta1(v1VirtConfig hcov1.VirtualizationConfig, v
 
 	if v1VirtConfig.MediatedDevicesConfiguration != nil {
 		v1beta1Spec.MediatedDevicesConfiguration = &MediatedDevicesConfiguration{}
-		if err := converter.Convert(v1VirtConfig.MediatedDevicesConfiguration, v1beta1Spec.MediatedDevicesConfiguration, converter.DefaultMeta(reflect.TypeOf(&MediatedDevicesConfiguration{}))); err != nil {
+		if err := converter.Convert(v1VirtConfig.MediatedDevicesConfiguration, v1beta1Spec.MediatedDevicesConfiguration, converter.DefaultMeta(reflect.TypeFor[*MediatedDevicesConfiguration]())); err != nil {
 			return err
 		}
 	}
@@ -257,7 +257,7 @@ func convertVirtualizationV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1VirtConf
 			v1VirtConfig.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{}
 		}
 
-		if err := converter.Convert(v1beta1Spec.MediatedDevicesConfiguration, v1VirtConfig.MediatedDevicesConfiguration, converter.DefaultMeta(reflect.TypeOf(&hcov1.MediatedDevicesConfiguration{}))); err != nil {
+		if err := converter.Convert(v1beta1Spec.MediatedDevicesConfiguration, v1VirtConfig.MediatedDevicesConfiguration, converter.DefaultMeta(reflect.TypeFor[*hcov1.MediatedDevicesConfiguration]())); err != nil {
 			return err
 		}
 	}

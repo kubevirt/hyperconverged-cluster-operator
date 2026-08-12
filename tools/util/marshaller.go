@@ -34,7 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func MarshallObject(obj interface{}, writer io.Writer) error {
+func MarshallObject(obj any, writer io.Writer) error {
 	r, err := unmarshalToUnstructured(obj)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func MarshallObject(obj interface{}, writer io.Writer) error {
 	return writeOutputWithYamlSeparator(writer, yamlBytes)
 }
 
-func unmarshalToUnstructured(obj interface{}) (*unstructured.Unstructured, error) {
+func unmarshalToUnstructured(obj any) (*unstructured.Unstructured, error) {
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
 		return &unstructured.Unstructured{}, err
@@ -123,7 +123,7 @@ func cleanupDataSourceFromTemplates(r *unstructured.Unstructured) {
 	templates, exists, _ := unstructured.NestedSlice(r.Object, "spec", "dataVolumeTemplates")
 	if exists {
 		for _, tmpl := range templates {
-			template := tmpl.(map[string]interface{})
+			template := tmpl.(map[string]any)
 			_, exists, _ = unstructured.NestedString(template, "spec", "pvc", "dataSource")
 			if !exists {
 				unstructured.RemoveNestedField(template, "spec", "pvc", "dataSource")
@@ -137,7 +137,7 @@ func cleanupDataSourceFromPVC(r *unstructured.Unstructured) {
 	objects, exists, _ := unstructured.NestedSlice(r.Object, "objects")
 	if exists {
 		for _, obj := range objects {
-			object := obj.(map[string]interface{})
+			object := obj.(map[string]any)
 			kind, exists, _ := unstructured.NestedString(object, "kind")
 			if exists && kind == "PersistentVolumeClaim" {
 				_, exists, _ = unstructured.NestedString(object, "spec", "dataSource")
@@ -154,7 +154,7 @@ func cleanupNonSpecFieldsFromDeployments(r *unstructured.Unstructured) {
 	deployments, exists, _ := unstructured.NestedSlice(r.Object, "spec", "install", "spec", "deployments")
 	if exists {
 		for _, obj := range deployments {
-			deployment := obj.(map[string]interface{})
+			deployment := obj.(map[string]any)
 			unstructured.RemoveNestedField(deployment, "metadata", "creationTimestamp")
 			unstructured.RemoveNestedField(deployment, "spec", "template", "metadata", "creationTimestamp")
 			unstructured.RemoveNestedField(deployment, "status")

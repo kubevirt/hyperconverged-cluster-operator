@@ -261,7 +261,7 @@ func writeEnvFile(images []*Image) error {
 	return nil
 }
 
-func exitOnError(err error, msg string, fmtParams ...interface{}) {
+func exitOnError(err error, msg string, fmtParams ...any) {
 	if err != nil {
 		fmt.Printf("%s; %v\n", fmt.Sprintf(msg, fmtParams...), err)
 		os.Exit(1)
