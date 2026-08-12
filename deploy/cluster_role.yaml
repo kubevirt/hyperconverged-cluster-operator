@@ -4684,6 +4684,23 @@ rules:
   - list
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - forklift.konveyor.io
   resources:
   - forkliftcontrollers
@@ -4743,6 +4760,7 @@ rules:
   - monitoring.coreos.com
   resources:
   - prometheusrules
+  - servicemonitors
   verbs:
   - create
   - get
@@ -4755,6 +4773,7 @@ rules:
   resources:
   - uiplugins
   verbs:
+  - delete
   - create
   - get
   - list
@@ -4773,10 +4792,22 @@ rules:
   - update
   - watch
 - apiGroups:
+  - perses.dev
+  resources:
+  - persesdashboards
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - remediation.medik8s.io
   resources:
   - nodehealthchecks
   verbs:
+  - delete
   - create
   - get
   - list
