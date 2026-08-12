@@ -73,7 +73,7 @@ spec:
         - name: MIGRATION_OPERATOR_VERSION
           value: v0.2.0
         - name: AUTOPILOT_VERSION
-          value: v0.0.10
+          value: v0.1.1
         - name: VM_FILE_RESTORE_OPERATOR_VERSION
           value: v0.0.5
         - name: INFLIGHT_OPERATIONS_VERSION
@@ -1208,7 +1208,10 @@ spec:
         - --namespace=kubevirt-hyperconverged
         command:
         - /manager
-        image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:ba94138eb74ebf3508dd1f2722773d0f1091aa683947ff1a1a5690168fed6384
+        env:
+        - name: RELATED_IMAGE_KUBEVIRT_METRICS_EXPORTER
+          value: quay.io/openshift-virtualization/kubevirt-metrics-exporter@sha256:a6337b9bbaa0b66835b2b09afffa39766b1fa283d1c29c02087873e9b8097121
+        image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:242b054acd0e2f9825fe44caebf1f0a23fab7c0dbefb786e06106f2d108a9d96
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:

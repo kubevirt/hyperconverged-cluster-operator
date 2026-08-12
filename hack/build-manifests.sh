@@ -238,6 +238,7 @@ create_autopilot_csv() {
     --operator-version=${AUTOPILOT_VERSION} \
     --operator-image=${AUTOPILOT_IMAGE} \
     --pull-policy=IfNotPresent \
+    --additional-images=RELATED_IMAGE_KUBEVIRT_METRICS_EXPORTER:${KUBEVIRT_METRICS_EXPORTER_IMAGE} \
   "
   gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${AUTOPILOT_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
   echo "${operatorName}"
