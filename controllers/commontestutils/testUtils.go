@@ -41,6 +41,7 @@ import (
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
+	vmfrv1alpha1 "kubevirt.io/vm-file-restore-operator/api/v1alpha1"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -183,6 +184,7 @@ func GetScheme() *runtime.Scheme {
 			csvv1alpha1.AddToScheme,
 			aaqv1alpha1.AddToScheme,
 			migrationv1alpha1.AddToScheme,
+			vmfrv1alpha1.AddToScheme,
 			deschedulerv1.AddToScheme,
 			rbacv1.AddToScheme,
 			networkingv1.AddToScheme,

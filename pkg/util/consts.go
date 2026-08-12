@@ -141,4 +141,5 @@ const (
 	AppComponentInFlightOperations AppComponent = "inflightoperations"
 	AppComponentNetResInjector     AppComponent = "virt-network-resources-injector"
 	AppComponentObservability      AppComponent = "virt-observability-controller"
+	AppComponentFileRestore        AppComponent = "vm-file-restore"
 )

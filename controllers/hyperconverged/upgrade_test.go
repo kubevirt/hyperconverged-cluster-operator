@@ -81,28 +81,31 @@ var _ = Describe("Upgrade Mode", func() {
 		// assumes there is no change in labels. Therefore, it should be
 		// set before getBasicDeployment so that the existing resource can
 		// have the correct labels
-		_ = os.Setenv(hcoutil.HcoKvIoVersionName, newHCOVersion)
+		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, newHCOVersion)).To(Succeed())
 
 		expected = getBasicDeployment()
 		origConditions = expected.hco.Status.Conditions
 		okConds = expected.hco.Status.Conditions
 
 		expected.kv.Status.ObservedKubeVirtVersion = newComponentVersion
-		_ = os.Setenv(hcoutil.KubevirtVersionEnvV, newComponentVersion)
+		Expect(os.Setenv(hcoutil.KubevirtVersionEnvV, newComponentVersion)).To(Succeed())
 
 		expected.cdi.Status.ObservedVersion = newComponentVersion
-		_ = os.Setenv(hcoutil.CdiVersionEnvV, newComponentVersion)
+		Expect(os.Setenv(hcoutil.CdiVersionEnvV, newComponentVersion)).To(Succeed())
 
 		expected.cna.Status.ObservedVersion = newComponentVersion
-		_ = os.Setenv(hcoutil.CnaoVersionEnvV, newComponentVersion)
+		Expect(os.Setenv(hcoutil.CnaoVersionEnvV, newComponentVersion)).To(Succeed())
 
-		_ = os.Setenv(hcoutil.SspVersionEnvV, newComponentVersion)
+		Expect(os.Setenv(hcoutil.SspVersionEnvV, newComponentVersion)).To(Succeed())
 		expected.ssp.Status.ObservedVersion = newComponentVersion
 
 		expected.migController.Status.ObservedVersion = newComponentVersion
-		_ = os.Setenv(hcoutil.MigrationOperatorVersionEnvV, newComponentVersion)
+		Expect(os.Setenv(hcoutil.MigrationOperatorVersionEnvV, newComponentVersion)).To(Succeed())
 
-		_ = os.Setenv(hcoutil.AaqVersionEnvV, newComponentVersion)
+		expected.vmFileRestore.Status.ObservedVersion = newComponentVersion
+		Expect(os.Setenv(hcoutil.VMFileRestoreOperatorVersionEnvV, newComponentVersion)).To(Succeed())
+
+		Expect(os.Setenv(hcoutil.AaqVersionEnvV, newComponentVersion)).To(Succeed())
 
 		expected.hco.Status.Conditions = origConditions
 
