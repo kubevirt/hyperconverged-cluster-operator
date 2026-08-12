@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -120,10 +121,15 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 
 	BeforeAll(func(ctx context.Context) {
 		cli = tests.GetControllerRuntimeClient()
-	})
 
-	AfterAll(func(ctx context.Context) {
-		tests.RestoreDefaultFeatureGates(ctx, cli)
+		By("checking the observability controller image is configured")
+		configured, err := isObservabilityImageConfigured(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(configured).To(BeTrueBecause(`the OBSERVABILITY_CONTROLLER_IMAGE environment variable should be configured in operator deployment. Use the "!observability-controller" label filter in order to skip this test`))
+
+		DeferCleanup(func(ctx context.Context) {
+			tests.RestoreDefaultFeatureGates(ctx, cli)
+		})
 	})
 
 	When("deployObservabilityController feature gate is enabled", func() {
@@ -216,8 +222,18 @@ var _ = Describe("Observability Controller Allowlist Configuration", Label(tests
 	BeforeAll(func(ctx context.Context) {
 		cli = tests.GetControllerRuntimeClient()
 
+		By("checking the observability controller image is configured")
+		configured, err := isObservabilityImageConfigured(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(configured).To(BeTrueBecause(`the OBSERVABILITY_CONTROLLER_IMAGE environment variable should be configured in operator deployment. Use the "!observability-controller" label filter in order to skip this test`))
+
 		By("enabling the deployObservabilityController feature gate")
 		Expect(tests.EnableFG(ctx, cli, observabilityControllerFGName)).To(Succeed())
+
+		DeferCleanup(func(ctx context.Context) {
+			tests.PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/observability"}]`))
+			tests.RestoreDefaultFeatureGates(ctx, cli)
+		})
 
 		By("waiting for the deployment to be created")
 		Eventually(func(ctx context.Context) error {
@@ -229,11 +245,6 @@ var _ = Describe("Observability Controller Allowlist Configuration", Label(tests
 			}
 			return cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)
 		}).WithTimeout(2 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
-	})
-
-	AfterAll(func(ctx context.Context) {
-		tests.PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/observability"}]`))
-		tests.RestoreDefaultFeatureGates(ctx, cli)
 	})
 
 	getDeploymentArgs := func(ctx context.Context) ([]string, error) {
@@ -326,4 +337,24 @@ func getServiceAccountToken(ctx context.Context) (string, error) {
 	}
 
 	return treq.Status.Token, nil
+}
+
+func isObservabilityImageConfigured(ctx context.Context, cli client.Client) (bool, error) {
+	depList := &appsv1.DeploymentList{}
+	err := cli.List(ctx, depList, client.InNamespace(tests.InstallNamespace), client.MatchingLabels{"name": "hyperconverged-cluster-operator"})
+	if err != nil {
+		return false, fmt.Errorf("failed to list operator deployments: %w", err)
+	}
+	if len(depList.Items) == 0 {
+		return false, fmt.Errorf("no hyperconverged-cluster-operator deployment found in namespace %s", tests.InstallNamespace)
+	}
+
+	if len(depList.Items[0].Spec.Template.Spec.Containers) == 0 {
+		return false, fmt.Errorf("operator deployment has no containers")
+	}
+
+	container := depList.Items[0].Spec.Template.Spec.Containers[0]
+	return slices.ContainsFunc(container.Env, func(e v1.EnvVar) bool {
+		return e.Name == "OBSERVABILITY_CONTROLLER_IMAGE" && e.Value != ""
+	}), nil
 }

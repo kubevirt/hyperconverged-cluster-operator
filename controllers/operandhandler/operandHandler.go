@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -73,7 +74,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		netresinjector.NewMutatingWebhookConfigurationHandler(client, scheme),
 	}
 
-	if ci.IsMonitoringAvailable() {
+	if ci.IsMonitoringAvailable() && os.Getenv(hcoutil.ObservabilityControllerImageEnvV) != "" {
 		operandList = append(operandList, []operands.Operand{
 			observabilitycontroller.NewServiceAccountHandler(client, scheme),
 			observabilitycontroller.NewClusterRoleHandler(client, scheme),
