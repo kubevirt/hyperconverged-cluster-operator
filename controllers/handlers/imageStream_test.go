@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -102,7 +101,7 @@ var _ = Describe("imageStream tests", func() {
 		})
 
 		It("should not create the ImageStream resource if the FG is not set", func() {
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(false)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(false)
 
 			cli := commontestutils.InitClient([]client.Object{})
 			handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -121,7 +120,7 @@ var _ = Describe("imageStream tests", func() {
 		})
 
 		It("should delete the ImageStream resource if the FG is not set", func() {
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(false)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(false)
 
 			exists := &imagev1.ImageStream{
 				ObjectMeta: metav1.ObjectMeta{
@@ -172,7 +171,7 @@ var _ = Describe("imageStream tests", func() {
 
 		It("should create the ImageStream resource if not exists", func() {
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 			cli := commontestutils.InitClient([]client.Object{hco})
 			handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
@@ -218,7 +217,7 @@ var _ = Describe("imageStream tests", func() {
 			Expect(imageStreamNames).To(ContainElement("test-image-stream"))
 
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 			By("apply the ImageStream CRs")
 			req := commontestutils.NewReq(hco)
 			res := handlers[0].Ensure(req)
@@ -276,7 +275,7 @@ var _ = Describe("imageStream tests", func() {
 			Expect(imageStreamNames).To(ContainElement("test-image-stream"))
 
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			By("apply the ImageStream CRs", func() {
 				req := commontestutils.NewReq(hco)
@@ -344,7 +343,7 @@ var _ = Describe("imageStream tests", func() {
 			Expect(imageStreamNames).To(ContainElement("test-image-stream"))
 
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			By("apply the ImageStream CRs", func() {
 				req := commontestutils.NewReq(hco)
@@ -408,7 +407,7 @@ var _ = Describe("imageStream tests", func() {
 			Expect(imageStreamNames).To(ContainElement("test-image-stream"))
 
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			By("apply the ImageStream CRs", func() {
 				req := commontestutils.NewReq(hco)
@@ -472,7 +471,7 @@ var _ = Describe("imageStream tests", func() {
 			Expect(imageStreamNames).To(ContainElement("test-image-stream"))
 
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			By("apply the ImageStream CRs", func() {
 				req := commontestutils.NewReq(hco)
@@ -537,7 +536,7 @@ var _ = Describe("imageStream tests", func() {
 			Expect(imageStreamNames).To(ContainElement("test-image-stream"))
 
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			By("apply the ImageStream CRs", func() {
 				req := commontestutils.NewReq(hco)
@@ -609,7 +608,7 @@ var _ = Describe("imageStream tests", func() {
 			Expect(imageStreamNames).To(ContainElement("test-image-stream"))
 
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 
 			By("apply the ImageStream CRs", func() {
 				req := commontestutils.NewReq(hco)
@@ -652,8 +651,8 @@ var _ = Describe("imageStream tests", func() {
 			const customNS = "custom-ns"
 			It("should create imagestream in a custom namespace", func() {
 				hco := commontestutils.NewHco()
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.WorkloadSources.CommonBootImageNamespace = ptr.To(customNS)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.CommonBootImageNamespace = new(customNS)
 
 				cli := commontestutils.InitClient([]client.Object{hco})
 				handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -676,7 +675,7 @@ var _ = Describe("imageStream tests", func() {
 			It("should delete an imagestream from one namespace, and create it in another one", func() {
 				By("create imagestream in the default namespace")
 				hco := commontestutils.NewHco()
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 				cli := commontestutils.InitClient([]client.Object{hco})
 				handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
 				Expect(err).ToNot(HaveOccurred())
@@ -699,8 +698,8 @@ var _ = Describe("imageStream tests", func() {
 
 				By("replace the image stream with a new one in the custom namespace")
 				hco = commontestutils.NewHco()
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.WorkloadSources.CommonBootImageNamespace = ptr.To(customNS)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.CommonBootImageNamespace = new(customNS)
 				Expect(objectreferencesv1.SetObjectReference(&hco.Status.RelatedObjects, *ref)).To(Succeed())
 
 				req = commontestutils.NewReq(hco)
@@ -722,8 +721,8 @@ var _ = Describe("imageStream tests", func() {
 			It("should remove an imagestream from a custom namespace, and create it in the default one", func() {
 				By("create imagestream in a custom namespace")
 				hco := commontestutils.NewHco()
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.WorkloadSources.CommonBootImageNamespace = ptr.To(customNS)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.CommonBootImageNamespace = new(customNS)
 
 				cli := commontestutils.InitClient([]client.Object{hco})
 				handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -747,7 +746,7 @@ var _ = Describe("imageStream tests", func() {
 
 				By("replace the image stream with a new one in the default namespace")
 				hco = commontestutils.NewHco()
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 				Expect(objectreferencesv1.SetObjectReference(&hco.Status.RelatedObjects, *ref)).To(Succeed())
 
 				req = commontestutils.NewReq(hco)
@@ -769,8 +768,8 @@ var _ = Describe("imageStream tests", func() {
 			It("should remove an imagestream from a custom namespace, and create it in the new custom namespace", func() {
 				By("create imagestream in a custom namespace")
 				hco := commontestutils.NewHco()
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.WorkloadSources.CommonBootImageNamespace = ptr.To(customNS)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.CommonBootImageNamespace = new(customNS)
 
 				cli := commontestutils.InitClient([]client.Object{hco})
 				handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -794,8 +793,8 @@ var _ = Describe("imageStream tests", func() {
 
 				By("replace the image stream with a new one in another custom namespace")
 				hco = commontestutils.NewHco()
-				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.WorkloadSources.CommonBootImageNamespace = ptr.To(customNS + "1")
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
+				hco.Spec.WorkloadSources.CommonBootImageNamespace = new(customNS + "1")
 				Expect(objectreferencesv1.SetObjectReference(&hco.Status.RelatedObjects, *ref)).To(Succeed())
 
 				req = commontestutils.NewReq(hco)

@@ -225,8 +225,8 @@ func (r *ReconcileConversionWebhook) updateCRDConversion(ctx context.Context, cr
 				Service: &apiextensionsv1.ServiceReference{
 					Namespace: r.namespace,
 					Name:      r.serviceName,
-					Path:      ptr.To(hcoutil.HCOConversionWebhookPath),
-					Port:      ptr.To(int32(hcoutil.WebhookPort)),
+					Path:      new(hcoutil.HCOConversionWebhookPath),
+					Port:      new(int32(hcoutil.WebhookPort)),
 				},
 			},
 			ConversionReviewVersions: []string{hcov1.APIVersionV1, hcov1beta1.APIVersionBeta},

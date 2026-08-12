@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -214,7 +213,7 @@ func NewCliDownloadsRoute() *routev1.Route {
 			To: routev1.RouteTargetReference{
 				Kind:   "Service",
 				Name:   downloadhost.CLIDownloadsServiceName,
-				Weight: ptr.To[int32](100),
+				Weight: new(int32(100)),
 			},
 		},
 	}

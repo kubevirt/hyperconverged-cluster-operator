@@ -173,7 +173,7 @@ func NewSSP(hc *hcov1.HyperConverged, useNodeInfoFromStatus bool) (*sspv1beta3.S
 
 	spec := sspv1beta3.SSPSpec{
 		TemplateValidator: &sspv1beta3.TemplateValidator{
-			Replicas: ptr.To(defaultTemplateValidatorReplicas),
+			Replicas: new(defaultTemplateValidatorReplicas),
 		},
 		CommonTemplates: sspv1beta3.CommonTemplates{
 			Namespace:               templatesNamespace,

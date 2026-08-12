@@ -13,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
@@ -77,7 +76,7 @@ func newWaspAgentDaemonSet(hc *hcov1.HyperConverged) *appsv1.DaemonSet {
 			},
 		},
 		SecurityContext: &corev1.SecurityContext{
-			Privileged: ptr.To(true),
+			Privileged: new(true),
 		},
 		TerminationMessagePath:   corev1.TerminationMessagePathDefault,
 		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
@@ -103,8 +102,8 @@ func newWaspAgentDaemonSet(hc *hcov1.HyperConverged) *appsv1.DaemonSet {
 		UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
 			Type: appsv1.RollingUpdateDaemonSetStrategyType,
 			RollingUpdate: &appsv1.RollingUpdateDaemonSet{
-				MaxUnavailable: ptr.To(intstr.FromInt32(1)),
-				MaxSurge:       ptr.To(intstr.FromInt32(0)),
+				MaxUnavailable: new(intstr.FromInt32(1)),
+				MaxSurge:       new(intstr.FromInt32(0)),
 			},
 		},
 		Template: corev1.PodTemplateSpec{
@@ -114,8 +113,8 @@ func newWaspAgentDaemonSet(hc *hcov1.HyperConverged) *appsv1.DaemonSet {
 			Spec: corev1.PodSpec{
 				ServiceAccountName:            waspAgentServiceAccountName,
 				HostPID:                       true,
-				HostUsers:                     ptr.To(true),
-				TerminationGracePeriodSeconds: ptr.To[int64](5),
+				HostUsers:                     new(true),
+				TerminationGracePeriodSeconds: new(int64(5)),
 				Containers:                    []corev1.Container{container},
 
 				Volumes: []corev1.Volume{
@@ -124,7 +123,7 @@ func newWaspAgentDaemonSet(hc *hcov1.HyperConverged) *appsv1.DaemonSet {
 						VolumeSource: corev1.VolumeSource{
 							HostPath: &corev1.HostPathVolumeSource{
 								Path: "/",
-								Type: ptr.To(corev1.HostPathUnset),
+								Type: new(corev1.HostPathUnset),
 							},
 						},
 					},
@@ -133,7 +132,7 @@ func newWaspAgentDaemonSet(hc *hcov1.HyperConverged) *appsv1.DaemonSet {
 						VolumeSource: corev1.VolumeSource{
 							HostPath: &corev1.HostPathVolumeSource{
 								Path: "/",
-								Type: ptr.To(corev1.HostPathUnset),
+								Type: new(corev1.HostPathUnset),
 							},
 						},
 					},
@@ -190,7 +189,7 @@ func shouldDeployWaspAgent(hc *hcov1.HyperConverged) bool {
 	if val == AutopilotFullOptInAnnotationValue {
 		return false
 	}
-	for _, name := range strings.Split(val, ",") {
+	for name := range strings.SplitSeq(val, ",") {
 		if strings.TrimSpace(name) == AutopilotSwapAnnotationValue {
 			return false
 		}

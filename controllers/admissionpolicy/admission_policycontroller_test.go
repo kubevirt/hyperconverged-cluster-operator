@@ -13,7 +13,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -27,8 +26,8 @@ var ref = &metav1.OwnerReference{
 	Kind:               "CustomResourceDefinition",
 	Name:               crdName,
 	UID:                types.UID("12345678"),
-	Controller:         ptr.To(false),
-	BlockOwnerDeletion: ptr.To(true),
+	Controller:         new(false),
+	BlockOwnerDeletion: new(true),
 }
 
 func TestAdmissionPolicyController(t *testing.T) {

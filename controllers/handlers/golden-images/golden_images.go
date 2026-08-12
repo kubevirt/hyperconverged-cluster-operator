@@ -175,13 +175,13 @@ func ensureDICTFields(dict *hcov1.DataImportCronTemplate) {
 	// override "ALL" CDI default for the RetentionPolicy field, with "None" so the underline DataSource and PVC
 	// will be deleted once the DataImportCorn is deleted.
 	if dict.Spec.RetentionPolicy == nil {
-		dict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
+		dict.Spec.RetentionPolicy = new(cdiv1beta1.DataImportCronRetainNone)
 	}
 
 	// Override the CDI default of 3, for the ImportsToKeep field, as it makes no sense. We have nothing to do
 	// with the old PVC.
 	if dict.Spec.ImportsToKeep == nil {
-		dict.Spec.ImportsToKeep = ptr.To[int32](1)
+		dict.Spec.ImportsToKeep = new(int32(1))
 	}
 }
 
@@ -400,7 +400,7 @@ func hcoDictToSSPSeq(hc *hcov1.HyperConverged, hcoDicts iter.Seq[hcov1.DataImpor
 func removeUnsupportedArchs(archAnnotation string, workloadsArchs []string) string {
 	var newArchList []string
 
-	for _, arch := range strings.Split(archAnnotation, ",") {
+	for arch := range strings.SplitSeq(archAnnotation, ",") {
 		if slices.Contains(workloadsArchs, arch) {
 			newArchList = append(newArchList, arch)
 		}

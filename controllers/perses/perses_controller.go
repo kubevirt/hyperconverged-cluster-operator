@@ -299,11 +299,11 @@ func resolveRequest(req reconcile.Request) (reqType, resourceName string) {
 	if reqType == startupReqType {
 		return startupReqType, ""
 	}
-	if strings.HasSuffix(reqType, dashboardReqSufix) {
-		return dashboardReqType, strings.TrimSuffix(reqType, dashboardReqSufix)
+	if before, ok := strings.CutSuffix(reqType, dashboardReqSufix); ok {
+		return dashboardReqType, before
 	}
-	if strings.HasSuffix(reqType, datasourceReqSufix) {
-		return datasourceReqType, strings.TrimSuffix(reqType, datasourceReqSufix)
+	if before, ok := strings.CutSuffix(reqType, datasourceReqSufix); ok {
+		return datasourceReqType, before
 	}
 	return unknownReqType, ""
 }

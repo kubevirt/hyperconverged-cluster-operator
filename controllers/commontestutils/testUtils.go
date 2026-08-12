@@ -216,7 +216,7 @@ type RepresentConditionMatcher struct {
 
 // Match - compares two conditions
 // two conditions are the same if they have the same type, status, reason, and message
-func (matcher *RepresentConditionMatcher) Match(actual interface{}) (success bool, err error) {
+func (matcher *RepresentConditionMatcher) Match(actual any) (success bool, err error) {
 	actualCondition, ok := actual.(metav1.Condition)
 	if !ok {
 		return false, fmt.Errorf("RepresentConditionMatcher expects a Condition")
@@ -237,11 +237,11 @@ func (matcher *RepresentConditionMatcher) Match(actual interface{}) (success boo
 	return true, nil
 }
 
-func (matcher *RepresentConditionMatcher) FailureMessage(actual interface{}) (message string) {
+func (matcher *RepresentConditionMatcher) FailureMessage(actual any) (message string) {
 	return fmt.Sprintf("Expected\n\t%#v\nto match the condition\n\t%#v", actual, matcher.expected)
 }
 
-func (matcher *RepresentConditionMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (matcher *RepresentConditionMatcher) NegatedFailureMessage(actual any) (message string) {
 	return fmt.Sprintf("Expected\n\t%#v\nnot to match the condition\n\t%#v", actual, matcher.expected)
 }
 

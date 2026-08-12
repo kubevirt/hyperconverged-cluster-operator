@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -76,7 +75,7 @@ func newAIEWebhookDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 
 	dep := newAIEWebhookDeploymentWithNameOnly()
 	dep.Spec = appsv1.DeploymentSpec{
-		Replicas: ptr.To[int32](1),
+		Replicas: new(int32(1)),
 		Selector: &metav1.LabelSelector{
 			MatchLabels: selectorLabels,
 		},
@@ -148,9 +147,9 @@ func newAIEWebhookDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
-							AllowPrivilegeEscalation: ptr.To(false),
-							ReadOnlyRootFilesystem:   ptr.To(true),
-							RunAsNonRoot:             ptr.To(true),
+							AllowPrivilegeEscalation: new(false),
+							ReadOnlyRootFilesystem:   new(true),
+							RunAsNonRoot:             new(true),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 							},

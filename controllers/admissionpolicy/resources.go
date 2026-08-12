@@ -9,7 +9,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -49,9 +48,9 @@ func getRequiredPolicy(owner *metav1.OwnerReference) *admissionv1.ValidatingAdmi
 				OwnerReferences: []metav1.OwnerReference{*owner},
 			},
 			Spec: admissionv1.ValidatingAdmissionPolicySpec{
-				FailurePolicy: ptr.To(admissionv1.Fail),
+				FailurePolicy: new(admissionv1.Fail),
 				MatchConstraints: &admissionv1.MatchResources{
-					MatchPolicy:       ptr.To(admissionv1.Equivalent),
+					MatchPolicy:       new(admissionv1.Equivalent),
 					NamespaceSelector: &metav1.LabelSelector{},
 					ObjectSelector:    &metav1.LabelSelector{},
 					ResourceRules: []admissionv1.NamedRuleWithOperations{
@@ -61,7 +60,7 @@ func getRequiredPolicy(owner *metav1.OwnerReference) *admissionv1.ValidatingAdmi
 									APIGroups:   []string{hcov1beta1.APIVersionGroup},
 									APIVersions: []string{hcov1.APIVersionV1, hcov1beta1.APIVersionBeta},
 									Resources:   []string{"hyperconvergeds"},
-									Scope:       ptr.To(admissionv1.NamespacedScope),
+									Scope:       new(admissionv1.NamespacedScope),
 								},
 								Operations: []admissionv1.OperationType{admissionv1.Create},
 							},

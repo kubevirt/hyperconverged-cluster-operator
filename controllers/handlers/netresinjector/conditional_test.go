@@ -11,7 +11,6 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -33,7 +32,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 
 	Context("Conditional ClusterRole Handler", func() {
 		It("should create ClusterRole when deployNetworkResourcesInjector is true", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewClusterRoleHandler(cl, commontestutils.GetScheme())
@@ -62,7 +61,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 		})
 
 		It("should delete ClusterRole when deployNetworkResourcesInjector is false", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
 			cr := newClusterRole()
 			cl = commontestutils.InitClient([]client.Object{hco, cr})
 
@@ -81,7 +80,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 
 	Context("Conditional ClusterRoleBinding Handler", func() {
 		It("should create ClusterRoleBinding when enabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewClusterRoleBindingHandler(cl, commontestutils.GetScheme())
@@ -92,7 +91,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 		})
 
 		It("should delete ClusterRoleBinding when disabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
 			crb := newClusterRoleBinding()
 			cl = commontestutils.InitClient([]client.Object{hco, crb})
 
@@ -106,7 +105,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 
 	Context("Conditional ServiceAccount Handler", func() {
 		It("should create ServiceAccount when enabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewServiceAccountHandler(cl, commontestutils.GetScheme())
@@ -120,7 +119,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 		})
 
 		It("should delete ServiceAccount when disabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
 			sa := newServiceAccount()
 			sa.Namespace = hco.Namespace
 			cl = commontestutils.InitClient([]client.Object{hco, sa})
@@ -135,7 +134,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 
 	Context("Conditional Service Handler", func() {
 		It("should create Service when enabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewServiceHandler(cl, commontestutils.GetScheme())
@@ -149,7 +148,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 		})
 
 		It("should delete Service when disabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
 			svc := newService()
 			svc.Namespace = hco.Namespace
 			cl = commontestutils.InitClient([]client.Object{hco, svc})
@@ -164,7 +163,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 
 	Context("Conditional Deployment Handler", func() {
 		It("should create Deployment when enabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
@@ -178,7 +177,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 		})
 
 		It("should delete Deployment when disabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
 			dep := newDeployment(hco)
 			cl = commontestutils.InitClient([]client.Object{hco, dep})
 
@@ -192,7 +191,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 
 	Context("Conditional PodDisruptionBudget Handler", func() {
 		It("should create PDB when enabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewPDBHandler(cl, commontestutils.GetScheme())
@@ -206,7 +205,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 		})
 
 		It("should delete PDB when disabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
 			pdb := newPDB()
 			pdb.Namespace = hco.Namespace
 			cl = commontestutils.InitClient([]client.Object{hco, pdb})
@@ -221,7 +220,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 
 	Context("Conditional MutatingWebhookConfiguration Handler", func() {
 		It("should create MutatingWebhookConfiguration when enabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewMutatingWebhookConfigurationHandler(cl, commontestutils.GetScheme())
@@ -235,7 +234,7 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 		})
 
 		It("should delete MutatingWebhookConfiguration when disabled", func() {
-			hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
 			mwc := newMutatingWebhookConfiguration()
 			cl = commontestutils.InitClient([]client.Object{hco, mwc})
 
