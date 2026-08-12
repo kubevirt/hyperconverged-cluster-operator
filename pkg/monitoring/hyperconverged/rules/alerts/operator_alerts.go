@@ -5,7 +5,6 @@ import (
 
 	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 )
 
 // withVMLabel wraps a PromQL expression with label_replace to add a "vm"
@@ -57,7 +56,7 @@ func operatorAlerts() []promv1.Rule {
 		{
 			Alert: installationNotCompletedAlert,
 			Expr:  intstr.FromString("kubevirt_hco_hyperconverged_cr_exists == 0"),
-			For:   ptr.To(promv1.Duration("1h")),
+			For:   new(promv1.Duration("1h")),
 			Annotations: map[string]string{
 				"description": "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource.",
 				"summary":     "the installation was not completed; to complete the installation, create a HyperConverged custom resource.",
@@ -122,7 +121,7 @@ func operatorAlerts() []promv1.Rule {
 			  * on(machine_type) group_left()
 				max(kubevirt_node_deprecated_machine_types) by (machine_type)
 			`)),
-			For: ptr.To(promv1.Duration("5m")),
+			For: new(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "Virtual Machine '{{ $labels.name }}' in namespace '{{ $labels.namespace }}' is using a deprecated machine type.",
 				"description": "Virtual Machine '{{ $labels.name }}' in namespace '{{ $labels.namespace }}' is using machine type '{{ $labels.machine_type }}', which is deprecated. Current status: '{{ $labels.status_group }}'.",

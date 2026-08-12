@@ -7,7 +7,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 )
@@ -88,7 +87,7 @@ var _ = Describe("", func() {
 							APIVersion: "apps/v1",
 							Kind:       "ReplicaSet",
 							Name:       rsName,
-							Controller: ptr.To(true),
+							Controller: new(true),
 						},
 					},
 				},
@@ -179,9 +178,9 @@ func (mock EventRecorderMock) Event(object runtime.Object, eventType, reason, me
 	kind := object.GetObjectKind().GroupVersionKind().Kind
 	mock.events[kind] = eventMock{eventType: eventType, reason: reason, message: message}
 }
-func (mock EventRecorderMock) Eventf(_ runtime.Object, _, _, _ string, _ ...interface{}) {
+func (mock EventRecorderMock) Eventf(_ runtime.Object, _, _, _ string, _ ...any) {
 	/* not implemented */
 }
-func (mock EventRecorderMock) AnnotatedEventf(_ runtime.Object, _ map[string]string, _, _, _ string, _ ...interface{}) {
+func (mock EventRecorderMock) AnnotatedEventf(_ runtime.Object, _ map[string]string, _, _, _ string, _ ...any) {
 	/* not implemented */
 }

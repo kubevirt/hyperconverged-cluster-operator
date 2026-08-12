@@ -10,7 +10,7 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-func UnmarshalYamlFileToObject(file io.Reader, o interface{}) error {
+func UnmarshalYamlFileToObject(file io.Reader, o any) error {
 	yamlBytes, err := io.ReadAll(file)
 	if err != nil {
 		return err

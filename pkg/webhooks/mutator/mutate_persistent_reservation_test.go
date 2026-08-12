@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	gomegatypes "github.com/onsi/gomega/types"
 	"gomodules.xyz/jsonpatch/v2"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -98,7 +97,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				}},
 			),
 			Entry("should set enabled=false when the FG is explicitly disabled",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: ptr.To(hcov1fg.Disabled)}},
+				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: new(hcov1fg.Disabled)}},
 				&hcov1.StorageConfig{
 					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{},
 				},
@@ -123,7 +122,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				hcov1fg.HyperConvergedFeatureGates{},
 				&hcov1.StorageConfig{
 					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				},
 				true,
@@ -134,7 +133,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				hcov1fg.HyperConvergedFeatureGates{},
 				&hcov1.StorageConfig{
 					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(false),
+						Enabled: new(false),
 					},
 				},
 				true,
@@ -145,7 +144,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName}},
 				&hcov1.StorageConfig{
 					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				},
 				true,
@@ -156,7 +155,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName}},
 				&hcov1.StorageConfig{
 					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(false),
+						Enabled: new(false),
 					},
 				},
 				false,
@@ -164,10 +163,10 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				nil,
 			),
 			Entry("should reject if the FG is disabled and the enabled field is true (contradict)",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: ptr.To(hcov1fg.Disabled)}},
+				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: new(hcov1fg.Disabled)}},
 				&hcov1.StorageConfig{
 					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				},
 				false,
@@ -175,10 +174,10 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 				nil,
 			),
 			Entry("should warn if the FG is disabled and the enabled field is false (agree)",
-				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: ptr.To(hcov1fg.Disabled)}},
+				hcov1fg.HyperConvergedFeatureGates{{Name: persistentReservationFGName, State: new(hcov1fg.Disabled)}},
 				&hcov1.StorageConfig{
 					PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-						Enabled: ptr.To(false),
+						Enabled: new(false),
 					},
 				},
 				true,
@@ -200,7 +199,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 			{Name: persistentReservationFGName},
 		}
 		disabledFG := hcov1fg.HyperConvergedFeatureGates{
-			{Name: persistentReservationFGName, State: ptr.To(hcov1fg.Disabled)},
+			{Name: persistentReservationFGName, State: new(hcov1fg.Disabled)},
 		}
 
 		nilField := &hcov1.StorageConfig{
@@ -208,12 +207,12 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 		}
 		enabledField := &hcov1.StorageConfig{
 			PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-				Enabled: ptr.To(true),
+				Enabled: new(true),
 			},
 		}
 		disabledField := &hcov1.StorageConfig{
 			PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
-				Enabled: ptr.To(false),
+				Enabled: new(false),
 			},
 		}
 
@@ -1502,7 +1501,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: persistentReservationFGName},
 							{Name: "someEnabledFG"},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
 						Storage: nilField,
 					},
@@ -1512,7 +1511,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: persistentReservationFGName},
 							{Name: "someEnabledFG"},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
 						Storage: enabledField,
 					},
@@ -1533,7 +1532,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
 							{Name: persistentReservationFGName},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
 						Storage: nilField,
 					},
@@ -1543,7 +1542,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
 							{Name: persistentReservationFGName},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
 						Storage: enabledField,
 					},
@@ -1563,7 +1562,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 							{Name: persistentReservationFGName},
 						},
 						Storage: nilField,
@@ -1573,7 +1572,7 @@ var _ = Describe("test HyperConverged v1 PersistentReservation mutator", func() 
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
-							{Name: "someDisabledFG", State: ptr.To(hcov1fg.Disabled)},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 							{Name: persistentReservationFGName},
 						},
 						Storage: enabledField,

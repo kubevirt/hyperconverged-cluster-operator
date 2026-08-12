@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"k8s.io/utils/ptr"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
@@ -252,7 +251,7 @@ var _ = Describe("upgradePatches", func() {
 			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
 			hc := commontestutils.NewHco()
-			hc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(true)
+			hc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = new(true)
 
 			ver, err := semver.Parse("1.18.5")
 			Expect(err).NotTo(HaveOccurred())

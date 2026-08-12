@@ -8,7 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -49,8 +48,8 @@ var ( // own resources
 		Kind:               "Deployment",
 		Name:               RSName,
 		UID:                "0155282d-9042-408d-bd86-3da4a89919d7",
-		BlockOwnerDeletion: ptr.To(true),
-		Controller:         ptr.To(true),
+		BlockOwnerDeletion: new(true),
+		Controller:         new(true),
 	}
 
 	pod = &corev1.Pod{
@@ -66,7 +65,7 @@ var ( // own resources
 					APIVersion: "apps/v1",
 					Kind:       "ReplicaSet",
 					Name:       RSName,
-					Controller: ptr.To(true),
+					Controller: new(true),
 				},
 			},
 		},
