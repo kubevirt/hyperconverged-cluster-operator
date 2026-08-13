@@ -82,7 +82,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 			g.Expect(stdout).ToNot(BeEmpty())
 			g.Expect(stderr).To(BeEmpty())
 
-			var pluginManifests map[string]interface{}
+			var pluginManifests map[string]any
 			err = json.Unmarshal([]byte(stdout), &pluginManifests)
 			g.Expect(err).ToNot(HaveOccurred())
 
