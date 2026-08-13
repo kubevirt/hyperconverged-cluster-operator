@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
-    createdAt: "2026-08-12 07:48:46"
+    createdAt: "2026-08-13 05:34:03"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4560,7 +4560,7 @@ spec:
                 - name: AUTOPILOT_VERSION
                   value: v0.1.1
                 - name: VM_FILE_RESTORE_OPERATOR_VERSION
-                  value: v0.0.5
+                  value: v0.0.6
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5715,10 +5715,10 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
                 - name: OPERATOR_VERSION
-                  value: v0.0.5
+                  value: v0.0.6
                 - name: VERBOSITY
                   value: "1"
-                image: quay.io/kubevirt/vm-file-restore-operator@sha256:ac17e065b0dc22c9af08ec6d9d9bcc1a5c9accbc16a7ba2fd732c0a53428e40d
+                image: quay.io/kubevirt/vm-file-restore-operator@sha256:20d4d1ef723a1f16057bcd810ffbf0805d3862b8a91cf3f8a54dc0e5d40c15cb
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6759,7 +6759,7 @@ spec:
     name: virt-template-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838
     name: virtio-container-disk
-  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:ac17e065b0dc22c9af08ec6d9d9bcc1a5c9accbc16a7ba2fd732c0a53428e40d
+  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:20d4d1ef723a1f16057bcd810ffbf0805d3862b8a91cf3f8a54dc0e5d40c15cb
     name: vm-file-restore-operator
   - image: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
     name: wasp-agent
