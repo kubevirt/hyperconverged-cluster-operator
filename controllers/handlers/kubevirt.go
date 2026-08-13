@@ -443,7 +443,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 		EvictionStrategy:                   hc.Spec.Virtualization.EvictionStrategy,
 		KSMConfiguration:                   hc.Spec.Virtualization.KSMConfiguration,
 		ChangedBlockTrackingLabelSelectors: hc.Spec.Virtualization.ChangedBlockTrackingLabelSelectors,
-		VMRolloutStrategy:                  ptr.To(kubevirtcorev1.VMRolloutStrategyLiveUpdate),
+		VMRolloutStrategy:                  new(kubevirtcorev1.VMRolloutStrategyLiveUpdate),
 		LiveUpdateConfiguration:            hc.Spec.Virtualization.LiveUpdateConfiguration,
 		ArchitectureConfiguration:          getArchConfiguration(),
 	}
@@ -872,7 +872,7 @@ func getKVSeccompConfig() *kubevirtcorev1.SeccompConfiguration {
 	return &kubevirtcorev1.SeccompConfiguration{
 		VirtualMachineInstanceProfile: &kubevirtcorev1.VirtualMachineInstanceProfile{
 			CustomProfile: &kubevirtcorev1.CustomProfile{
-				LocalhostProfile: ptr.To("kubevirt/kubevirt.json"),
+				LocalhostProfile: new("kubevirt/kubevirt.json"),
 			},
 		},
 	}
@@ -904,7 +904,7 @@ func hcoConfig2KvConfig(
 		if !infraHighlyAvailable {
 			// if there is only one worker node and no control plane nodes,
 			// set the kubevirt control plane replica count to 1.
-			kvConfig.Replicas = ptr.To[uint8](1)
+			kvConfig.Replicas = new(uint8(1))
 		}
 		return kvConfig
 	}

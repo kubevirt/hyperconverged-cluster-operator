@@ -37,7 +37,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -649,7 +648,7 @@ func injectVolumesForWebHookCerts(deploy *appsv1.Deployment) {
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
 				SecretName:  deploy.Name + "-service-cert",
-				DefaultMode: ptr.To[int32](420),
+				DefaultMode: new(int32(420)),
 				Items: []corev1.KeyToPath{
 					{
 						Key:  "tls.crt",

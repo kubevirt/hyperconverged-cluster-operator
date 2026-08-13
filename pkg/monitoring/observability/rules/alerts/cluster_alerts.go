@@ -6,7 +6,6 @@ import (
 
 	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 )
 
 // Network interface flag bitmasks for Linux interface flags
@@ -40,7 +39,7 @@ func clusterAlerts() []promv1.Rule {
 		{
 			Alert: "HighCPUWorkload",
 			Expr:  intstr.FromString("instance:node_cpu_utilisation:rate1m >= 0.9"),
-			For:   ptr.To[promv1.Duration]("5m"),
+			For:   new(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "High CPU usage on host {{ $labels.instance }}",
 				"description": "CPU utilization for {{ $labels.instance }} has been above 90% for more than 5 minutes.",
@@ -53,7 +52,7 @@ func clusterAlerts() []promv1.Rule {
 		{
 			Alert: "HAControlPlaneDown",
 			Expr:  intstr.FromString("kube_node_role{role='control-plane'} * on(node) kube_node_status_condition{condition='Ready',status='true'} == 0"),
-			For:   ptr.To[promv1.Duration]("5m"),
+			For:   new(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "Control plane node {{ $labels.node }} is not ready",
 				"description": "Control plane node {{ $labels.node }} has been not ready for more than 5 minutes.",
@@ -78,7 +77,7 @@ func clusterAlerts() []promv1.Rule {
 					and
 					on(instance,device) (node_network_flags unless node_network_flags{device=~"%s"})     # Excluding ignored interfaces
 				) > 0`, (IFF_UP << 1), IFF_UP, (IFF_RUNNING << 1), IFF_RUNNING, (IFF_LOWER_UP << 1), IFF_LOWER_UP, strings.Join(ignoredInterfacesForNetworkDown, "|"))),
-			For: ptr.To[promv1.Duration]("5m"),
+			For: new(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "Network interfaces are down",
 				"description": "{{ $value }} network devices have been down on instance {{ $labels.instance }} for more than 5 minutes.",
@@ -100,7 +99,7 @@ func clusterAlerts() []promv1.Rule {
 				and predict_linear(kubelet_volume_stats_available_bytes{job="kubelet",metrics_path="/metrics"}[6h], 4 * 24 * 3600) < 0
 				unless on (cluster, namespace, persistentvolumeclaim) kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyMany"} == 1
 			`),
-			For: ptr.To[promv1.Duration]("5m"),
+			For: new(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "PersistentVolume is filling up",
 				"description": "Based on recent sampling, the PersistentVolume claimed by {{ $labels.persistentvolumeclaim }} in Namespace {{ $labels.namespace }} is expected to fill up within four days. Currently {{ $value | humanizePercentage }} is available.",
@@ -117,7 +116,7 @@ func clusterAlerts() []promv1.Rule {
 				and on(instance, cpu)
 				node_cpu_frequency_hertz - on(instance, cpu) group_left() node_cpu_frequency_max_hertz * 0.8 > 0
 			`),
-			For: ptr.To[promv1.Duration]("5m"),
+			For: new(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "High CPU frequency detected on node {{ $labels.instance }}",
 				"description": "CPU frequency on node {{ $labels.instance }} (CPU {{ $labels.cpu }}) is {{ $value | humanize }}Hz, which is above 80% of the maximum frequency. This may indicate high CPU utilization or thermal throttling.",
@@ -150,7 +149,7 @@ func clusterAlerts() []promv1.Rule {
 					sum by (namespace, name) (increase(kubevirt_vmi_guest_os_panic_total[24h]))
 				) <= 5
 			`)),
-			For: ptr.To[promv1.Duration]("1m"),
+			For: new(promv1.Duration("1m")),
 			Annotations: map[string]string{
 				"summary":     "VM {{ $labels.name }} in namespace {{ $labels.namespace }} experienced a non-recoverable guest OS panic",
 				"description": "The VM has experienced {{ $value }} non-recoverable guest OS panic(s) in the last 24 hours.",
@@ -176,7 +175,7 @@ func clusterAlerts() []promv1.Rule {
 					) > 0
 				) > 0
 			`),
-			For: ptr.To[promv1.Duration]("5m"),
+			For: new(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "VMs experienced non-recoverable guest OS panics in the last 24 hours",
 				"description": "{{ $value }} VM(s) across the cluster have experienced non-recoverable guest OS panics in the last 24 hours. This may indicate a cluster-wide infrastructure issue.",
@@ -193,7 +192,7 @@ func clusterAlerts() []promv1.Rule {
 				`count(kube_daemonset_metadata_generation{namespace="wasp",daemonset="wasp-agent"}) > 0
 					and on() (kubevirt_hco_memory_overcommit_percentage > 100)
 			`),
-			For: ptr.To[promv1.Duration]("1m"),
+			For: new(promv1.Duration("1m")),
 			Annotations: map[string]string{
 				"summary":     "Duplicate wasp-agent deployment detected",
 				"description": "Two wasp-agent deployments exist in the cluster. Please follow the instructions mentioned in the runbook to remove the duplicate deployment.",

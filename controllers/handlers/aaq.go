@@ -100,7 +100,7 @@ func (*aaqHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 
 func NewAAQ(hc *hcov1.HyperConverged) (*aaqv1alpha1.AAQ, error) {
 	spec := aaqv1alpha1.AAQSpec{
-		PriorityClass:   ptr.To[aaqv1alpha1.AAQPriorityClass](kvPriorityClass),
+		PriorityClass:   new(aaqv1alpha1.AAQPriorityClass(kvPriorityClass)),
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		CertConfig: &aaqv1alpha1.AAQCertConfig{
 			CA: &aaqv1alpha1.CertConfig{

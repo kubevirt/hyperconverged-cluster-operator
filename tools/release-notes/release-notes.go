@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+
 	"log"
 	"os"
 	"path"
@@ -196,7 +196,7 @@ func createProjects(baseDir string, token string) []*git.Project {
 }
 
 func getToken(githubTokenPath string) string {
-	tokenBytes, err := ioutil.ReadFile(githubTokenPath)
+	tokenBytes, err := os.ReadFile(githubTokenPath)
 	if err != nil {
 		log.Fatalf("ERROR accessing github token: %s ", err)
 	}

@@ -49,7 +49,7 @@ type clusterMock struct {
 	logger logr.Logger
 }
 
-func (cm *clusterMock) SetFields(_ interface{}) error {
+func (cm *clusterMock) SetFields(_ any) error {
 	return nil
 }
 

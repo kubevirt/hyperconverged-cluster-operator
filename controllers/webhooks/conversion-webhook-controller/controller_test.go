@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -245,7 +244,7 @@ var _ = Describe("ConversionWebhookController", func() {
 			It("should update CRD when path is different", func(ctx context.Context) {
 				ctx = logr.NewContext(ctx, GinkgoLogr)
 				conversion := newValidConversion(testServiceName, commontestutils.Namespace)
-				conversion.Webhook.ClientConfig.Service.Path = ptr.To("/wrong-path")
+				conversion.Webhook.ClientConfig.Service.Path = new("/wrong-path")
 				crd := newHyperConvergedCRDWithConversion(conversion)
 
 				resources := []client.Object{crd}
@@ -267,7 +266,7 @@ var _ = Describe("ConversionWebhookController", func() {
 			It("should update CRD when port is different", func(ctx context.Context) {
 				ctx = logr.NewContext(ctx, GinkgoLogr)
 				conversion := newValidConversion(testServiceName, commontestutils.Namespace)
-				conversion.Webhook.ClientConfig.Service.Port = ptr.To(int32(9999))
+				conversion.Webhook.ClientConfig.Service.Port = new(int32(9999))
 				crd := newHyperConvergedCRDWithConversion(conversion)
 
 				resources := []client.Object{crd}
@@ -450,14 +449,14 @@ var _ = Describe("ConversionWebhookController", func() {
 
 		It("should return true when path is different", func() {
 			conversion := newValidConversion(testServiceName, commontestutils.Namespace)
-			conversion.Webhook.ClientConfig.Service.Path = ptr.To("/wrong-path")
+			conversion.Webhook.ClientConfig.Service.Path = new("/wrong-path")
 			crd := newHyperConvergedCRDWithConversion(conversion)
 			Expect(reconciler.needsUpdate(crd, nil)).To(BeTrue())
 		})
 
 		It("should return true when port is different", func() {
 			conversion := newValidConversion(testServiceName, commontestutils.Namespace)
-			conversion.Webhook.ClientConfig.Service.Port = ptr.To(int32(9999))
+			conversion.Webhook.ClientConfig.Service.Port = new(int32(9999))
 			crd := newHyperConvergedCRDWithConversion(conversion)
 			Expect(reconciler.needsUpdate(crd, nil)).To(BeTrue())
 		})
@@ -553,8 +552,8 @@ func newValidConversion(serviceName, namespace string) *apiextensionsv1.CustomRe
 				Service: &apiextensionsv1.ServiceReference{
 					Namespace: namespace,
 					Name:      serviceName,
-					Path:      ptr.To(hcoutil.HCOConversionWebhookPath),
-					Port:      ptr.To(int32(hcoutil.WebhookPort)),
+					Path:      new(hcoutil.HCOConversionWebhookPath),
+					Port:      new(int32(hcoutil.WebhookPort)),
 				},
 			},
 			ConversionReviewVersions: []string{hcov1.APIVersionV1, hcov1beta1.APIVersionBeta},

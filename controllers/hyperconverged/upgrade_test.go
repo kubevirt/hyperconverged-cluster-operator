@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtv1 "kubevirt.io/api/core/v1"
@@ -569,7 +568,7 @@ var _ = Describe("Upgrade Mode", func() {
 	Context("apply upgrade patches", func() {
 		It("should apply spec patch when upgrading from an affected version", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.16.5")
-			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(false)
+			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = new(false)
 
 			cl := expected.initClient()
 			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
@@ -583,7 +582,7 @@ var _ = Describe("Upgrade Mode", func() {
 
 		It("should not apply spec patch when upgrading from an unaffected version", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
-			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(false)
+			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = new(false)
 
 			cl := expected.initClient()
 			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
@@ -595,7 +594,7 @@ var _ = Describe("Upgrade Mode", func() {
 
 		It("should skip test+replace patch when test value does not match", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.16.5")
-			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(true)
+			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = new(true)
 
 			cl := expected.initClient()
 			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
@@ -607,7 +606,7 @@ var _ = Describe("Upgrade Mode", func() {
 
 		It("should update completionTimeoutPerGiB from old default on upgrade", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.5")
-			expected.hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To[int64](150)
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = new(int64(150))
 
 			cl := expected.initClient()
 			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
@@ -621,7 +620,7 @@ var _ = Describe("Upgrade Mode", func() {
 
 		It("should not update completionTimeoutPerGiB when user customized the value", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.5")
-			expected.hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To[int64](800)
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = new(int64(800))
 
 			cl := expected.initClient()
 			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)

@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
@@ -179,7 +178,7 @@ func getDeletionOption(dryRun bool, wait bool) *client.DeleteOptions {
 		opts.DryRun = []string{metav1.DryRunAll}
 	}
 	if wait {
-		opts.PropagationPolicy = ptr.To(metav1.DeletePropagationForeground)
+		opts.PropagationPolicy = new(metav1.DeletePropagationForeground)
 	}
 	return opts
 }

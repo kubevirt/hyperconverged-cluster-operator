@@ -19,7 +19,7 @@ const (
 )
 
 func (p Phase) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%q", p.String())), nil
+	return fmt.Appendf(nil, "%q", p.String()), nil
 }
 
 func (p *Phase) UnmarshalJSON(bytes []byte) error {

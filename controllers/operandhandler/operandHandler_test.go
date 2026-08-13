@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
@@ -495,7 +494,7 @@ var _ = Describe("Test operandHandler", func() {
 		It("should delete the ImageStream resource if the FG is not set, and emit event", func() {
 			hcoNamespace := commontestutils.NewHcoNamespace()
 			hco := commontestutils.NewHco()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(true)
 			eventEmitter := commontestutils.NewEventEmitterMock()
 			ci := commontestutils.ClusterInfoMock{}
 			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
@@ -522,7 +521,7 @@ var _ = Describe("Test operandHandler", func() {
 
 			By("Run again, this time when the FG is false")
 			eventEmitter.Reset()
-			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(false)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = new(false)
 			req = commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
 

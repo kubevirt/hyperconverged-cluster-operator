@@ -8,7 +8,6 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -108,7 +107,7 @@ func CreateEndpoint(bearerTokenSecretName string) monitoringv1.Endpoint {
 
 	return monitoringv1.Endpoint{
 		Port:   OperatorPortName,
-		Scheme: ptr.To[monitoringv1.Scheme]("https"),
+		Scheme: new(monitoringv1.Scheme("https")),
 		HTTPConfigWithProxyAndTLSFiles: monitoringv1.HTTPConfigWithProxyAndTLSFiles{
 			HTTPConfigWithTLSFiles: monitoringv1.HTTPConfigWithTLSFiles{
 				HTTPConfigWithoutTLS: monitoringv1.HTTPConfigWithoutTLS{
@@ -123,7 +122,7 @@ func CreateEndpoint(bearerTokenSecretName string) monitoringv1.Endpoint {
 				},
 				TLSConfig: &monitoringv1.TLSConfig{
 					SafeTLSConfig: monitoringv1.SafeTLSConfig{
-						InsecureSkipVerify: ptr.To(true),
+						InsecureSkipVerify: new(true),
 					},
 				},
 			},

@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	networkaddonsshared "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared"
@@ -262,7 +261,7 @@ var _ = Describe("CNA Operand", func() {
 
 			// now, modify HCO's node placement
 			hco.Spec.Deployment.NodePlacements.Infra.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
-				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 			})
 
 			hco.Spec.Deployment.NodePlacements.Workload.NodeSelector["key1"] = "something else"
@@ -302,10 +301,10 @@ var _ = Describe("CNA Operand", func() {
 
 			// now, modify CNAO node placement
 			existingResource.Spec.PlacementConfiguration.Infra.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
-				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 			})
 			existingResource.Spec.PlacementConfiguration.Workloads.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
-				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 			})
 
 			existingResource.Spec.PlacementConfiguration.Infra.NodeSelector["key1"] = "BADvalue1"
@@ -603,11 +602,11 @@ var _ = Describe("CNA Operand", func() {
 			const kubeSecondaryDNSNameServerIP = "127.0.0.1"
 			if o.setFeatureGate {
 				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-					{Name: "deployKubeSecondaryDNS", State: ptr.To(o.featureGateValue)},
+					{Name: "deployKubeSecondaryDNS", State: new(o.featureGateValue)},
 				}
 
 				hco.Spec.Networking = &hcov1.NetworkingConfig{
-					KubeSecondaryDNSNameServerIP: ptr.To(kubeSecondaryDNSNameServerIP),
+					KubeSecondaryDNSNameServerIP: new(kubeSecondaryDNSNameServerIP),
 				}
 			}
 
@@ -1042,8 +1041,8 @@ var _ = Describe("CNA Operand", func() {
 			It("should create KubeMacPool with both RangeStart and RangeEnd when both are specified", func() {
 				hco.Spec.Networking = &hcov1.NetworkingConfig{
 					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
-						RangeStart: ptr.To("02:00:00:00:00:00"),
-						RangeEnd:   ptr.To("FD:FF:FF:FF:FF:FF"),
+						RangeStart: new("02:00:00:00:00:00"),
+						RangeEnd:   new("FD:FF:FF:FF:FF:FF"),
 					},
 				}
 
@@ -1160,10 +1159,10 @@ var _ = Describe("CNA Operand", func() {
 
 	Context("hcoConfig2CnaoPlacement", func() {
 		tolr1 := corev1.Toleration{
-			Key: "key1", Operator: "operator1", Value: "value1", Effect: "effect1", TolerationSeconds: ptr.To[int64](1),
+			Key: "key1", Operator: "operator1", Value: "value1", Effect: "effect1", TolerationSeconds: new(int64(1)),
 		}
 		tolr2 := corev1.Toleration{
-			Key: "key2", Operator: "operator2", Value: "value2", Effect: "effect2", TolerationSeconds: ptr.To[int64](2),
+			Key: "key2", Operator: "operator2", Value: "value2", Effect: "effect2", TolerationSeconds: new(int64(2)),
 		}
 
 		It("Should return nil if HCO's input is empty", func() {

@@ -2,6 +2,6 @@ module github.com/hyperconverged-cluster-operator/automation/hco-nightly-reporte
 
 go 1.26
 
-require github.com/slack-go/slack v0.23.1
+require github.com/slack-go/slack v0.27.0
 
 require github.com/gorilla/websocket v1.5.3 // indirect

@@ -11,7 +11,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -59,7 +58,7 @@ var _ = Describe("AIE Webhook Deployment", func() {
 			Expect(deployment.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(deployment.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentAIEWebhook)))
 
-			Expect(deployment.Spec.Replicas).To(Equal(ptr.To[int32](1)))
+			Expect(deployment.Spec.Replicas).To(Equal(new(int32(1))))
 			Expect(deployment.Spec.Selector.MatchLabels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(deployment.Spec.Selector.MatchLabels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentAIEWebhook)))
 
@@ -116,9 +115,9 @@ var _ = Describe("AIE Webhook Deployment", func() {
 			Expect(container.VolumeMounts[0].ReadOnly).To(BeTrue())
 
 			Expect(container.SecurityContext).ToNot(BeNil())
-			Expect(container.SecurityContext.AllowPrivilegeEscalation).To(Equal(ptr.To(false)))
-			Expect(container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(ptr.To(true)))
-			Expect(container.SecurityContext.RunAsNonRoot).To(Equal(ptr.To(true)))
+			Expect(container.SecurityContext.AllowPrivilegeEscalation).To(Equal(new(false)))
+			Expect(container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(new(true)))
+			Expect(container.SecurityContext.RunAsNonRoot).To(Equal(new(true)))
 			Expect(container.SecurityContext.Capabilities).ToNot(BeNil())
 			Expect(container.SecurityContext.Capabilities.Drop).To(ConsistOf(corev1.Capability("ALL")))
 			Expect(container.SecurityContext.SeccompProfile).ToNot(BeNil())
@@ -259,7 +258,7 @@ var _ = Describe("AIE Webhook Deployment", func() {
 			originalDep := newAIEWebhookDeployment(hco)
 			modifiedDep := originalDep.DeepCopy()
 			modifiedDep.Spec.Template.Spec.Containers[0].Image = "malicious:tag"
-			modifiedDep.Spec.Template.Spec.Containers[0].SecurityContext.RunAsNonRoot = ptr.To(false)
+			modifiedDep.Spec.Template.Spec.Containers[0].SecurityContext.RunAsNonRoot = new(false)
 			modifiedDep.Spec.Template.Spec.Volumes = nil
 			cl = commontestutils.InitClient([]client.Object{hco, modifiedDep})
 

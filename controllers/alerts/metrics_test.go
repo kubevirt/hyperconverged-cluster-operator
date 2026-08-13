@@ -16,7 +16,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -242,8 +241,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
@@ -269,8 +268,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
@@ -406,8 +405,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
@@ -487,8 +486,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existRole := newRole(owner, commontestutils.Namespace)
@@ -513,8 +512,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existRole := newRole(owner, commontestutils.Namespace)
@@ -663,8 +662,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existRB := newRoleBinding(owner, commontestutils.Namespace, ci)
@@ -689,8 +688,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existRB := newRoleBinding(owner, commontestutils.Namespace, ci)
@@ -883,8 +882,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existSM := NewMetricsService(commontestutils.Namespace, owner)
@@ -909,8 +908,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existSM := NewMetricsService(commontestutils.Namespace, owner)
@@ -1067,8 +1066,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existSM := NewServiceMonitor(commontestutils.Namespace, owner)
@@ -1093,8 +1092,8 @@ var _ = Describe("alert tests", func() {
 				APIVersion:         "wrongAPIVersion",
 				Kind:               "wrongKind",
 				Name:               "wrongName",
-				Controller:         ptr.To(true),
-				BlockOwnerDeletion: ptr.To(true),
+				Controller:         new(true),
+				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
 			existSM := NewServiceMonitor(commontestutils.Namespace, owner)

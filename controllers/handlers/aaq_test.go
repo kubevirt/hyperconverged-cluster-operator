@@ -11,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
@@ -109,7 +108,7 @@ var _ = Describe("AAQ tests", func() {
 
 		It("should have ConfigName", func() {
 			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
-				VmiCalcConfigName: ptr.To(aaqv1alpha1.VmiPodUsage),
+				VmiCalcConfigName: new(aaqv1alpha1.VmiPodUsage),
 			}
 
 			aaq, err := NewAAQ(hco)
@@ -182,7 +181,7 @@ var _ = Describe("AAQ tests", func() {
 
 				// now, modify HCO's TLSSecurityProfile
 				hco.Spec.Security.TLSSecurityProfile = modernTLSSecurityProfile
-				hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: ptr.To(true)}
+				hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: new(true)}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewAAQHandler(cl, commontestutils.GetScheme())
@@ -214,7 +213,7 @@ var _ = Describe("AAQ tests", func() {
 				// now, modify AAQ node placement
 				existingResource.Spec.TLSSecurityProfile = openshift2AAQSecProfile(modernTLSSecurityProfile)
 
-				hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: ptr.To(true)}
+				hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: new(true)}
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewAAQHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -277,7 +276,7 @@ var _ = Describe("AAQ tests", func() {
 		})
 
 		It("should create AAQ if the enableApplicationAwareQuota FG is true", func() {
-			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: ptr.To(true)}
+			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: new(true)}
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewAAQHandler(cl, commontestutils.GetScheme())
@@ -305,11 +304,11 @@ var _ = Describe("AAQ tests", func() {
 
 		It("should update AAQ fields, if not matched to the requirements", func() {
 			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
-				Enable: ptr.To(true),
+				Enable: new(true),
 			}
 			aaq := NewAAQWithNameOnly()
 			aaq.Spec.Infra = testNodePlacement
-			aaq.Spec.PriorityClass = ptr.To[aaqv1alpha1.AAQPriorityClass]("wrongPC")
+			aaq.Spec.PriorityClass = new(aaqv1alpha1.AAQPriorityClass("wrongPC"))
 			aaq.Spec.CertConfig = &aaqv1alpha1.AAQCertConfig{
 				CA: &aaqv1alpha1.CertConfig{
 					Duration:    &metav1.Duration{Duration: time.Hour * 72},
@@ -357,7 +356,7 @@ var _ = Describe("AAQ tests", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
-				Enable: ptr.To(true),
+				Enable: new(true),
 			}
 
 			outdatedResource := NewAAQWithNameOnly()
@@ -392,7 +391,7 @@ var _ = Describe("AAQ tests", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
-				Enable: ptr.To(true),
+				Enable: new(true),
 			}
 
 			outdatedResource := NewAAQWithNameOnly()

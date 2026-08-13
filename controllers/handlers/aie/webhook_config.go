@@ -2,12 +2,12 @@ package aie
 
 import (
 	"errors"
+	"maps"
 	"reflect"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -73,9 +73,7 @@ func (h *aieWebhookMWCHooks) UpdateCR(req *common.HcoRequest, Client client.Clie
 			if found.Annotations == nil {
 				found.Annotations = make(map[string]string)
 			}
-			for k, v := range mwc.Annotations {
-				found.Annotations[k] = v
-			}
+			maps.Copy(found.Annotations, mwc.Annotations)
 		}
 
 		err := Client.Update(req.Ctx, found)
@@ -121,8 +119,8 @@ func newAIEMutatingWebhookConfiguration() *admissionregistrationv1.MutatingWebho
 				Service: &admissionregistrationv1.ServiceReference{
 					Name:      aieWebhookName,
 					Namespace: util.GetOperatorNamespaceFromEnv(),
-					Path:      ptr.To("/mutate-pods"),
-					Port:      ptr.To[int32](443),
+					Path:      new("/mutate-pods"),
+					Port:      new(int32(443)),
 				},
 			},
 			ObjectSelector: &metav1.LabelSelector{

@@ -49,7 +49,7 @@ func (ee *eventEmitter) EmitEvent(object runtime.Object, eventType, reason, msg 
 
 // IsActuallyNil checks if an interface object is actually nil. Just checking for == nil won't work, if the parameter is
 // a pointer variable that holds nil.
-func IsActuallyNil(object interface{}) bool {
+func IsActuallyNil(object any) bool {
 	if object == nil {
 		return true
 	}

@@ -173,14 +173,14 @@ func validateNetResInjectorDeleted(ctx context.Context, cli client.Client) {
 func enableNetResInjector(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	By("setting deployNetworkResourcesInjector to true")
-	patch := []byte(fmt.Sprintf(netResInjectorDeploymentPatchTemplate, true))
+	patch := fmt.Appendf(nil, netResInjectorDeploymentPatchTemplate, true)
 	tests.PatchMergeHCO(ctx, cli, patch)
 }
 
 func disableNetResInjector(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	By("setting deployNetworkResourcesInjector to false")
-	patch := []byte(fmt.Sprintf(netResInjectorDeploymentPatchTemplate, false))
+	patch := fmt.Appendf(nil, netResInjectorDeploymentPatchTemplate, false)
 	tests.PatchMergeHCO(ctx, cli, patch)
 }
 

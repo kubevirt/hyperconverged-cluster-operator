@@ -56,7 +56,7 @@ func (mm *ManagerMock) Add(r manager.Runnable) error {
 }
 
 // Deprecated: use the equivalent Options field to set a field. This method will be removed in v0.10.
-func (mm *ManagerMock) SetFields(_ interface{}) error {
+func (mm *ManagerMock) SetFields(_ any) error {
 	return nil
 }
 

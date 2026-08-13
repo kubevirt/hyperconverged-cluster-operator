@@ -277,13 +277,13 @@ func getWaspDS(ctx context.Context, cli client.Client) (*appsv1.DaemonSet, error
 
 func setAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
-	patchBytes := []byte(fmt.Sprintf(`{
+	patchBytes := fmt.Appendf(nil, `{
 		"metadata": {
 			"annotations": {
 				%q: %q
 			}
 		}
-	}`, waspagent.AutopilotSwapAnnotation, waspagent.AutopilotSwapAnnotationValue))
+	}`, waspagent.AutopilotSwapAnnotation, waspagent.AutopilotSwapAnnotationValue)
 
 	tests.PatchMergeHCO(ctx, cli, patchBytes)
 
@@ -300,13 +300,13 @@ func setAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 
 func removeAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
-	patchBytes := []byte(fmt.Sprintf(`{
+	patchBytes := fmt.Appendf(nil, `{
 		"metadata": {
 			"annotations": {
 				%q: null
 			}
 		}
-	}`, waspagent.AutopilotSwapAnnotation))
+	}`, waspagent.AutopilotSwapAnnotation)
 
 	tests.PatchMergeHCO(ctx, cli, patchBytes)
 

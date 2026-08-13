@@ -9,7 +9,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -213,7 +212,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 			modifiedDs := originalDs.DeepCopy()
 			modifiedDs.Spec.Template.Spec.Containers[0].Image = "malicious:tag"
 			modifiedDs.Spec.Template.Spec.HostPID = false
-			modifiedDs.Spec.Template.Spec.Containers[0].SecurityContext.Privileged = ptr.To(false)
+			modifiedDs.Spec.Template.Spec.Containers[0].SecurityContext.Privileged = new(false)
 			modifiedDs.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceCPU] = resource.MustParse("500m")
 			modifiedDs.Spec.Template.Spec.Volumes = nil
 			ds = commontestutils.InitClient([]client.Object{hco, modifiedDs})

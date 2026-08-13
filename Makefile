@@ -37,7 +37,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate gogenerate prepare-tools-crd generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring update-kv-fg-file
+sanity: generate gogenerate prepare-tools-crd go-fix generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring update-kv-fg-file
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -319,6 +319,9 @@ lint-monitoring:
 	go install github.com/kubevirt/monitoring/monitoringlinter/cmd/monitoringlinter@a697c0c
 	monitoringlinter ./api/... ./pkg/... ./controllers/...
 
+go-fix:
+	./hack/go-fix.sh
+
 bump-hco:
 	./hack/bump-hco.sh ${HCO_BUMP_LEVEL}
 
@@ -395,6 +398,7 @@ push-builder-image: retag-builder-image
 		validate-no-offensive-lang \
 		lint-metrics \
 		lint-monitoring \
+		go-fix \
 		sanity \
 		goimport \
 		update-kv-fg-file \
