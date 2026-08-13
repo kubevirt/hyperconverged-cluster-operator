@@ -49,7 +49,7 @@ require (
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/kubevirt-migration-operator v0.2.0
 	kubevirt.io/ssp-operator/api v0.26.0
-	kubevirt.io/vm-file-restore-operator v0.0.5
+	kubevirt.io/vm-file-restore-operator v0.0.6
 	sigs.k8s.io/controller-runtime v0.24.1
 	sigs.k8s.io/controller-tools v0.21.0
 	sigs.k8s.io/yaml v1.6.0
