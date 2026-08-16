@@ -3969,7 +3969,43 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - persistentvolumeclaims
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachineinstances
+          verbs:
+          - get
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - kubevirt-metrics-exporter
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          - serviceaccounts
           - services
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - daemonsets
           verbs:
           - create
           - get
@@ -4036,6 +4072,7 @@ spec:
         - apiGroups:
           - monitoring.coreos.com
           resources:
+          - podmonitors
           - prometheusrules
           - servicemonitors
           verbs:
@@ -4050,8 +4087,8 @@ spec:
           resources:
           - uiplugins
           verbs:
-          - delete
           - create
+          - delete
           - get
           - list
           - patch
@@ -4072,8 +4109,47 @@ spec:
           - perses.dev
           resources:
           - persesdashboards
+          - persesdatasources
           verbs:
           - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          verbs:
+          - create
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resourceNames:
+          - kubevirt-metrics-exporter
+          - kubevirt-metrics-exporter-scc
+          resources:
+          - clusterrolebindings
+          verbs:
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterroles
+          verbs:
+          - create
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resourceNames:
+          - kubevirt-metrics-exporter
+          - kubevirt-metrics-exporter-scc
+          resources:
+          - clusterroles
+          verbs:
           - get
           - list
           - patch
@@ -4084,8 +4160,26 @@ spec:
           resources:
           - nodehealthchecks
           verbs:
-          - delete
           - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - create
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - kubevirt-metrics-exporter
+          resources:
+          - securitycontextconstraints
+          verbs:
           - get
           - list
           - patch
@@ -4166,7 +4260,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.2.0
                 - name: AUTOPILOT_VERSION
-                  value: v0.0.11
+                  value: v0.0.12
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5243,7 +5337,7 @@ spec:
                 - --namespace=kubevirt-hyperconverged
                 command:
                 - /manager
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:b17d7a731a57522105de798fa638e25023f10bdb5a59a1ac55a20c2be49f1eb0
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:6360f35dcd27f0c3f256217089ceb713d2341713e39ef7e35eb7cb0c3def3d13
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6235,7 +6329,7 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:65d23c9ad91707a4fb5f0103e04c12d02343437ac44e3a31608d7a1fff003d55
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:b17d7a731a57522105de798fa638e25023f10bdb5a59a1ac55a20c2be49f1eb0
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:6360f35dcd27f0c3f256217089ceb713d2341713e39ef7e35eb7cb0c3def3d13
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:631ade5aced9ffb248f2725759c7d37376d596875b05f6a331a12342a281a1ce
     name: virt-synchronization-controller
