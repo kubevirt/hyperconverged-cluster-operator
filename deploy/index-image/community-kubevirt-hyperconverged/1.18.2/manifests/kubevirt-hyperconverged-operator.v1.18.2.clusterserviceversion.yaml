@@ -3967,6 +3967,12 @@ spec:
           verbs:
           - get
         - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - storageprofiles
+          verbs:
+          - list
+        - apiGroups:
           - ""
           resources:
           - persistentvolumeclaims
@@ -4047,6 +4053,17 @@ spec:
           - update
           - watch
         - apiGroups:
+          - loki.grafana.com
+          resources:
+          - lokistacks
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - machineconfiguration.openshift.io
           resources:
           - kubeletconfigs
@@ -4085,6 +4102,7 @@ spec:
         - apiGroups:
           - observability.openshift.io
           resources:
+          - clusterlogforwarders
           - uiplugins
           verbs:
           - create
@@ -4123,25 +4141,31 @@ spec:
           - clusterrolebindings
           verbs:
           - create
+          - list
+          - watch
         - apiGroups:
           - rbac.authorization.k8s.io
           resourceNames:
           - kubevirt-metrics-exporter
           - kubevirt-metrics-exporter-scc
+          - logging-collector-application
+          - logging-collector-audit
+          - logging-collector-infrastructure
+          - logging-collector-logs-writer
           resources:
           - clusterrolebindings
           verbs:
           - get
-          - list
           - patch
           - update
-          - watch
         - apiGroups:
           - rbac.authorization.k8s.io
           resources:
           - clusterroles
           verbs:
           - create
+          - list
+          - watch
         - apiGroups:
           - rbac.authorization.k8s.io
           resourceNames:
@@ -4151,10 +4175,8 @@ spec:
           - clusterroles
           verbs:
           - get
-          - list
           - patch
           - update
-          - watch
         - apiGroups:
           - remediation.medik8s.io
           resources:
@@ -4173,6 +4195,8 @@ spec:
           - securitycontextconstraints
           verbs:
           - create
+          - list
+          - watch
         - apiGroups:
           - security.openshift.io
           resourceNames:
@@ -4180,6 +4204,15 @@ spec:
           resources:
           - securitycontextconstraints
           verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - storage-based-remediation.medik8s.io
+          resources:
+          - storagebasedremediationconfigs
+          verbs:
+          - create
           - get
           - list
           - patch
@@ -4260,7 +4293,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.2.0
                 - name: AUTOPILOT_VERSION
-                  value: v0.0.12
+                  value: v0.1.2
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5337,7 +5370,7 @@ spec:
                 - --namespace=kubevirt-hyperconverged
                 command:
                 - /manager
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:6360f35dcd27f0c3f256217089ceb713d2341713e39ef7e35eb7cb0c3def3d13
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:c8afb962ae84ae2a0684111204f140284f0f7f4e3110111570998729fa13a121
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6329,7 +6362,7 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:65d23c9ad91707a4fb5f0103e04c12d02343437ac44e3a31608d7a1fff003d55
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:6360f35dcd27f0c3f256217089ceb713d2341713e39ef7e35eb7cb0c3def3d13
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:c8afb962ae84ae2a0684111204f140284f0f7f4e3110111570998729fa13a121
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:631ade5aced9ffb248f2725759c7d37376d596875b05f6a331a12342a281a1ce
     name: virt-synchronization-controller

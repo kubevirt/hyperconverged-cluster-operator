@@ -4690,6 +4690,12 @@ rules:
   verbs:
   - get
 - apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - storageprofiles
+  verbs:
+  - list
+- apiGroups:
   - ""
   resources:
   - persistentvolumeclaims
@@ -4770,6 +4776,17 @@ rules:
   - update
   - watch
 - apiGroups:
+  - loki.grafana.com
+  resources:
+  - lokistacks
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - machineconfiguration.openshift.io
   resources:
   - kubeletconfigs
@@ -4808,6 +4825,7 @@ rules:
 - apiGroups:
   - observability.openshift.io
   resources:
+  - clusterlogforwarders
   - uiplugins
   verbs:
   - create
@@ -4846,25 +4864,31 @@ rules:
   - clusterrolebindings
   verbs:
   - create
+  - list
+  - watch
 - apiGroups:
   - rbac.authorization.k8s.io
   resourceNames:
   - kubevirt-metrics-exporter
   - kubevirt-metrics-exporter-scc
+  - logging-collector-application
+  - logging-collector-audit
+  - logging-collector-infrastructure
+  - logging-collector-logs-writer
   resources:
   - clusterrolebindings
   verbs:
   - get
-  - list
   - patch
   - update
-  - watch
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterroles
   verbs:
   - create
+  - list
+  - watch
 - apiGroups:
   - rbac.authorization.k8s.io
   resourceNames:
@@ -4874,10 +4898,8 @@ rules:
   - clusterroles
   verbs:
   - get
-  - list
   - patch
   - update
-  - watch
 - apiGroups:
   - remediation.medik8s.io
   resources:
@@ -4896,6 +4918,8 @@ rules:
   - securitycontextconstraints
   verbs:
   - create
+  - list
+  - watch
 - apiGroups:
   - security.openshift.io
   resourceNames:
@@ -4903,6 +4927,15 @@ rules:
   resources:
   - securitycontextconstraints
   verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - storage-based-remediation.medik8s.io
+  resources:
+  - storagebasedremediationconfigs
+  verbs:
+  - create
   - get
   - list
   - patch
