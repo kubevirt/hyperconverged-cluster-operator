@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
-    createdAt: "2026-08-13 05:34:03"
+    createdAt: "2026-08-17 12:30:05"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4291,6 +4291,8 @@ spec:
           - clusterrolebindings
           verbs:
           - create
+          - list
+          - watch
         - apiGroups:
           - rbac.authorization.k8s.io
           resourceNames:
@@ -4304,16 +4306,16 @@ spec:
           - clusterrolebindings
           verbs:
           - get
-          - list
           - patch
           - update
-          - watch
         - apiGroups:
           - rbac.authorization.k8s.io
           resources:
           - clusterroles
           verbs:
           - create
+          - list
+          - watch
         - apiGroups:
           - rbac.authorization.k8s.io
           resourceNames:
@@ -4323,10 +4325,8 @@ spec:
           - clusterroles
           verbs:
           - get
-          - list
           - patch
           - update
-          - watch
         - apiGroups:
           - remediation.medik8s.io
           resources:
@@ -4345,6 +4345,8 @@ spec:
           - securitycontextconstraints
           verbs:
           - create
+          - list
+          - watch
         - apiGroups:
           - security.openshift.io
           resourceNames:
@@ -4353,10 +4355,8 @@ spec:
           - securitycontextconstraints
           verbs:
           - get
-          - list
           - patch
           - update
-          - watch
         - apiGroups:
           - storage-based-remediation.medik8s.io
           resources:
@@ -4558,7 +4558,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.2.0
                 - name: AUTOPILOT_VERSION
-                  value: v0.1.1
+                  value: v0.1.2
                 - name: VM_FILE_RESTORE_OPERATOR_VERSION
                   value: v0.0.6
                 - name: INFLIGHT_OPERATIONS_VERSION
@@ -5648,7 +5648,7 @@ spec:
                 env:
                 - name: RELATED_IMAGE_KUBEVIRT_METRICS_EXPORTER
                   value: quay.io/openshift-virtualization/kubevirt-metrics-exporter@sha256:a6337b9bbaa0b66835b2b09afffa39766b1fa283d1c29c02087873e9b8097121
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:242b054acd0e2f9825fe44caebf1f0a23fab7c0dbefb786e06106f2d108a9d96
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:c8afb962ae84ae2a0684111204f140284f0f7f4e3110111570998729fa13a121
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6749,7 +6749,7 @@ spec:
     name: virt-observability-controller
   - image: quay.io/kubevirt/virt-operator@sha256:d08b5b5ad1c0d694fad13279e44b44b6fad961aa7508acd53b87ce6ef468cbae
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:242b054acd0e2f9825fe44caebf1f0a23fab7c0dbefb786e06106f2d108a9d96
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:c8afb962ae84ae2a0684111204f140284f0f7f4e3110111570998729fa13a121
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:6163d1108317d2abc4fef3213b4a00acfc8e066625d22882671fcb032859e062
     name: virt-synchronization-controller
