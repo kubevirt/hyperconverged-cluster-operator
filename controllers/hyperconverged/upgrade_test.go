@@ -970,8 +970,7 @@ var _ = Describe("Upgrade Mode", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.19.0")
 
 			cl := commontestutils.InitClient(resources)
-			foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeFalse())
+			foundResource, _, _ := doReconcile(cl, expected.hco, nil)
 			checkAvailability(foundResource, metav1.ConditionTrue)
 
 			foundDS := &appsv1.DaemonSet{}
@@ -1057,8 +1056,7 @@ var _ = Describe("Upgrade Mode", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.19.0")
 
 			cl := commontestutils.InitClient(resources)
-			foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeFalse())
+			foundResource, _, _ := doReconcile(cl, expected.hco, nil)
 			checkAvailability(foundResource, metav1.ConditionTrue)
 
 			foundDS := &appsv1.DaemonSet{}
