@@ -4572,7 +4572,7 @@ spec:
                 - name: WASP_AGENT_IMAGE
                   value: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
                 - name: AIE_WEBHOOK_IMAGE
-                  value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d5aafc2c9ea71fc03c92a5f73d1c612996a20cff59051e029f82774210ff457e
+                  value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
                 - name: OBSERVABILITY_CONTROLLER_IMAGE
                   value: quay.io/kubevirt/virt-observability-controller@sha256:170a30602ba326b11b298f511553fbf479a5447632f051ed915f6af1b0e612a0
                 image: +IMAGE_TO_REPLACE+
@@ -6695,7 +6695,7 @@ spec:
     name: kubemacpool
   - image: ghcr.io/kubevirt/kubesecondarydns@sha256:f5fe9c98fb6d7e5e57a6df23fe82e43e65db5953d76af44adda9ab40c46ad0bf
     name: kubesecondarydns
-  - image: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d5aafc2c9ea71fc03c92a5f73d1c612996a20cff59051e029f82774210ff457e
+  - image: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
     name: kubevirt-aie-webhook
   - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:147a0a9fbd8169bdf150242d8a7aaf4587634bf30e588639a0f854777aba62d1
     name: kubevirt-apiserver-proxy
