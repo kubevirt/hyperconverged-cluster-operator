@@ -308,7 +308,7 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 
 	kvCertConfig := hcoCertConfig2KvCertificateRotateStrategy(hc.Spec.CertConfig)
 
-	controlPlaneHighlyAvailable := nodeinfo.IsControlPlaneHighlyAvailable()
+	controlPlaneMultiNode := nodeinfo.IsControlPlaneMultiNode()
 	controlPlaneNodeExists := nodeinfo.IsControlPlaneNodeExists()
 	infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 
@@ -319,7 +319,7 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 
 	spec := kubevirtcorev1.KubeVirtSpec{
 		UninstallStrategy:           uninstallStrategy,
-		Infra:                       hcoConfig2KvConfig(hc.Spec.Infra, infraHighlyAvailable, controlPlaneHighlyAvailable, controlPlaneNodeExists),
+		Infra:                       hcoConfig2KvConfig(hc.Spec.Infra, infraHighlyAvailable, controlPlaneMultiNode, controlPlaneNodeExists),
 		Workloads:                   hcoConfig2KvConfig(hc.Spec.Workloads, true, true, true),
 		Configuration:               *config,
 		CertificateRotationStrategy: *kvCertConfig,
@@ -898,8 +898,8 @@ func NewKubeVirtWithNameOnly() *kubevirtcorev1.KubeVirt {
 }
 
 func hcoConfig2KvConfig(
-	hcoConfig hcov1beta1.HyperConvergedConfig, infraHighlyAvailable, controlPlaneHighlyAvailable, controlPlaneNodeExists bool) *kubevirtcorev1.ComponentConfig {
-	if hcoConfig.NodePlacement == nil && controlPlaneHighlyAvailable {
+	hcoConfig hcov1beta1.HyperConvergedConfig, infraHighlyAvailable, controlPlaneMultiNode, controlPlaneNodeExists bool) *kubevirtcorev1.ComponentConfig {
+	if hcoConfig.NodePlacement == nil && controlPlaneMultiNode {
 		return nil
 	}
 
@@ -918,7 +918,7 @@ func hcoConfig2KvConfig(
 		return kvConfig
 	}
 
-	if !controlPlaneHighlyAvailable {
+	if !controlPlaneMultiNode {
 		kvConfig.Replicas = ptr.To[uint8](1)
 	}
 
