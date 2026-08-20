@@ -2172,15 +2172,49 @@ Version: 1.2.3`)
 						},
 						ContainElement(kvTemplateFG),
 					),
-					Entry("should not add the Template feature gate if template is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "template", State: new(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvTemplateFG)),
-					),
-				)
+				Entry("should not add the Template feature gate if template is false in HyperConverged CR",
+					func(hc *hcov1.HyperConverged) {
+						hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+							{Name: "template", State: new(featuregates.Disabled)},
+						}
+					},
+					Not(ContainElement(kvTemplateFG)),
+				),
+				// WorkloadEncryptionSEV
+				Entry("should add the WorkloadEncryptionSEV feature gate if workloadEncryptionSEV is true in HyperConverged CR",
+					func(hc *hcov1.HyperConverged) {
+						hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+							{Name: "workloadEncryptionSEV", State: new(featuregates.Enabled)},
+						}
+					},
+					ContainElement(kvWorkloadEncryptionSEV),
+				),
+				Entry("should not add the WorkloadEncryptionSEV feature gate if workloadEncryptionSEV is false in HyperConverged CR",
+					func(hc *hcov1.HyperConverged) {
+						hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+							{Name: "workloadEncryptionSEV", State: new(featuregates.Disabled)},
+						}
+					},
+					Not(ContainElement(kvWorkloadEncryptionSEV)),
+				),
+				// WorkloadEncryptionTDX
+				Entry("should add the WorkloadEncryptionTDX feature gate if workloadEncryptionTDX is true in HyperConverged CR",
+					func(hc *hcov1.HyperConverged) {
+						hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+							{Name: "workloadEncryptionTDX", State: new(featuregates.Enabled)},
+						}
+					},
+					ContainElement(kvWorkloadEncryptionTDX),
+				),
+				Entry("should not add the WorkloadEncryptionTDX feature gate if workloadEncryptionTDX is false in HyperConverged CR",
+					func(hc *hcov1.HyperConverged) {
+						hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+							{Name: "workloadEncryptionTDX", State: new(featuregates.Disabled)},
+						}
+					},
+					Not(ContainElement(kvWorkloadEncryptionTDX)),
+				),
+			)
 			})
 
 			Context("test feature gates in KV handler", func() {

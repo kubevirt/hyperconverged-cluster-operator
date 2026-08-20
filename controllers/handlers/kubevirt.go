@@ -148,6 +148,8 @@ const (
 	kvIOMMUFD                      = "IOMMUFD"
 	kvTemplateFG                   = "Template"
 	kvExternalNetResourceInjection = "ExternalNetResourceInjection"
+	kvWorkloadEncryptionSEV        = "WorkloadEncryptionSEV"
+	kvWorkloadEncryptionTDX        = "WorkloadEncryptionTDX"
 )
 
 // CPU Plugin default values
@@ -1000,6 +1002,14 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	if common.ShouldDeployNetworkResourcesInjector(hc) &&
 		meta.IsStatusConditionTrue(hc.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady) {
 		fgs = append(fgs, kvExternalNetResourceInjection)
+	}
+
+	if featureGates.IsEnabled("workloadEncryptionSEV") {
+		fgs = append(fgs, kvWorkloadEncryptionSEV)
+	}
+
+	if featureGates.IsEnabled("workloadEncryptionTDX") {
+		fgs = append(fgs, kvWorkloadEncryptionTDX)
 	}
 
 	return fgs

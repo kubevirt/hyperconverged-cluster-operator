@@ -124,6 +124,16 @@ type HyperConvergedSpec struct {
 	//   This feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * workloadEncryptionSEV:
+	//   Enable AMD SEV and SEV-SNP workload encryption for confidential VMs. Note:
+	//   this feature is in Developer Preview.
+	//   Phase: alpha
+	//
+	// * workloadEncryptionTDX:
+	//   Enable Intel TDX workload encryption for confidential VMs. Note: this
+	//   feature is in Developer Preview.
+	//   Phase: alpha
+	//
 	// * disableMDevConfiguration:
 	//   Deprecated: This feature gate has graduated to a dedicated configuration
 	//   field; use spec.virtualization.mediatedDevicesConfiguration.enabled

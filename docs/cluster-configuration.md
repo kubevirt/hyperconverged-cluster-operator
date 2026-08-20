@@ -226,6 +226,54 @@ workload identity.
 
 **Graduation Status**: Alpha
 
+### workloadEncryptionSEV Feature Gate
+Add the `workloadEncryptionSEV` feature gate in order to enable AMD SEV and
+SEV-SNP workload encryption for confidential VMs. When enabled, this allows
+deploy VMs in which memory and CPU registers are encrypted and isolated from
+the host.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: workloadEncryptionSEV
+```
+
+**Note**: This feature is in Developer Preview. The host must have AMD SEV or
+SEV-SNP capable hardware and the appropriate kernel parameters configured
+(`kvm_amd.sev_snp=1`, `mem_encrypt=on`).
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
+### workloadEncryptionTDX Feature Gate
+Add the `workloadEncryptionTDX` feature gate in order to enable Intel TDX
+workload encryption for confidential VMs. When enabled, this allows deploy VMs
+in which memory and CPU registers are encrypted and isolated from the host.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: workloadEncryptionTDX
+```
+
+**Note**: This feature is in Developer Preview. The host must have Intel TDX
+capable hardware and the appropriate kernel parameters configured
+(`kvm_intel.tdx=1`, `nohibernate`). Additionally, PCCS and QGS services must
+be deployed for attestation.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### enableMultiArchBootImageImport Feature Gate (Deprecated)
 This feature is GA now, and the feature gate is deprecated. It will be removed in a future version.
 

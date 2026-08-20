@@ -541,6 +541,8 @@ A feature gate may be in the following phases:
 | downwardMetrics | Allow to expose a limited set of host metrics to guests. | alpha |
 | incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Developer Preview. | alpha |
 | objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | alpha |
+| workloadEncryptionSEV | Enable AMD SEV and SEV-SNP workload encryption for confidential VMs. Note: this feature is in Developer Preview. | alpha |
+| workloadEncryptionTDX | Enable Intel TDX workload encryption for confidential VMs. Note: this feature is in Developer Preview. | alpha |
 | disableMDevConfiguration | Deprecated: This feature gate has graduated to a dedicated configuration field; use spec.virtualization.mediatedDevicesConfiguration.enabled instead. This feature gate is deprecated and will be removed in a future release. | deprecated |
 | enableMultiArchBootImageImport | Deprecated: This feature gate has graduated to a dedicated configuration field; use spec.workloadSources.enableMultiArchBootImageImport instead. This feature gate is deprecated and will be removed in a future release. | deprecated |
 | persistentReservation | This feature gate has graduated to a dedicated configuration field. Use spec.storage.persistentReservationConfiguration.enabled instead. This feature gate is deprecated and will be removed in a future release. | deprecated |
