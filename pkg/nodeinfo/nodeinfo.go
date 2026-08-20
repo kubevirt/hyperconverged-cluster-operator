@@ -21,6 +21,7 @@ var (
 	HandleNodeChanges = internal.HandleNodeChanges
 
 	IsControlPlaneHighlyAvailable   = internal.IsControlPlaneHighlyAvailable
+	IsControlPlaneMultiNode         = internal.IsControlPlaneMultiNode
 	IsControlPlaneNodeExists        = internal.IsControlPlaneNodeExists
 	IsInfrastructureHighlyAvailable = internal.IsInfrastructureHighlyAvailable
 

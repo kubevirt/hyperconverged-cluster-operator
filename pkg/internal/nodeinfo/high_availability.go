@@ -20,12 +20,21 @@ const (
 
 var (
 	controlPlaneHighlyAvailable   atomic.Bool
+	controlPlaneMultiNode         atomic.Bool
 	controlPlaneNodeExist         atomic.Bool
 	infrastructureHighlyAvailable atomic.Bool
 )
 
 func IsControlPlaneHighlyAvailable() bool {
 	return controlPlaneHighlyAvailable.Load()
+}
+
+// IsControlPlaneMultiNode reports whether there is more than one control
+// plane node to spread replicas across. Unlike IsControlPlaneHighlyAvailable,
+// this does not require an arbiter or a third node, so it also covers
+// two-node control planes (e.g. Dual Replica / TNF topologies).
+func IsControlPlaneMultiNode() bool {
+	return controlPlaneMultiNode.Load()
 }
 
 func IsControlPlaneNodeExists() bool {

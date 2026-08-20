@@ -4,6 +4,7 @@ import "github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 
 var (
 	origIsControlPlaneHighlyAvailable = nodeinfo.IsControlPlaneHighlyAvailable
+	origIsControlPlaneMultiNode       = nodeinfo.IsControlPlaneMultiNode
 	origIsControlPlaneNodeExists      = nodeinfo.IsControlPlaneNodeExists
 	origIsInfraHighlyAvailable        = nodeinfo.IsInfrastructureHighlyAvailable
 	origGetControlPlaneArchitectures  = nodeinfo.GetControlPlaneArchitectures
@@ -13,6 +14,7 @@ var (
 
 func ResetNodeInfoMocks() {
 	nodeinfo.IsControlPlaneHighlyAvailable = origIsControlPlaneHighlyAvailable
+	nodeinfo.IsControlPlaneMultiNode = origIsControlPlaneMultiNode
 	nodeinfo.IsControlPlaneNodeExists = origIsControlPlaneNodeExists
 	nodeinfo.IsInfrastructureHighlyAvailable = origIsInfraHighlyAvailable
 	nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
@@ -33,6 +35,10 @@ func HighlyAvailableNodeInfoMocks() {
 	nodeinfo.IsControlPlaneHighlyAvailable = func() bool {
 		return true
 	}
+
+	nodeinfo.IsControlPlaneMultiNode = func() bool {
+		return true
+	}
 }
 
 // SNONodeInfoMock mocks Openshift SNO
@@ -46,6 +52,10 @@ func SNONodeInfoMock() {
 	}
 
 	nodeinfo.IsControlPlaneHighlyAvailable = func() bool {
+		return false
+	}
+
+	nodeinfo.IsControlPlaneMultiNode = func() bool {
 		return false
 	}
 }
@@ -62,6 +72,33 @@ func SRCPHAINodeInfoMock() {
 
 	nodeinfo.IsControlPlaneHighlyAvailable = func() bool {
 		return false
+	}
+
+	nodeinfo.IsControlPlaneMultiNode = func() bool {
+		return false
+	}
+}
+
+// DualReplicaNodeInfoMock mocks Openshift with the DualReplica (two-node
+// control plane, no arbiter) topology: two control plane nodes without a
+// third node or arbiter to form etcd quorum, so IsControlPlaneHighlyAvailable
+// is false, but there are still two nodes to spread KubeVirt infra replicas
+// across.
+func DualReplicaNodeInfoMock() {
+	nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
+		return false
+	}
+
+	nodeinfo.IsControlPlaneNodeExists = func() bool {
+		return true
+	}
+
+	nodeinfo.IsControlPlaneHighlyAvailable = func() bool {
+		return false
+	}
+
+	nodeinfo.IsControlPlaneMultiNode = func() bool {
+		return true
 	}
 }
 
