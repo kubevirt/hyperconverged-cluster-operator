@@ -890,21 +890,16 @@ func hcoConfig2KvConfig(
 
 	kvConfig := &kubevirtcorev1.ComponentConfig{}
 
+	if shouldHaveVirtInfraSingleReplica(infraHighlyAvailable, controlPlaneMultiNode, controlPlaneNodeExists) {
+		kvConfig.Replicas = new(uint8(1))
+	}
+
 	// In case there are no control plane / master nodes in the cluster, we're setting
 	// an empty struct for NodePlacement so that kubevirt control plane pods won't have
 	// any affinity rules, and they could get scheduled onto worker nodes.
 	if nodePlacement == nil && !controlPlaneNodeExists {
 		kvConfig.NodePlacement = &kubevirtcorev1.NodePlacement{}
-		if !infraHighlyAvailable {
-			// if there is only one worker node and no control plane nodes,
-			// set the kubevirt control plane replica count to 1.
-			kvConfig.Replicas = new(uint8(1))
-		}
 		return kvConfig
-	}
-
-	if !controlPlaneMultiNode {
-		kvConfig.Replicas = new(uint8(1))
 	}
 
 	if nodePlacement == nil {
@@ -929,6 +924,10 @@ func hcoConfig2KvConfig(
 	}
 
 	return kvConfig
+}
+
+func shouldHaveVirtInfraSingleReplica(infraHighlyAvailable, controlPlaneMultiNode, controlPlaneNodeExists bool) bool {
+	return (controlPlaneNodeExists && !controlPlaneMultiNode) || (!controlPlaneNodeExists && !infraHighlyAvailable)
 }
 
 func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
