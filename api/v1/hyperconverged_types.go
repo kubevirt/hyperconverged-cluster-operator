@@ -318,6 +318,11 @@ type VirtualizationConfig struct {
 	// +kubebuilder:validation:Enum=AggregateToDefault;Manual
 	RoleAggregationStrategy *v1.RoleAggregationStrategy `json:"roleAggregationStrategy,omitempty"`
 
+	// ConfidentialCompute configures cluster-level confidential computing settings,
+	// such as TDX attestation via QGS (Quote Generation Service).
+	// +optional
+	ConfidentialCompute *v1.ConfidentialComputeConfiguration `json:"confidentialCompute,omitempty"`
+
 	// VmiCPUAllocationRatio defines, for each requested virtual CPU,
 	// how much physical CPU to request per VMI from the
 	// hosting node. The value is in fraction of a CPU thread (or

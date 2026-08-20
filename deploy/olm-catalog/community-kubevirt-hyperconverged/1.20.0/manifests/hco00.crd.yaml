@@ -2982,6 +2982,33 @@ spec:
                         type: object
                         x-kubernetes-map-type: atomic
                     type: object
+                  confidentialCompute:
+                    description: |-
+                      ConfidentialCompute configures cluster-level confidential computing settings,
+                      such as TDX attestation via QGS (Quote Generation Service).
+                    properties:
+                      tdx:
+                        description: TDX configuration for attestation on the Intel
+                          TDX Platform
+                        nullable: true
+                        properties:
+                          attestation:
+                            description: QGSConfiguration holds QGS configuration
+                            properties:
+                              enforced:
+                                default: false
+                                description: Indicates whether TDX VM should enforce
+                                  the existence of QGS (required for attestation)
+                                  to be scheduled
+                                type: boolean
+                              qgsSocketPath:
+                                default: /var/run/tdx-qgs/qgs.socket
+                                description: Socket path pointing to the Quote Generation
+                                  Service
+                                type: string
+                            type: object
+                        type: object
+                    type: object
                   evictionStrategy:
                     description: |-
                       EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be

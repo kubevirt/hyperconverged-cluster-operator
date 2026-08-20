@@ -776,6 +776,42 @@ spec:
       batchEvictionInterval: "1m"
 ```
 
+### Confidential Compute Configuration
+
+The `spec.virtualization.confidentialCompute` field configures cluster-level
+confidential computing settings. Currently, it only configures attestation.
+
+When a TDX-enabled VM is started and attestation is configured, user can do
+remote attestation of the confidential VM.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: workloadEncryptionTDX
+  virtualization:
+    confidentialCompute:
+      tdx:
+        attestation:
+          enforced: false
+          qgsSocketPath: /var/run/tdx-qgs/qgs.socket
+```
+
+Fields:
+
+- `tdx.attestation.enforced` (bool, default: `false`): When `true`, TDX VMs will only be scheduled
+  on nodes where the QGS socket is available. When `false`, VMs can be scheduled even if QGS
+  is not present, but attestation will not be available.
+- `tdx.attestation.qgsSocketPath` (string, default: `/var/run/tdx-qgs/qgs.socket`): The path to the
+  Quote Generation Service socket on the host.
+
+**Note**: This configuration requires the `workloadEncryptionTDX` feature gate to be enabled, and the
+host must have Intel TDX capable hardware with the appropriate kernel parameters (`kvm_intel.tdx=1`,
+`nohibernate`).
+
 ### Cluster-level eviction strategy
 
 The `spec.virtualization.evictionStrategy` field defines at the cluster level if VirtualMachineInstances should be
