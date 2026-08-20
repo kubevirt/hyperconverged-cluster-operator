@@ -146,6 +146,8 @@ const (
 	kvTemplateFG                 = "Template"
 	kvRebootPolicyFG             = "RebootPolicy"
 	kvVSOCKFG                    = "VSOCK"
+	kvWorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
+	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
 )
 
 var (
@@ -163,6 +165,8 @@ var (
 		kvAlignCPUs,
 		kvObjectGraph,
 		kvContainerPathVolumes,
+		kvWorkloadEncryptionSEV,
+		kvWorkloadEncryptionTDX,
 	}
 )
 
