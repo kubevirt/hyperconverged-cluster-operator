@@ -144,6 +144,8 @@ const (
 	kvIOMMUFD                    = "IOMMUFD"
 	kvTemplateFG                 = "Template"
 	kvRebootPolicyFG             = "RebootPolicy"
+	kvWorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
+	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
 )
 
 // CPU Plugin default values
@@ -991,6 +993,14 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled(kvRebootPolicyFG) {
 		fgs = append(fgs, kvRebootPolicyFG)
+	}
+
+	if featureGates.IsEnabled("workloadEncryptionSEV") {
+		fgs = append(fgs, kvWorkloadEncryptionSEV)
+	}
+
+	if featureGates.IsEnabled("workloadEncryptionTDX") {
+		fgs = append(fgs, kvWorkloadEncryptionTDX)
 	}
 
 	return fgs
