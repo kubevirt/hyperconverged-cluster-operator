@@ -102,6 +102,48 @@ func DualReplicaNodeInfoMock() {
 	}
 }
 
+// HyperShiftHANodeInfoMock mocks a HyperShift (Hosted Control Plane) cluster
+// with highly available infrastructure: no control plane nodes (external CP)
+// and 2+ worker nodes.
+func HyperShiftHANodeInfoMock() {
+	nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
+		return true
+	}
+
+	nodeinfo.IsControlPlaneNodeExists = func() bool {
+		return false
+	}
+
+	nodeinfo.IsControlPlaneHighlyAvailable = func() bool {
+		return false
+	}
+
+	nodeinfo.IsControlPlaneMultiNode = func() bool {
+		return false
+	}
+}
+
+// HyperShiftSingleWorkerNodeInfoMock mocks a HyperShift (Hosted Control Plane)
+// cluster with a single worker node: no control plane nodes (external CP)
+// and only 1 worker.
+func HyperShiftSingleWorkerNodeInfoMock() {
+	nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
+		return false
+	}
+
+	nodeinfo.IsControlPlaneNodeExists = func() bool {
+		return false
+	}
+
+	nodeinfo.IsControlPlaneHighlyAvailable = func() bool {
+		return false
+	}
+
+	nodeinfo.IsControlPlaneMultiNode = func() bool {
+		return false
+	}
+}
+
 // ControlPlaneArchitecturesMock mocks the architecures for ControlPlane nodes
 func ControlPlaneArchitecturesMock(arch ...string) {
 	nodeinfo.GetControlPlaneArchitectures = func() []string {

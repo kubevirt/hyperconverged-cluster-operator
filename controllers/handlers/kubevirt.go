@@ -909,7 +909,9 @@ func hcoConfig2KvConfig(
 		return kvConfig
 	}
 
-	if !controlPlaneMultiNode {
+	if controlPlaneNodeExists && !controlPlaneMultiNode {
+		kvConfig.Replicas = new(uint8(1))
+	} else if !controlPlaneNodeExists && !infraHighlyAvailable {
 		kvConfig.Replicas = new(uint8(1))
 	}
 
