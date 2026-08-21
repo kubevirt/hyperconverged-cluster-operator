@@ -4550,7 +4550,7 @@ spec:
                 - name: NETWORK_ADDONS_VERSION
                   value: v0.102.0
                 - name: SSP_VERSION
-                  value: v0.26.0
+                  value: v0.27.0
                 - name: HPPO_VERSION
                   value: v0.25.2
                 - name: AAQ_VERSION
@@ -5087,15 +5087,15 @@ spec:
                 - /manager
                 env:
                 - name: VALIDATOR_IMAGE
-                  value: quay.io/kubevirt/kubevirt-template-validator@sha256:00bc24b90e8e4c56ed80f34c30d2a4207c40b3f6d5f662124e80640f5a9a3c24
+                  value: quay.io/kubevirt/kubevirt-template-validator@sha256:dd3e5d8b615da7ebd91072ff5e890bb2b85e0882bf3a80952afc4df41ee9fcc9
                 - name: OPERATOR_VERSION
-                  value: v0.26.0
+                  value: v0.27.0
                 - name: VM_CONSOLE_PROXY_IMAGE
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                image: quay.io/kubevirt/ssp-operator@sha256:1a3b187432eda471442e14a0e429bdeeeffb54d990f8fb0a1500bba8f6d0f4ac
+                image: quay.io/kubevirt/ssp-operator@sha256:5162bb37706309110fe2ec109aed01faebdd9836c7c4b7f2defa3a142320b637
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   failureThreshold: 5
@@ -6707,7 +6707,7 @@ spec:
     name: kubevirt-migration-operator
   - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:9a0183d08db45d34bfe8dfd007ac7c58d57cfb1c386d0fac6d0ea780ab4cb660
     name: kubevirt-plugin
-  - image: quay.io/kubevirt/kubevirt-template-validator@sha256:00bc24b90e8e4c56ed80f34c30d2a4207c40b3f6d5f662124e80640f5a9a3c24
+  - image: quay.io/kubevirt/kubevirt-template-validator@sha256:dd3e5d8b615da7ebd91072ff5e890bb2b85e0882bf3a80952afc4df41ee9fcc9
     name: kubevirt-template-validator
   - image: quay.io/kubevirt/libguestfs-tools@sha256:0ff18ccee820d776688188df0390461238d0795ced60555016324cc5d7657b7d
     name: libguestfs-tools
@@ -6729,7 +6729,7 @@ spec:
     name: pr-helper
   - image: quay.io/kubevirt/sidecar-shim@sha256:8eb25c016c09366ea4b2bbd524dfbb4872184a9aea67cc34c60ff78a11cb2661
     name: sidecar-shim
-  - image: quay.io/kubevirt/ssp-operator@sha256:1a3b187432eda471442e14a0e429bdeeeffb54d990f8fb0a1500bba8f6d0f4ac
+  - image: quay.io/kubevirt/ssp-operator@sha256:5162bb37706309110fe2ec109aed01faebdd9836c7c4b7f2defa3a142320b637
     name: ssp-operator
   - image: quay.io/kubevirt/virt-api@sha256:42341b1d52699f4bb87f3996151bafe2e3fe065e9146cc64a15959ddf7bf2c69
     name: virt-api
