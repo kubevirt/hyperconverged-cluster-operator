@@ -148,6 +148,8 @@ const (
 	kvIOMMUFD                      = "IOMMUFD"
 	kvTemplateFG                   = "Template"
 	kvExternalNetResourceInjection = "ExternalNetResourceInjection"
+	kvWorkloadEncryptionSEV        = "WorkloadEncryptionSEV"
+	kvWorkloadEncryptionTDX        = "WorkloadEncryptionTDX"
 )
 
 // CPU Plugin default values
@@ -475,6 +477,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 	copyHypervisors(hc.Spec.Virtualization.Hypervisors, config)
 
 	config.RoleAggregationStrategy = hc.Spec.Virtualization.RoleAggregationStrategy
+	config.ConfidentialCompute = hc.Spec.Virtualization.ConfidentialCompute.DeepCopy()
 
 	return config, nil
 }
@@ -1000,6 +1003,14 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	if common.ShouldDeployNetworkResourcesInjector(hc) &&
 		meta.IsStatusConditionTrue(hc.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady) {
 		fgs = append(fgs, kvExternalNetResourceInjection)
+	}
+
+	if featureGates.IsEnabled("workloadEncryptionSEV") {
+		fgs = append(fgs, kvWorkloadEncryptionSEV)
+	}
+
+	if featureGates.IsEnabled("workloadEncryptionTDX") {
+		fgs = append(fgs, kvWorkloadEncryptionTDX)
 	}
 
 	return fgs
