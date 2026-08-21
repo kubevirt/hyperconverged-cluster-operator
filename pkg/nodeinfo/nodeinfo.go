@@ -8,6 +8,7 @@ const (
 	// LabelNodeRoleControlPlane is the label used to identify control plane nodes
 	LabelNodeRoleControlPlane = internal.LabelNodeRoleControlPlane
 	// LabelNodeRoleKubevirtControlPlane is the label used by HCO on HCP clusters
+	// and on classic OCP when operators are placed via Subscription nodeSelector.
 	LabelNodeRoleKubevirtControlPlane = internal.LabelNodeRoleKubevirtControlPlane
 	// LabelNodeRoleMaster is the old label used to identify control plane nodes
 	LabelNodeRoleMaster = internal.LabelNodeRoleMaster
@@ -28,4 +29,6 @@ var (
 	GetControlPlaneArchitectures = internal.GetControlPlaneArchitectures
 	GetWorkloadsArchitectures    = internal.GetWorkloadsArchitectures
 	GetDefaultArchitecture       = internal.GetDefaultArchitecture
+
+	InjectKubeVirtControlPlanePlacement = internal.InjectKubeVirtControlPlanePlacement
 )
