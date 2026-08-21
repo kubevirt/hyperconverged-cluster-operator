@@ -65,7 +65,7 @@ spec:
         - name: NETWORK_ADDONS_VERSION
           value: v0.102.0
         - name: SSP_VERSION
-          value: v0.26.0
+          value: v0.27.0
         - name: HPPO_VERSION
           value: v0.25.2
         - name: AAQ_VERSION
@@ -623,15 +623,15 @@ spec:
         - /manager
         env:
         - name: VALIDATOR_IMAGE
-          value: quay.io/kubevirt/kubevirt-template-validator@sha256:00bc24b90e8e4c56ed80f34c30d2a4207c40b3f6d5f662124e80640f5a9a3c24
+          value: quay.io/kubevirt/kubevirt-template-validator@sha256:dd3e5d8b615da7ebd91072ff5e890bb2b85e0882bf3a80952afc4df41ee9fcc9
         - name: OPERATOR_VERSION
-          value: v0.26.0
+          value: v0.27.0
         - name: VM_CONSOLE_PROXY_IMAGE
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/kubevirt/ssp-operator@sha256:1a3b187432eda471442e14a0e429bdeeeffb54d990f8fb0a1500bba8f6d0f4ac
+        image: quay.io/kubevirt/ssp-operator@sha256:5162bb37706309110fe2ec109aed01faebdd9836c7c4b7f2defa3a142320b637
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 5
