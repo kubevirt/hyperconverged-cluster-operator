@@ -8,9 +8,9 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -632,12 +632,13 @@ var _ = Describe("NodesController", func() {
 		})
 	})
 
-	Context("Classic OCP Subscription node placement", func() {
+	Context("Classic OCP operator node placement", func() {
 		const infraLabel = "node-role.kubernetes.io/infra"
 
 		var nodeEvents chan event.GenericEvent
 		BeforeEach(func() {
 			nodeEvents = make(chan event.GenericEvent, 1)
+			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
 			DeferCleanup(func() {
 				close(nodeEvents)
 			})
@@ -685,10 +686,10 @@ var _ = Describe("NodesController", func() {
 			}
 		}
 
-		virtOperatorDep := func(selector map[string]string) *appsv1.Deployment {
+		hcoOperatorDep := func(selector map[string]string) *appsv1.Deployment {
 			return &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      virtOperatorDeploymentName,
+					Name:      hcoutil.HCOOperatorName,
 					Namespace: commontestutils.Namespace,
 				},
 				Spec: appsv1.DeploymentSpec{
@@ -701,31 +702,33 @@ var _ = Describe("NodesController", func() {
 			}
 		}
 
-		It("Should label infra nodes matching virt-operator nodeSelector", func() {
+		placementReconciler := func(cl client.Client) *ReconcileNodeCounter {
+			return &ReconcileNodeCounter{
+				Client:                                 cl,
+				nodeEvents:                             nodeEvents,
+				HandleClassicOperatorPlacementLabeling: HandleClassicOperatorPlacementLabeling,
+			}
+		}
+
+		It("Should label infra nodes matching HCO operator nodeSelector", func() {
 			hco := commontestutils.NewHco()
 			resources := []client.Object{
 				hco,
 				infraNode(),
 				workerNode(),
 				cpNode(),
-				virtOperatorDep(map[string]string{
+				hcoOperatorDep(map[string]string{
 					corev1.LabelOSStable: "linux",
 					infraLabel:           "",
 				}),
 			}
 			cl := commontestutils.InitClient(resources)
 
-			r := &ReconcileNodeCounter{
-				Client:                                 cl,
-				nodeEvents:                             nodeEvents,
-				HandleClassicOperatorPlacementLabeling: HandleClassicOperatorPlacementLabeling,
-			}
-
 			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 				return false, nil
 			}
 
-			res, err := r.Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
@@ -740,24 +743,18 @@ var _ = Describe("NodesController", func() {
 			resources := []client.Object{
 				hco,
 				workerNode(),
-				virtOperatorDep(map[string]string{
+				hcoOperatorDep(map[string]string{
 					corev1.LabelOSStable: "linux",
 					infraLabel:           "",
 				}),
 			}
 			cl := commontestutils.InitClient(resources)
 
-			r := &ReconcileNodeCounter{
-				Client:                                 cl,
-				nodeEvents:                             nodeEvents,
-				HandleClassicOperatorPlacementLabeling: HandleClassicOperatorPlacementLabeling,
-			}
-
 			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 				return false, nil
 			}
 
-			res, err := r.Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "worker-1"}})
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "worker-1"}})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
@@ -772,24 +769,18 @@ var _ = Describe("NodesController", func() {
 			resources := []client.Object{
 				hco,
 				cpNode(),
-				virtOperatorDep(map[string]string{
+				hcoOperatorDep(map[string]string{
 					corev1.LabelOSStable: "linux",
 					infraLabel:           "",
 				}),
 			}
 			cl := commontestutils.InitClient(resources)
 
-			r := &ReconcileNodeCounter{
-				Client:                                 cl,
-				nodeEvents:                             nodeEvents,
-				HandleClassicOperatorPlacementLabeling: HandleClassicOperatorPlacementLabeling,
-			}
-
 			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 				return false, nil
 			}
 
-			res, err := r.Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "control-plane-1"}})
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "control-plane-1"}})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
@@ -799,28 +790,22 @@ var _ = Describe("NodesController", func() {
 			Expect(updatedCP.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
 		})
 
-		It("Should not label nodes when virt-operator only has the default OS selector", func() {
+		It("Should not label nodes when the operator only has the default OS selector", func() {
 			hco := commontestutils.NewHco()
 			resources := []client.Object{
 				hco,
 				infraNode(),
-				virtOperatorDep(map[string]string{
+				hcoOperatorDep(map[string]string{
 					corev1.LabelOSStable: "linux",
 				}),
 			}
 			cl := commontestutils.InitClient(resources)
 
-			r := &ReconcileNodeCounter{
-				Client:                                 cl,
-				nodeEvents:                             nodeEvents,
-				HandleClassicOperatorPlacementLabeling: HandleClassicOperatorPlacementLabeling,
-			}
-
 			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 				return false, nil
 			}
 
-			res, err := r.Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
@@ -830,42 +815,115 @@ var _ = Describe("NodesController", func() {
 			Expect(updatedInfra.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
 		})
 
-		It("Should fall back to Subscription nodeSelector when virt-operator is missing", func() {
+		It("Should not label nodes when the HCO operator Deployment is missing", func() {
 			hco := commontestutils.NewHco()
-			sub := &csvv1alpha1.Subscription{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hco-operatorhub",
-					Namespace: commontestutils.Namespace,
-				},
-				Spec: &csvv1alpha1.SubscriptionSpec{
-					Config: &csvv1alpha1.SubscriptionConfig{
-						NodeSelector: map[string]string{
-							infraLabel: "",
-						},
-					},
-				},
-			}
-			resources := []client.Object{hco, infraNode(), sub}
+			resources := []client.Object{hco, infraNode()}
 			cl := commontestutils.InitClient(resources)
-
-			r := &ReconcileNodeCounter{
-				Client:                                 cl,
-				nodeEvents:                             nodeEvents,
-				HandleClassicOperatorPlacementLabeling: HandleClassicOperatorPlacementLabeling,
-			}
 
 			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 				return false, nil
 			}
 
-			res, err := r.Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
 			updatedInfra := &corev1.Node{}
 			err = cl.Get(context.TODO(), client.ObjectKey{Name: "infra-1"}, updatedInfra)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(updatedInfra.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
+		})
+
+		It("Should not patch a node that already has the placement label", func() {
+			node := infraNode()
+			node.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane] = hypershiftLabelValue
+			hco := commontestutils.NewHco()
+			resources := []client.Object{
+				hco,
+				node,
+				hcoOperatorDep(map[string]string{
+					corev1.LabelOSStable: "linux",
+					infraLabel:           "",
+				}),
+			}
+			cl := commontestutils.InitClient(resources)
+
+			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
+				return false, nil
+			}
+
+			origNode := &corev1.Node{}
+			err := cl.Get(context.TODO(), client.ObjectKey{Name: "infra-1"}, origNode)
+			Expect(err).ToNot(HaveOccurred())
+			originalRV := origNode.ResourceVersion
+
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.IsZero()).To(BeTrue())
+
+			updatedInfra := &corev1.Node{}
+			err = cl.Get(context.TODO(), client.ObjectKey{Name: "infra-1"}, updatedInfra)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(updatedInfra.ResourceVersion).To(Equal(originalRV), "node should not have been patched")
 			Expect(updatedInfra.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane]).To(Equal(hypershiftLabelValue))
+		})
+
+		It("Should not patch an unlabeled node that should stay unlabeled", func() {
+			hco := commontestutils.NewHco()
+			resources := []client.Object{
+				hco,
+				workerNode(),
+				hcoOperatorDep(map[string]string{
+					corev1.LabelOSStable: "linux",
+					infraLabel:           "",
+				}),
+			}
+			cl := commontestutils.InitClient(resources)
+
+			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
+				return false, nil
+			}
+
+			origNode := &corev1.Node{}
+			err := cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, origNode)
+			Expect(err).ToNot(HaveOccurred())
+			originalRV := origNode.ResourceVersion
+
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "worker-1"}})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.IsZero()).To(BeTrue())
+
+			updatedWorker := &corev1.Node{}
+			err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, updatedWorker)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(updatedWorker.ResourceVersion).To(Equal(originalRV), "node should not have been patched")
+			Expect(updatedWorker.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
+		})
+
+		It("Should return an error when getting the operator Deployment fails", func() {
+			hco := commontestutils.NewHco()
+			resources := []client.Object{
+				hco,
+				infraNode(),
+				hcoOperatorDep(map[string]string{
+					infraLabel: "",
+				}),
+			}
+			cl := commontestutils.InitClient(resources)
+			cl.InitiateGetErrors(func(key client.ObjectKey) error {
+				if key.Name == hcoutil.HCOOperatorName {
+					return apierrors.NewInternalError(errors.New("boom"))
+				}
+				return nil
+			})
+
+			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
+				return false, nil
+			}
+
+			_, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to get " + hcoutil.HCOOperatorName + " deployment"))
 		})
 
 		It("Should remove the HCO kubevirt control-plane label when custom placement is cleared", func() {
@@ -875,23 +933,17 @@ var _ = Describe("NodesController", func() {
 			resources := []client.Object{
 				hco,
 				node,
-				virtOperatorDep(map[string]string{
+				hcoOperatorDep(map[string]string{
 					corev1.LabelOSStable: "linux",
 				}),
 			}
 			cl := commontestutils.InitClient(resources)
 
-			r := &ReconcileNodeCounter{
-				Client:                                 cl,
-				nodeEvents:                             nodeEvents,
-				HandleClassicOperatorPlacementLabeling: HandleClassicOperatorPlacementLabeling,
-			}
-
 			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 				return false, nil
 			}
 
-			res, err := r.Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
@@ -907,24 +959,18 @@ var _ = Describe("NodesController", func() {
 				hco,
 				infraNode(),
 				workerNode(),
-				virtOperatorDep(map[string]string{
+				hcoOperatorDep(map[string]string{
 					corev1.LabelOSStable: "linux",
 					infraLabel:           "",
 				}),
 			}
 			cl := commontestutils.InitClient(resources)
 
-			r := &ReconcileNodeCounter{
-				Client:                                 cl,
-				nodeEvents:                             nodeEvents,
-				HandleClassicOperatorPlacementLabeling: HandleClassicOperatorPlacementLabeling,
-			}
-
 			nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 				return false, nil
 			}
 
-			res, err := r.Reconcile(context.TODO(), placementReq)
+			res, err := placementReconciler(cl).Reconcile(context.TODO(), placementReq)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
@@ -937,6 +983,55 @@ var _ = Describe("NodesController", func() {
 			err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, updatedWorker)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(updatedWorker.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
+		})
+	})
+
+	Context("operatorDeploymentPredicate", func() {
+		BeforeEach(func() {
+			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
+		})
+
+		hcoDep := func(ns string, selector map[string]string) *appsv1.Deployment {
+			return &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      hcoutil.HCOOperatorName,
+					Namespace: ns,
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							NodeSelector: selector,
+						},
+					},
+				},
+			}
+		}
+
+		It("Should reconcile create and delete of the HCO operator Deployment", func() {
+			pred := operatorDeploymentPredicate{}
+			dep := hcoDep(commontestutils.Namespace, map[string]string{"node-role.kubernetes.io/infra": ""})
+			Expect(pred.Create(event.TypedCreateEvent[*appsv1.Deployment]{Object: dep})).To(BeTrue())
+			Expect(pred.Delete(event.TypedDeleteEvent[*appsv1.Deployment]{Object: dep})).To(BeTrue())
+			Expect(pred.Generic(event.TypedGenericEvent[*appsv1.Deployment]{Object: dep})).To(BeFalse())
+		})
+
+		It("Should ignore other Deployments", func() {
+			pred := operatorDeploymentPredicate{}
+			other := hcoDep(commontestutils.Namespace, nil)
+			other.Name = "virt-operator"
+			Expect(pred.Create(event.TypedCreateEvent[*appsv1.Deployment]{Object: other})).To(BeFalse())
+			Expect(pred.Update(event.TypedUpdateEvent[*appsv1.Deployment]{ObjectOld: other, ObjectNew: other})).To(BeFalse())
+		})
+
+		It("Should reconcile only when the operator nodeSelector changes", func() {
+			pred := operatorDeploymentPredicate{}
+			oldDep := hcoDep(commontestutils.Namespace, map[string]string{corev1.LabelOSStable: "linux"})
+			newDep := hcoDep(commontestutils.Namespace, map[string]string{
+				corev1.LabelOSStable:            "linux",
+				"node-role.kubernetes.io/infra": "",
+			})
+			Expect(pred.Update(event.TypedUpdateEvent[*appsv1.Deployment]{ObjectOld: oldDep, ObjectNew: newDep})).To(BeTrue())
+			Expect(pred.Update(event.TypedUpdateEvent[*appsv1.Deployment]{ObjectOld: newDep, ObjectNew: newDep})).To(BeFalse())
 		})
 	})
 })

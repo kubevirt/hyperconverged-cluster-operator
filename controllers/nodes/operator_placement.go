@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -15,17 +14,19 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-const virtOperatorDeploymentName = "virt-operator"
-
-// HandleClassicOperatorPlacementLabeling labels nodes selected by OLM Subscription /
-// virt-operator nodeSelector with node-role.kubevirt.io/control-plane so virt-operator
+// HandleClassicOperatorPlacementLabeling labels nodes selected by the operator
+// Deployment nodeSelector with node-role.kubevirt.io/control-plane so virt-operator
 // can schedule there on classic OpenShift clusters.
 //
-// virt-operator has a required affinity for kubernetes control-plane/master nodes.
+// virt-operator has node affinity for kubernetes control-plane/master nodes.
 // OLM Subscription config.nodeSelector cannot replace that affinity, so placing
 // operators on infra nodes AND the required affinity together is unsatisfiable
 // unless those infra nodes also carry the kubevirt control-plane label (an OR term
-// in virt-operator's affinity).
+// in virt-operator's affinity, owned by the KubeVirt repo).
+//
+// The selector is read from HCO's own Deployment. OLM applies the same Subscription
+// config to every CSV operator Deployment, HCO has no required control-plane affinity
+// so it can schedule first, and HCO's Deployment is already in the operator cache.
 func HandleClassicOperatorPlacementLabeling(ctx context.Context, cli client.Client, nodeName string, logger logr.Logger) error {
 	node := &corev1.Node{}
 	if err := cli.Get(ctx, client.ObjectKey{Name: nodeName}, node); err != nil {
@@ -48,26 +49,15 @@ func getOperatorNodeSelector(ctx context.Context, cli client.Client) (map[string
 	ns := hcoutil.GetOperatorNamespaceFromEnv()
 
 	dep := &appsv1.Deployment{}
-	err := cli.Get(ctx, client.ObjectKey{Name: virtOperatorDeploymentName, Namespace: ns}, dep)
-	if err == nil && len(dep.Spec.Template.Spec.NodeSelector) > 0 {
-		return dep.Spec.Template.Spec.NodeSelector, nil
-	}
-	if err != nil && !errors.IsNotFound(err) {
-		return nil, fmt.Errorf("failed to get virt-operator deployment: %w", err)
-	}
-
-	subs := &csvv1alpha1.SubscriptionList{}
-	if err := cli.List(ctx, subs, client.InNamespace(ns)); err != nil {
-		return nil, fmt.Errorf("failed to list subscriptions: %w", err)
-	}
-	for i := range subs.Items {
-		spec := subs.Items[i].Spec
-		if spec != nil && spec.Config != nil && len(spec.Config.NodeSelector) > 0 {
-			return spec.Config.NodeSelector, nil
+	err := cli.Get(ctx, client.ObjectKey{Name: hcoutil.HCOOperatorName, Namespace: ns}, dep)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil, nil
 		}
+		return nil, fmt.Errorf("failed to get %s deployment: %w", hcoutil.HCOOperatorName, err)
 	}
 
-	return nil, nil
+	return dep.Spec.Template.Spec.NodeSelector, nil
 }
 
 func hasCustomOperatorPlacement(selector map[string]string) bool {
@@ -125,7 +115,7 @@ func labelNodeForOperatorPlacement(ctx context.Context, cli client.Client, node 
 	}
 
 	if wantLabel {
-		logger.Info("Adding kubevirt control-plane label for Subscription node placement",
+		logger.Info("Adding kubevirt control-plane label for operator node placement",
 			"node", node.Name,
 			"label", nodeinfo.LabelNodeRoleKubevirtControlPlane,
 			"labelValue", hypershiftLabelValue,

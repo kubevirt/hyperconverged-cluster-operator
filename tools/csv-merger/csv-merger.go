@@ -44,7 +44,6 @@ import (
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/manifests"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
@@ -806,8 +805,6 @@ func getDeploymentParams() *manifests.DeploymentOperatorParams {
 	}
 }
 
-const virtOperatorDeploymentName = "virt-operator"
-
 func overwriteDeploymentSpecLabels(specs []csvv1alpha1.StrategyDeploymentSpec, component hcoutil.AppComponent) {
 	for i := range specs {
 		if specs[i].Label == nil {
@@ -818,9 +815,6 @@ func overwriteDeploymentSpecLabels(specs []csvv1alpha1.StrategyDeploymentSpec, c
 		}
 		overwriteWithStandardLabels(specs[i].Spec.Template.Labels, *hcoKvIoVersion, component)
 		overwriteWithStandardLabels(specs[i].Label, *hcoKvIoVersion, component)
-		if specs[i].Name == virtOperatorDeploymentName {
-			nodeinfo.InjectKubeVirtControlPlanePlacement(&specs[i].Spec.Template.Spec)
-		}
 	}
 
 }

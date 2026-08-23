@@ -1725,13 +1725,15 @@ In OLM v0, The cluster admin indeed is allowed to influence the placement of the
 configuring a [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector) or [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations) directly on the OLM subscription object. This is not supported
 in OLM v1.
 
-`virt-operator` also has a required node affinity for Kubernetes control-plane/master nodes. OLM Subscription
-`spec.config` cannot replace that affinity. On classic OpenShift clusters, when the Subscription sets a custom
-`nodeSelector` (for example to place operators on infra nodes), HCO labels the matching nodes with
-`node-role.kubevirt.io/control-plane`. That label is an additional OR term in `virt-operator`'s affinity, so the
-pod can schedule on the selected infra nodes without treating them as Kubernetes control-plane nodes.
-On Hosted Control Plane clusters, HCO applies the same label to worker nodes because those clusters have no
-Kubernetes control-plane nodes.
+`virt-operator` also has node affinity for Kubernetes control-plane/master nodes. OLM Subscription `spec.config`
+can set `nodeSelector` and `tolerations` on the operator Deployments, but it cannot replace that affinity.
+On classic OpenShift clusters, when the operator Deployment has a custom `nodeSelector` (for example because
+the Subscription places operators on infra nodes), HCO labels the matching non-control-plane nodes with
+`node-role.kubevirt.io/control-plane`. HCO does not watch Subscription objects (those are OLM v0 resources and
+are not present on plain Kubernetes or OLM v1). It watches its own Deployment, which receives the same
+`nodeSelector` OLM applies to `virt-operator`. That kubevirt-specific label is the same one HCO already applies
+to worker nodes on Hosted Control Plane clusters, so those nodes can satisfy `virt-operator` affinity without
+being treated as Kubernetes control-plane nodes.
 
 #### Node Placement Examples
 * Place the infra resources on nodes labeled with "nodeType = infra", and workloads in nodes labeled with "nodeType = nested-virtualization", using node selector:

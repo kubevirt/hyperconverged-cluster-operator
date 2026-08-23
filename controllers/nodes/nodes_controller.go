@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -109,7 +108,7 @@ func RegisterReconciler(mgr manager.Manager, nodeEvents chan<- event.GenericEven
 	reconciler := newReconciler(mgr, nodeEvents)
 
 	// Label nodes after the cache starts on OpenShift: HCP workers, and classic OCP
-	// nodes selected by Subscription node placement.
+	// nodes selected by operator Deployment node placement.
 	clusterInfo := hcoutil.GetClusterInfo()
 	if clusterInfo.IsOpenshift() {
 		if err := mgr.Add(&startupNodeLabeler{reconciler: reconciler}); err != nil {
@@ -117,7 +116,8 @@ func RegisterReconciler(mgr manager.Manager, nodeEvents chan<- event.GenericEven
 		}
 	}
 
-	return add(mgr, reconciler)
+	watchOperatorPlacement := clusterInfo.IsOpenshift() && !clusterInfo.IsHyperShiftManaged()
+	return add(mgr, reconciler, watchOperatorPlacement)
 }
 
 // newReconciler returns a new reconcile.Reconciler
@@ -167,7 +167,7 @@ func staleHyperShiftNodeLabeling(ctx context.Context, cli client.Client, nodeNam
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler) error {
+func add(mgr manager.Manager, r reconcile.Reconciler, watchOperatorPlacement bool) error {
 	// Create a new controller
 	c, err := controller.New("nodes-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
@@ -194,24 +194,20 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	if err := c.Watch(
+	if !watchOperatorPlacement {
+		return nil
+	}
+
+	// Watch HCO's own Deployment. OLM copies Subscription nodeSelector onto every
+	// CSV operator Deployment, including this one. Do not watch Subscription:
+	// that CRD is OLM v0-only and is missing on plain Kubernetes (and OLM v1).
+	return c.Watch(
 		source.Kind[*appsv1.Deployment](
 			mgr.GetCache(), &appsv1.Deployment{},
 			handler.TypedEnqueueRequestsFromMapFunc(func(_ context.Context, _ *appsv1.Deployment) []reconcile.Request {
 				return []reconcile.Request{placementReq}
 			}),
-			virtOperatorDeploymentPredicate{},
-		)); err != nil {
-		return err
-	}
-
-	return c.Watch(
-		source.Kind[*csvv1alpha1.Subscription](
-			mgr.GetCache(), &csvv1alpha1.Subscription{},
-			handler.TypedEnqueueRequestsFromMapFunc(func(_ context.Context, _ *csvv1alpha1.Subscription) []reconcile.Request {
-				return []reconcile.Request{placementReq}
-			}),
-			subscriptionConfigPredicate{},
+			operatorDeploymentPredicate{},
 		))
 }
 
