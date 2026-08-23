@@ -3249,6 +3249,123 @@ Version: 1.2.3`)
 
 		})
 
+		Context("HyperShift replicas", func() {
+			BeforeEach(func() {
+				commontestutils.HighlyAvailableNodeInfoMocks()
+
+				DeferCleanup(func() {
+					commontestutils.ResetNodeInfoMocks()
+				})
+			})
+
+			Context("Custom Infra placement, default Workloads placement", func() {
+				BeforeEach(func() {
+					commontestutils.SetNodeCustomPlacement(hco, commontestutils.NewNodePlacement(), nil)
+				})
+
+				It("should not force replica=1 on HyperShift HA (2+ workers, no CP nodes)", func() {
+					commontestutils.HyperShiftHANodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(BeNil())
+					Expect(kv.Spec.Workloads).To(BeNil())
+				})
+
+				It("should set replica=1 on HyperShift single worker", func() {
+					commontestutils.HyperShiftSingleWorkerNodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(HaveValue(Equal(uint8(1))))
+					Expect(kv.Spec.Workloads).To(BeNil())
+				})
+			})
+
+			Context("Custom Workloads placement, default Infra placement", func() {
+				BeforeEach(func() {
+					commontestutils.SetNodeCustomPlacement(hco, nil, commontestutils.NewNodePlacement())
+				})
+
+				It("should not force replica=1 on HyperShift HA (2+ workers, no CP nodes)", func() {
+					commontestutils.HyperShiftHANodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(BeNil())
+					Expect(kv.Spec.Infra.NodePlacement).ToNot(BeNil())
+					Expect(kv.Spec.Workloads).ToNot(BeNil())
+					Expect(kv.Spec.Workloads.Replicas).To(BeNil())
+				})
+
+				It("should set replica=1 on HyperShift single worker", func() {
+					commontestutils.HyperShiftSingleWorkerNodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(HaveValue(Equal(uint8(1))))
+					Expect(kv.Spec.Workloads).ToNot(BeNil())
+					Expect(kv.Spec.Workloads.Replicas).To(BeNil())
+				})
+			})
+
+			Context("Default Infra and Workload placement", func() {
+				It("should not force replica=1 on HyperShift HA (2+ workers, no CP nodes)", func() {
+					commontestutils.HyperShiftHANodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(BeNil())
+					Expect(kv.Spec.Infra.NodePlacement).ToNot(BeNil())
+					Expect(kv.Spec.Workloads).To(BeNil())
+				})
+
+				It("should set replica=1 on HyperShift single worker", func() {
+					commontestutils.HyperShiftSingleWorkerNodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(HaveValue(Equal(uint8(1))))
+					Expect(kv.Spec.Infra.NodePlacement).ToNot(BeNil())
+					Expect(kv.Spec.Workloads).To(BeNil())
+				})
+			})
+
+			Context("Custom Infra and Workloads placement", func() {
+				BeforeEach(func() {
+					commontestutils.SetNodePlacement(hco)
+				})
+
+				It("should not force replica=1 on HyperShift HA (2+ workers, no CP nodes)", func() {
+					commontestutils.HyperShiftHANodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(BeNil())
+					Expect(kv.Spec.Workloads).ToNot(BeNil())
+					Expect(kv.Spec.Workloads.Replicas).To(BeNil())
+				})
+
+				It("should set replica=1 on HyperShift single worker", func() {
+					commontestutils.HyperShiftSingleWorkerNodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(HaveValue(Equal(uint8(1))))
+					Expect(kv.Spec.Workloads).ToNot(BeNil())
+					Expect(kv.Spec.Workloads.Replicas).To(BeNil())
+				})
+			})
+		})
+
 		Context("Cluster level EvictionStrategy", func() {
 			It("should add eviction strategy if missing in KV", func() {
 				existingResource, err := NewKubeVirt(hco)
