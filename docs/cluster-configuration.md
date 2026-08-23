@@ -1722,7 +1722,7 @@ structure, and contains the following fields:
 The HyperConverged Cluster Operator and the component operators are deployed by the Operator Lifecycle Manager (OLM).
 HCO does not place those pods. Changing `spec.deployment.nodePlacements` on the HyperConverged CR will not move them.
 
-In OLM v0, configure [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector) or [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations) on the Subscription object. This is not supported in OLM v1.
+In OLM v0, configure [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector), [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations), or [affinity](https://olm.operatorframework.io/docs/advanced-tasks/overriding-operator-pod-affinity-configuration/) on the Subscription object. This is not supported in OLM v1.
 
 These pods exist as soon as the operator is installed, even before a HyperConverged CR is created:
 
@@ -1737,7 +1737,41 @@ These pods exist as soon as the operator is installed, even before a HyperConver
 * `ssp-operator`
 * `virt-operator`
 
-`virt-operator` is listed because OLM creates it, but it is not free to run anywhere. It has required node affinity for Kubernetes `control-plane` / `master` nodes. When those nodes exist (classic OpenShift / Kubernetes), `virt-operator` **must** run there. Subscription `spec.config` can set `nodeSelector` and `tolerations`; it cannot replace that affinity. The `node-role.kubevirt.io/control-plane` label is only for Hosted Control Plane clusters, where there are no Kubernetes control-plane nodes in the hosted cluster.
+`virt-operator` ships with required node affinity for Kubernetes `control-plane` / `master` nodes. Subscription `spec.config.nodeSelector` does **not** replace that affinity; if you set only a selector that excludes control-plane nodes, `virt-operator` stays unschedulable. Set `spec.config.affinity.nodeAffinity` to override the CSV affinity. That is the workaround for placing `virt-operator` on infrastructure nodes. The `node-role.kubevirt.io/control-plane` label is only for Hosted Control Plane clusters, where there are no Kubernetes control-plane nodes in the hosted cluster.
+
+Example Subscription config that overrides `virt-operator` control-plane affinity and places operators on infrastructure nodes:
+
+```yaml
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: community-kubevirt-hyperconverged
+  namespace: kubevirt-hyperconverged
+spec:
+  channel: stable
+  name: community-kubevirt-hyperconverged
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  config:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeType
+              operator: In
+              values:
+              - infra
+    nodeSelector:
+      nodeType: infra
+    tolerations:
+    - key: nodeType
+      operator: Equal
+      value: infra
+      effect: NoSchedule
+```
+
+OLM overrides the operator deployment `nodeAffinity`, including the required control-plane affinity on `virt-operator`, with `spec.config.affinity`.
 
 #### Operand placement (HyperConverged CR)
 

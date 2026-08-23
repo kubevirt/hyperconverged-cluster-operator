@@ -56,7 +56,7 @@ See https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ for 
 #### Operators placement (OLM Subscription)
 The HyperConverged Cluster Operator and the component operators are deployed by the Operator Lifecycle Manager (OLM). HCO does not place those pods. Changing `spec.infra.nodePlacement` / `spec.workloads.nodePlacement` on the HyperConverged CR will not move them.
 
-The cluster admin can influence OLM-created pods by configuring a [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector) or [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations) on the OLM Subscription object.
+The cluster admin can influence OLM-created pods by configuring a [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector), [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations), or [affinity](https://olm.operatorframework.io/docs/advanced-tasks/overriding-operator-pod-affinity-configuration/) on the OLM Subscription object.
 
 These pods exist as soon as the operator is installed, even before a HyperConverged CR is created:
 
@@ -71,7 +71,41 @@ These pods exist as soon as the operator is installed, even before a HyperConver
 * `ssp-operator`
 * `virt-operator`
 
-`virt-operator` is listed because OLM creates it, but when Kubernetes control-plane / master nodes exist it **must** run there. Subscription config cannot replace that required affinity. The `node-role.kubevirt.io/control-plane` label is only used on Hosted Control Plane clusters, where there are no Kubernetes control-plane nodes.
+`virt-operator` ships with required node affinity for Kubernetes control-plane / master nodes. Subscription `spec.config.nodeSelector` does not replace that affinity. Set `spec.config.affinity.nodeAffinity` to override the CSV affinity if you need `virt-operator` on infrastructure nodes. The `node-role.kubevirt.io/control-plane` label is only used on Hosted Control Plane clusters, where there are no Kubernetes control-plane nodes.
+
+Example Subscription config that overrides `virt-operator` control-plane affinity and places operators on infrastructure nodes:
+
+```yaml
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: community-kubevirt-hyperconverged
+  namespace: kubevirt-hyperconverged
+spec:
+  channel: stable
+  name: community-kubevirt-hyperconverged
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  config:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeType
+              operator: In
+              values:
+              - infra
+    nodeSelector:
+      nodeType: infra
+    tolerations:
+    - key: nodeType
+      operator: Equal
+      value: infra
+      effect: NoSchedule
+```
+
+OLM overrides the operator deployment `nodeAffinity`, including the required control-plane affinity on `virt-operator`, with `spec.config.affinity`.
 
 #### Operand placement (HyperConverged CR)
 These pods are created only after a HyperConverged CR exists. Their placement follows `spec.infra.nodePlacement` or `spec.workloads.nodePlacement`:
