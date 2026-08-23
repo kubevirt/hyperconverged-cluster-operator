@@ -9,13 +9,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/fields"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
-	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -42,13 +39,6 @@ var (
 	hcoReq = reconcile.Request{
 		NamespacedName: k8stypes.NamespacedName{
 			Name:      "hyperconverged-req-" + randomConstSuffix,
-			Namespace: os.Getenv(hcoutil.OperatorNamespaceEnv),
-		},
-	}
-
-	placementReq = reconcile.Request{
-		NamespacedName: k8stypes.NamespacedName{
-			Name:      "operator-placement-req-" + randomConstSuffix,
 			Namespace: os.Getenv(hcoutil.OperatorNamespaceEnv),
 		},
 	}
@@ -109,33 +99,28 @@ func (s *startupNodeLabeler) NeedLeaderElection() bool {
 func RegisterReconciler(mgr manager.Manager, nodeEvents chan<- event.GenericEvent) error {
 	reconciler := newReconciler(mgr, nodeEvents)
 
-	// Label nodes after the cache starts on OpenShift: HCP workers, and classic OCP
-	// nodes selected by operator Deployment node placement.
+	// Add a runnable to label all nodes after the cache starts if we're in a HyperShift cluster
 	clusterInfo := hcoutil.GetClusterInfo()
-	if clusterInfo.IsOpenshift() {
+	if clusterInfo.IsOpenshift() && clusterInfo.IsHyperShiftManaged() {
 		if err := mgr.Add(&startupNodeLabeler{reconciler: reconciler}); err != nil {
 			return fmt.Errorf("failed to add startup node labeler: %w", err)
 		}
 	}
 
-	watchOperatorPlacement := clusterInfo.IsOpenshift() && !clusterInfo.IsHyperShiftManaged()
-	return add(mgr, reconciler, watchOperatorPlacement)
+	return add(mgr, reconciler)
 }
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager, nodeEvents chan<- event.GenericEvent) *ReconcileNodeCounter {
 	clusterInfo := hcoutil.GetClusterInfo()
 
-	isOpenshift := clusterInfo.IsOpenshift()
-	isHyperShift := clusterInfo.IsHyperShiftManaged()
-	shouldLabelHCPNodes := isOpenshift && isHyperShift
-	shouldLabelClassicPlacementNodes := isOpenshift && !isHyperShift
+	// Evaluate once at initialization whether we should label nodes for HyperShift
+	shouldLabelNodes := clusterInfo.IsOpenshift() && clusterInfo.IsHyperShiftManaged()
 
 	log.Info("Initializing nodes controller",
-		"isOpenshift", isOpenshift,
-		"isHyperShiftManaged", isHyperShift,
-		"shouldLabelHCPNodes", shouldLabelHCPNodes,
-		"shouldLabelClassicPlacementNodes", shouldLabelClassicPlacementNodes,
+		"isOpenshift", clusterInfo.IsOpenshift(),
+		"isHyperShiftManaged", clusterInfo.IsHyperShiftManaged(),
+		"shouldLabelNodes", shouldLabelNodes,
 	)
 
 	r := &ReconcileNodeCounter{
@@ -143,38 +128,22 @@ func newReconciler(mgr manager.Manager, nodeEvents chan<- event.GenericEvent) *R
 		nodeEvents: nodeEvents,
 	}
 
-	if shouldLabelHCPNodes {
+	if shouldLabelNodes {
 		r.HandleHyperShiftNodeLabeling = HandleHyperShiftNodeLabeling
 	} else {
-		r.HandleHyperShiftNodeLabeling = staleNodeLabeling
-	}
-
-	if shouldLabelClassicPlacementNodes {
-		// hco-operator is not in the restricted Deployment cache
-		// (app=kubevirt-hyperconverged). Read nodeSelector via the API.
-		reader := mgr.GetAPIReader()
-		r.HandleClassicOperatorPlacementLabeling = func(ctx context.Context, cli client.Client, nodeName string, logger logr.Logger) error {
-			return labelClassicOperatorPlacement(ctx, cli, reader, nodeName, logger)
-		}
-	} else {
-		r.HandleClassicOperatorPlacementLabeling = staleNodeLabeling
+		r.HandleHyperShiftNodeLabeling = staleHyperShiftNodeLabeling
 	}
 
 	return r
 }
 
-// staleNodeLabeling is a no-op used when a labeling path is not needed.
-func staleNodeLabeling(_ context.Context, _ client.Client, _ string, _ logr.Logger) error {
+// staleHyperShiftNodeLabeling is a no-op function used when HyperShift node labeling is not needed
+func staleHyperShiftNodeLabeling(_ context.Context, _ client.Client, _ string, _ logr.Logger) error {
 	return nil
 }
 
-// staleHyperShiftNodeLabeling is kept for existing tests.
-func staleHyperShiftNodeLabeling(ctx context.Context, cli client.Client, nodeName string, logger logr.Logger) error {
-	return staleNodeLabeling(ctx, cli, nodeName, logger)
-}
-
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler, watchOperatorPlacement bool) error {
+func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
 	c, err := controller.New("nodes-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
@@ -192,55 +161,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler, watchOperatorPlacement boo
 		return err
 	}
 
-	if err := c.Watch(
+	return c.Watch(
 		source.Kind[*hcov1.HyperConverged](
 			mgr.GetCache(), &hcov1.HyperConverged{},
 			&handler.TypedEnqueueRequestForObject[*hcov1.HyperConverged]{},
 			hyperconvergedPredicate{},
-		)); err != nil {
-		return err
-	}
-
-	if !watchOperatorPlacement {
-		return nil
-	}
-
-	return watchHCOOperatorDeployment(mgr, c)
-}
-
-// watchHCOOperatorDeployment watches OLM's hco-operator Deployment.
-// The main cache only lists Deployments labeled app=kubevirt-hyperconverged,
-// and that label is not present on the OLM-managed operator Deployment.
-// Do not watch Subscription: that CRD is OLM v0-only and is missing on
-// plain Kubernetes (and OLM v1).
-func watchHCOOperatorDeployment(mgr manager.Manager, c controller.Controller) error {
-	ns := hcoutil.GetOperatorNamespaceFromEnv()
-	operatorCache, err := ctrlcache.New(mgr.GetConfig(), ctrlcache.Options{
-		Scheme: mgr.GetScheme(),
-		Mapper: mgr.GetRESTMapper(),
-		DefaultNamespaces: map[string]ctrlcache.Config{
-			ns: {},
-		},
-		ByObject: map[client.Object]ctrlcache.ByObject{
-			&appsv1.Deployment{}: {
-				Field: fields.OneTermEqualSelector("metadata.name", hcoutil.OperatorName),
-			},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create cache for HCO operator Deployment: %w", err)
-	}
-	if err := mgr.Add(operatorCache); err != nil {
-		return fmt.Errorf("failed to add HCO operator Deployment cache: %w", err)
-	}
-
-	return c.Watch(
-		source.Kind[*appsv1.Deployment](
-			operatorCache, &appsv1.Deployment{},
-			handler.TypedEnqueueRequestsFromMapFunc(func(_ context.Context, _ *appsv1.Deployment) []reconcile.Request {
-				return []reconcile.Request{placementReq}
-			}),
-			operatorDeploymentPredicate{},
 		))
 }
 
@@ -249,10 +174,9 @@ type ReconcileNodeCounter struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client.Client
-	HyperConvergedQueue                    workqueue.TypedRateLimitingInterface[reconcile.Request]
-	nodeEvents                             chan<- event.GenericEvent
-	HandleHyperShiftNodeLabeling           func(ctx context.Context, cli client.Client, nodeName string, logger logr.Logger) error
-	HandleClassicOperatorPlacementLabeling func(ctx context.Context, cli client.Client, nodeName string, logger logr.Logger) error
+	HyperConvergedQueue          workqueue.TypedRateLimitingInterface[reconcile.Request]
+	nodeEvents                   chan<- event.GenericEvent
+	HandleHyperShiftNodeLabeling func(ctx context.Context, cli client.Client, nodeName string, logger logr.Logger) error
 }
 
 // Reconcile updates the nodes count on ClusterInfo singleton
@@ -261,12 +185,10 @@ func (r *ReconcileNodeCounter) Reconcile(ctx context.Context, req reconcile.Requ
 	if err != nil {
 		logger = log
 	}
-	switch req {
-	case hcoReq:
+	if req == hcoReq {
+		// This is a request triggered by a change in the HyperConverged CR
 		logger.Info("Triggered by a HyperConverged CR change")
-	case placementReq:
-		logger.Info("Triggered by operator placement change")
-	default:
+	} else {
 		logger.Info("Triggered by a node change", "node name", req.Name)
 	}
 
@@ -281,14 +203,11 @@ func (r *ReconcileNodeCounter) Reconcile(ctx context.Context, req reconcile.Requ
 		return reconcile.Result{}, err
 	}
 
-	if req == placementReq {
-		if err := r.labelAllNodes(ctx, logger); err != nil {
-			logger.Error(err, "Failed to label nodes for operator placement")
-			return reconcile.Result{}, err
-		}
-	} else if req != hcoReq {
-		if err := r.applyNodeLabeling(ctx, req.Name, logger); err != nil {
-			logger.Error(err, "Failed to handle node labeling")
+	// Handle HyperShift node labeling for hosted control plane clusters
+	// Only process if this is a node event (not HCO event)
+	if req != hcoReq {
+		if err := r.HandleHyperShiftNodeLabeling(ctx, r.Client, req.Name, logger); err != nil {
+			logger.Error(err, "Failed to handle HyperShift node labeling")
 			return reconcile.Result{}, err
 		}
 	}
@@ -302,20 +221,6 @@ func (r *ReconcileNodeCounter) Reconcile(ctx context.Context, req reconcile.Requ
 	}
 
 	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileNodeCounter) applyNodeLabeling(ctx context.Context, nodeName string, logger logr.Logger) error {
-	if r.HandleHyperShiftNodeLabeling != nil {
-		if err := r.HandleHyperShiftNodeLabeling(ctx, r.Client, nodeName, logger); err != nil {
-			return err
-		}
-	}
-	if r.HandleClassicOperatorPlacementLabeling != nil {
-		if err := r.HandleClassicOperatorPlacementLabeling(ctx, r.Client, nodeName, logger); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (r *ReconcileNodeCounter) readHyperConverged(ctx context.Context) (*hcov1.HyperConverged, error) {
@@ -336,23 +241,21 @@ func (r *ReconcileNodeCounter) readHyperConverged(ctx context.Context) (*hcov1.H
 	return hc, nil
 }
 
-// labelAllNodesAtStartup labels nodes after the manager cache is ready.
+// labelAllNodesAtStartup labels all worker nodes at controller startup for HyperShift clusters
 func (r *ReconcileNodeCounter) labelAllNodesAtStartup(ctx context.Context) error {
-	log.Info("Labeling nodes at startup")
-	return r.labelAllNodes(ctx, log)
-}
+	log.Info("Labeling all worker nodes at startup for HyperShift")
 
-func (r *ReconcileNodeCounter) labelAllNodes(ctx context.Context, logger logr.Logger) error {
+	// Get all nodes
 	nodesList := &corev1.NodeList{}
 	if err := r.List(ctx, nodesList); err != nil {
-		return fmt.Errorf("failed to list nodes for labeling: %w", err)
+		return fmt.Errorf("failed to list nodes for HyperShift labeling at startup: %w", err)
 	}
 
 	var errs []error
 	for i := range nodesList.Items {
 		node := &nodesList.Items[i]
-		if err := r.applyNodeLabeling(ctx, node.Name, logger); err != nil {
-			logger.Error(err, "Failed to label node", "node", node.Name)
+		if err := labelNode(ctx, r.Client, node, log); err != nil {
+			log.Error(err, "Failed to label node at startup", "node", node.Name)
 			errs = append(errs, fmt.Errorf("node %s: %w", node.Name, err))
 		}
 	}
@@ -361,7 +264,7 @@ func (r *ReconcileNodeCounter) labelAllNodes(ctx context.Context, logger logr.Lo
 		return fmt.Errorf("failed to label %d node(s): %v", len(errs), errs)
 	}
 
-	logger.Info("Completed labeling nodes", "totalNodes", len(nodesList.Items))
+	log.Info("Completed labeling nodes at startup", "totalNodes", len(nodesList.Items))
 	return nil
 }
 

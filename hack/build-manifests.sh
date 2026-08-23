@@ -111,8 +111,7 @@ function create_virt_csv() {
     --gs-image="${KUBEVIRT_LIBGUESTFS_TOOLS_IMAGE}" \
     --sidecar-shim-image="${KUBEVIRT_SIDECAR_SHIM}" \
     --pr-helper-image="${KUBEVIRT_PR_HELPER}" \
-    --virt-operator-image="${KUBEVIRT_OPERATOR_IMAGE}" \
-    --with-kubevirt-control-plane-label
+    --virt-operator-image="${KUBEVIRT_OPERATOR_IMAGE}"
   "
 
   gen_csv "${DEFAULT_CSV_GENERATOR}" "${operatorName}" "${KUBEVIRT_OPERATOR_IMAGE}" "${dumpCRDsArg}" "${operatorArgs}"

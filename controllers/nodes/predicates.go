@@ -2,16 +2,13 @@ package nodes
 
 import (
 	"maps"
-	"os"
 	"reflect"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 // Custom predicate to detect changes in node count
@@ -68,33 +65,4 @@ func (hyperconvergedPredicate) Delete(_ event.TypedDeleteEvent[*hcov1.HyperConve
 
 func (hyperconvergedPredicate) Generic(_ event.TypedGenericEvent[*hcov1.HyperConverged]) bool {
 	return false
-}
-
-func operatorNamespace() string {
-	return os.Getenv(hcoutil.OperatorNamespaceEnv)
-}
-
-type operatorDeploymentPredicate predicate.TypedFuncs[*appsv1.Deployment]
-
-func (operatorDeploymentPredicate) Create(e event.TypedCreateEvent[*appsv1.Deployment]) bool {
-	return isHCOOperatorDeployment(e.Object)
-}
-
-func (operatorDeploymentPredicate) Update(e event.TypedUpdateEvent[*appsv1.Deployment]) bool {
-	if !isHCOOperatorDeployment(e.ObjectNew) {
-		return false
-	}
-	return !maps.Equal(e.ObjectOld.Spec.Template.Spec.NodeSelector, e.ObjectNew.Spec.Template.Spec.NodeSelector)
-}
-
-func (operatorDeploymentPredicate) Delete(e event.TypedDeleteEvent[*appsv1.Deployment]) bool {
-	return isHCOOperatorDeployment(e.Object)
-}
-
-func (operatorDeploymentPredicate) Generic(_ event.TypedGenericEvent[*appsv1.Deployment]) bool {
-	return false
-}
-
-func isHCOOperatorDeployment(dep *appsv1.Deployment) bool {
-	return dep != nil && dep.Name == operatorDeploymentName() && dep.Namespace == operatorNamespace()
 }

@@ -7,10 +7,8 @@ import (
 const (
 	// LabelNodeRoleControlPlane is the label used to identify control plane nodes
 	LabelNodeRoleControlPlane = "node-role.kubernetes.io/control-plane"
-	// LabelNodeRoleKubevirtControlPlane is the label used by HCO to allow virt-operator
-	// scheduling without mislabeling worker/infra nodes as Kubernetes control plane nodes.
-	// It is applied on HCP worker nodes and on classic OCP nodes selected by the operator
-	// Deployment nodeSelector.
+	// LabelNodeRoleKubevirtControlPlane is the label used by HCO on HCP clusters to allow
+	// virt-operator scheduling without mislabeling worker nodes as Kubernetes control plane nodes
 	LabelNodeRoleKubevirtControlPlane = "node-role.kubevirt.io/control-plane"
 	// LabelNodeRoleMaster is the old label used to identify control plane nodes
 	LabelNodeRoleMaster = "node-role.kubernetes.io/master"

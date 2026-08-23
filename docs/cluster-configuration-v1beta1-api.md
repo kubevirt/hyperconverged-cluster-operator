@@ -34,7 +34,7 @@ Below are the cluster configuration details. Currently, only "Node Placement" co
 Kubernetes lets the cluster admin influence node placement in several ways, see
 https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ for a general overview.
 
-The HyperConverged Cluster's CR is the single entry point to let the cluster admin influence the placement of all the pods directly and indirectly managed by the HyperConverged Cluster Operator.
+The HyperConverged Cluster's CR is the entry point to influence placement of **operand** pods (the components HCO creates after the HyperConverged CR exists). Operator pods deployed by OLM are **not** placed by this CR; they are placed by the OLM Subscription. Pods in the operator namespace look similar until you inspect `ownerReferences`.
 
 The `nodePlacement` object is an optional field in the HyperConverged Cluster's CR, under `spec.infra` and `spec.workloads`
 fields.
@@ -53,10 +53,44 @@ See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#aff
 * `tolerations` is a list of tolerations applied to the relevant kind of pods.
 See https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ for more info.
 
-#### Operators placement
-The HyperConverged Cluster Operator and the operators for its component are supposed to be deployed by the Operator Lifecycle Manager (OLM).
-Thus, the HyperConverged Cluster Operator is not going to directly influence its own placement but that should be influenced by the OLM.
-The cluster admin indeed is allowed to influence the placement of the Pods directly created by the OLM configuring a [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector) or [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations) directly on the OLM subscription object.
+#### Operators placement (OLM Subscription)
+The HyperConverged Cluster Operator and the component operators are deployed by the Operator Lifecycle Manager (OLM). HCO does not place those pods. Changing `spec.infra.nodePlacement` / `spec.workloads.nodePlacement` on the HyperConverged CR will not move them.
+
+The cluster admin can influence OLM-created pods by configuring a [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector) or [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations) on the OLM Subscription object.
+
+These pods exist as soon as the operator is installed, even before a HyperConverged CR is created:
+
+* `aaq-operator`
+* `cdi-operator`
+* `cluster-network-addons-operator`
+* `hco-operator`
+* `hco-webhook`
+* `hostpath-provisioner-operator`
+* `hyperconverged-cluster-cli-download`
+* `kubevirt-migration-operator`
+* `ssp-operator`
+* `virt-operator`
+
+`virt-operator` is listed because OLM creates it, but when Kubernetes control-plane / master nodes exist it **must** run there. Subscription config cannot replace that required affinity. The `node-role.kubevirt.io/control-plane` label is only used on Hosted Control Plane clusters, where there are no Kubernetes control-plane nodes.
+
+#### Operand placement (HyperConverged CR)
+These pods are created only after a HyperConverged CR exists. Their placement follows `spec.infra.nodePlacement` or `spec.workloads.nodePlacement`:
+
+* `cdi-apiserver`
+* `cdi-deployment`
+* `cdi-uploadproxy`
+* `kubemacpool-cert-manager`
+* `kubemacpool-mac-controller-manager`
+* `kubevirt-console-proxy`
+* `kubevirt-console-plugin`
+* `kubevirt-ipam-controller-manager`
+* `kubevirt-migration-controller`
+* `virt-api`
+* `virt-controller`
+* `virt-exportproxy`
+* `virt-template-validator`
+
+DaemonSets such as `virt-handler` also follow HyperConverged workload placement.
 
 #### Node Placement Examples
 * Place the infra resources on nodes labeled with "nodeType = infra", and workloads in nodes labeled with "nodeType = nested-virtualization", using node selector:
