@@ -96,5 +96,5 @@ func (operatorDeploymentPredicate) Generic(_ event.TypedGenericEvent[*appsv1.Dep
 }
 
 func isHCOOperatorDeployment(dep *appsv1.Deployment) bool {
-	return dep != nil && dep.Name == hcoutil.HCOOperatorName && dep.Namespace == operatorNamespace()
+	return dep != nil && dep.Name == operatorDeploymentName() && dep.Namespace == operatorNamespace()
 }

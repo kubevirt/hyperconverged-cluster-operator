@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -24,10 +25,17 @@ import (
 // unless those infra nodes also carry the kubevirt control-plane label (an OR term
 // in virt-operator's affinity, owned by the KubeVirt repo).
 //
-// The selector is read from HCO's own Deployment. OLM applies the same Subscription
-// config to every CSV operator Deployment, HCO has no required control-plane affinity
-// so it can schedule first, and HCO's Deployment is already in the operator cache.
+// The selector is read from HCO's own Deployment (OLM name hco-operator, not the
+// ServiceAccount name hyperconverged-cluster-operator). OLM applies the same
+// Subscription config to every CSV operator Deployment. HCO has no required
+// control-plane affinity, so it can schedule first. That Deployment is not in
+// HCO's restricted cache (app=kubevirt-hyperconverged), so callers should pass
+// an API reader for the Get.
 func HandleClassicOperatorPlacementLabeling(ctx context.Context, cli client.Client, nodeName string, logger logr.Logger) error {
+	return labelClassicOperatorPlacement(ctx, cli, cli, nodeName, logger)
+}
+
+func labelClassicOperatorPlacement(ctx context.Context, cli client.Client, reader client.Reader, nodeName string, logger logr.Logger) error {
 	node := &corev1.Node{}
 	if err := cli.Get(ctx, client.ObjectKey{Name: nodeName}, node); err != nil {
 		if errors.IsNotFound(err) {
@@ -37,7 +45,7 @@ func HandleClassicOperatorPlacementLabeling(ctx context.Context, cli client.Clie
 		return fmt.Errorf("failed to get node %s for operator placement labeling: %w", nodeName, err)
 	}
 
-	selector, err := getOperatorNodeSelector(ctx, cli)
+	selector, err := getOperatorNodeSelector(ctx, reader)
 	if err != nil {
 		return err
 	}
@@ -45,16 +53,26 @@ func HandleClassicOperatorPlacementLabeling(ctx context.Context, cli client.Clie
 	return labelNodeForOperatorPlacement(ctx, cli, node, selector, logger)
 }
 
-func getOperatorNodeSelector(ctx context.Context, cli client.Client) (map[string]string, error) {
+func operatorDeploymentName() string {
+	if name := ownresources.GetDeploymentRef().Name; name != "" {
+		return name
+	}
+	// OLM CSV install strategy names this Deployment hco-operator
+	// (hcoutil.OperatorName), not the SA/container name HCOOperatorName.
+	return hcoutil.OperatorName
+}
+
+func getOperatorNodeSelector(ctx context.Context, reader client.Reader) (map[string]string, error) {
 	ns := hcoutil.GetOperatorNamespaceFromEnv()
+	name := operatorDeploymentName()
 
 	dep := &appsv1.Deployment{}
-	err := cli.Get(ctx, client.ObjectKey{Name: hcoutil.HCOOperatorName, Namespace: ns}, dep)
+	err := reader.Get(ctx, client.ObjectKey{Name: name, Namespace: ns}, dep)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to get %s deployment: %w", hcoutil.HCOOperatorName, err)
+		return nil, fmt.Errorf("failed to get %s deployment: %w", name, err)
 	}
 
 	return dep.Spec.Template.Spec.NodeSelector, nil

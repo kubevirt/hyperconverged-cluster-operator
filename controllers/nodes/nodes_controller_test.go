@@ -689,7 +689,7 @@ var _ = Describe("NodesController", func() {
 		hcoOperatorDep := func(selector map[string]string) *appsv1.Deployment {
 			return &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      hcoutil.HCOOperatorName,
+					Name:      hcoutil.OperatorName,
 					Namespace: commontestutils.Namespace,
 				},
 				Spec: appsv1.DeploymentSpec{
@@ -911,7 +911,7 @@ var _ = Describe("NodesController", func() {
 			}
 			cl := commontestutils.InitClient(resources)
 			cl.InitiateGetErrors(func(key client.ObjectKey) error {
-				if key.Name == hcoutil.HCOOperatorName {
+				if key.Name == hcoutil.OperatorName {
 					return apierrors.NewInternalError(errors.New("boom"))
 				}
 				return nil
@@ -923,7 +923,7 @@ var _ = Describe("NodesController", func() {
 
 			_, err := placementReconciler(cl).Reconcile(context.TODO(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "infra-1"}})
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("failed to get " + hcoutil.HCOOperatorName + " deployment"))
+			Expect(err.Error()).To(ContainSubstring("failed to get " + hcoutil.OperatorName + " deployment"))
 		})
 
 		It("Should remove the HCO kubevirt control-plane label when custom placement is cleared", func() {
@@ -994,7 +994,7 @@ var _ = Describe("NodesController", func() {
 		hcoDep := func(ns string, selector map[string]string) *appsv1.Deployment {
 			return &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      hcoutil.HCOOperatorName,
+					Name:      hcoutil.OperatorName,
 					Namespace: ns,
 				},
 				Spec: appsv1.DeploymentSpec{

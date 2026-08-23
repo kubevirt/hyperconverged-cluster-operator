@@ -12,8 +12,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/fields"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -148,7 +150,12 @@ func newReconciler(mgr manager.Manager, nodeEvents chan<- event.GenericEvent) *R
 	}
 
 	if shouldLabelClassicPlacementNodes {
-		r.HandleClassicOperatorPlacementLabeling = HandleClassicOperatorPlacementLabeling
+		// hco-operator is not in the restricted Deployment cache
+		// (app=kubevirt-hyperconverged). Read nodeSelector via the API.
+		reader := mgr.GetAPIReader()
+		r.HandleClassicOperatorPlacementLabeling = func(ctx context.Context, cli client.Client, nodeName string, logger logr.Logger) error {
+			return labelClassicOperatorPlacement(ctx, cli, reader, nodeName, logger)
+		}
 	} else {
 		r.HandleClassicOperatorPlacementLabeling = staleNodeLabeling
 	}
@@ -198,12 +205,38 @@ func add(mgr manager.Manager, r reconcile.Reconciler, watchOperatorPlacement boo
 		return nil
 	}
 
-	// Watch HCO's own Deployment. OLM copies Subscription nodeSelector onto every
-	// CSV operator Deployment, including this one. Do not watch Subscription:
-	// that CRD is OLM v0-only and is missing on plain Kubernetes (and OLM v1).
+	return watchHCOOperatorDeployment(mgr, c)
+}
+
+// watchHCOOperatorDeployment watches OLM's hco-operator Deployment.
+// The main cache only lists Deployments labeled app=kubevirt-hyperconverged,
+// and that label is not present on the OLM-managed operator Deployment.
+// Do not watch Subscription: that CRD is OLM v0-only and is missing on
+// plain Kubernetes (and OLM v1).
+func watchHCOOperatorDeployment(mgr manager.Manager, c controller.Controller) error {
+	ns := hcoutil.GetOperatorNamespaceFromEnv()
+	operatorCache, err := ctrlcache.New(mgr.GetConfig(), ctrlcache.Options{
+		Scheme: mgr.GetScheme(),
+		Mapper: mgr.GetRESTMapper(),
+		DefaultNamespaces: map[string]ctrlcache.Config{
+			ns: {},
+		},
+		ByObject: map[client.Object]ctrlcache.ByObject{
+			&appsv1.Deployment{}: {
+				Field: fields.OneTermEqualSelector("metadata.name", hcoutil.OperatorName),
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create cache for HCO operator Deployment: %w", err)
+	}
+	if err := mgr.Add(operatorCache); err != nil {
+		return fmt.Errorf("failed to add HCO operator Deployment cache: %w", err)
+	}
+
 	return c.Watch(
 		source.Kind[*appsv1.Deployment](
-			mgr.GetCache(), &appsv1.Deployment{},
+			operatorCache, &appsv1.Deployment{},
 			handler.TypedEnqueueRequestsFromMapFunc(func(_ context.Context, _ *appsv1.Deployment) []reconcile.Request {
 				return []reconcile.Request{placementReq}
 			}),

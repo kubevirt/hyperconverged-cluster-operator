@@ -1730,10 +1730,11 @@ can set `nodeSelector` and `tolerations` on the operator Deployments, but it can
 On classic OpenShift clusters, when the operator Deployment has a custom `nodeSelector` (for example because
 the Subscription places operators on infra nodes), HCO labels the matching non-control-plane nodes with
 `node-role.kubevirt.io/control-plane`. HCO does not watch Subscription objects (those are OLM v0 resources and
-are not present on plain Kubernetes or OLM v1). It watches its own Deployment, which receives the same
-`nodeSelector` OLM applies to `virt-operator`. That kubevirt-specific label is the same one HCO already applies
-to worker nodes on Hosted Control Plane clusters, so those nodes can satisfy `virt-operator` affinity without
-being treated as Kubernetes control-plane nodes.
+are not present on plain Kubernetes or OLM v1). It reads and watches the OLM-managed `hco-operator` Deployment,
+which receives the same `nodeSelector` OLM applies to `virt-operator`. That kubevirt-specific label is the same
+one HCO already applies to worker nodes on Hosted Control Plane clusters, so those nodes can satisfy
+`virt-operator` affinity (the additional `node-role.kubevirt.io/control-plane` term from KubeVirt's
+`--with-kubevirt-control-plane-label` CSV flag) without being treated as Kubernetes control-plane nodes.
 
 #### Node Placement Examples
 * Place the infra resources on nodes labeled with "nodeType = infra", and workloads in nodes labeled with "nodeType = nested-virtualization", using node selector:
