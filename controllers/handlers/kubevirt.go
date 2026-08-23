@@ -52,9 +52,6 @@ const (
 )
 
 const (
-	DefaultAMD64OVMFPath             = "/usr/share/OVMF"
-	DefaultARM64OVMFPath             = "/usr/share/AAVMF"
-	DefaultS390xOVMFPath             = ""
 	DefaultAMD64EmulatedQ35Machine   = "q35*"
 	DefaultAMD64EmulatedPCQ35Machine = "pc-q35*"
 	DefaultARM64EmulatedMachines     = "virt*"
@@ -559,7 +556,6 @@ func getAMD64ArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
 
 	return &kubevirtcorev1.ArchSpecificConfiguration{
 		MachineType: amd64MachineType,
-		OVMFPath:    DefaultAMD64OVMFPath,
 		EmulatedMachines: []string{
 			DefaultAMD64EmulatedQ35Machine,
 			DefaultAMD64EmulatedPCQ35Machine,
@@ -575,7 +571,6 @@ func getARM64ArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
 
 	return &kubevirtcorev1.ArchSpecificConfiguration{
 		MachineType:      armMachineType,
-		OVMFPath:         DefaultARM64OVMFPath,
 		EmulatedMachines: []string{DefaultARM64EmulatedMachines},
 	}
 }
@@ -588,7 +583,6 @@ func getS390xArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
 
 	return &kubevirtcorev1.ArchSpecificConfiguration{
 		MachineType:      s390xMachineType,
-		OVMFPath:         DefaultS390xOVMFPath,
 		EmulatedMachines: []string{DefaultS390XEmulatedMachines},
 	}
 }
