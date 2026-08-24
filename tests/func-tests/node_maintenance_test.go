@@ -91,7 +91,14 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, vmi)).To(Succeed())
 			g.Expect(vmi.Status.Phase).To(Equal(kubevirtcorev1.Running), vmiFailureMessage(vmi))
 			g.Expect(vmi.Status.NodeName).ToNot(BeEmpty())
+			g.Expect(vmiReady(vmi)).To(BeTrue(), vmiFailureMessage(vmi))
 			g.Expect(vmi.IsMigratable()).To(BeTrue(), vmiFailureMessage(vmi))
+		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(Succeed())
+		vmStatus := &kubevirtcorev1.VirtualMachine{}
+		Eventually(func(g Gomega, pollCtx context.Context) {
+			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, vmStatus)).To(Succeed())
+			g.Expect(vmStatus.Status.Ready).To(BeTrue())
+			g.Expect(vmStatus.Status.PrintableStatus).To(Equal(kubevirtcorev1.VirtualMachineStatusRunning))
 		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(Succeed())
 
 		sourceNode := vmi.Status.NodeName
@@ -138,11 +145,17 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 
 		By("verifying that the same VMI UID is Running on a different node")
 		var observedMigration *kubevirtcorev1.VirtualMachineInstanceMigration
+		observedMigrationNames := map[string]struct{}{}
 		Eventually(func(g Gomega, pollCtx context.Context) bool {
 			// Capture the VMIM before checking the VMI node: completed migrations may be
 			// garbage-collected shortly after the VMI is observed on its target node.
 			migrations := &kubevirtcorev1.VirtualMachineInstanceMigrationList{}
 			g.Expect(cli.List(pollCtx, migrations, client.InNamespace(tests.TestNamespace))).To(Succeed())
+			for i := range migrations.Items {
+				if migrations.Items[i].Spec.VMIName == vm.Name {
+					observedMigrationNames[migrations.Items[i].Name] = struct{}{}
+				}
+			}
 			if candidate := preferredMigrationForVMI(migrations.Items, vm.Name); candidate != nil && shouldRecordMigration(candidate, observedMigration) {
 				observedMigration = candidate.DeepCopy()
 			}
@@ -151,6 +164,7 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, current)).To(Succeed())
 			g.Expect(current.UID).To(Equal(vmiUID), vmiFailureMessage(current))
 			g.Expect(current.Status.Phase).To(Equal(kubevirtcorev1.Running), vmiFailureMessage(current))
+			g.Expect(vmiReady(current)).To(BeTrue(), vmiFailureMessage(current))
 			g.Expect(current.IsMigratable()).To(BeTrue(), vmiFailureMessage(current))
 			if current.Status.NodeName == sourceNode {
 				return false
@@ -164,6 +178,7 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 			return fmt.Sprintf("VMI did not complete migration from cordoned node %s; VMIM=%s phase=%s", sourceNode, observedMigration.Name, observedMigration.Status.Phase)
 		})
 		Expect(observedMigration).ToNot(BeNil(), "the eviction did not create a VMIM for the test VMI")
+		Expect(observedMigrationNames).To(HaveLen(1), "the eviction should produce exactly one VMIM for the test VMI")
 		Expect(observedMigration.Status.Phase).To(Equal(kubevirtcorev1.MigrationSucceeded),
 			fmt.Sprintf("VMIM %s did not complete successfully", observedMigration.Name))
 		observedMigrationState := observedMigration.Status.MigrationState
@@ -183,6 +198,11 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 			g.Expect(cli.List(pollCtx, pods, client.InNamespace(tests.TestNamespace))).To(Succeed())
 			return activeVirtLauncherCount(pods, vm.Name, vmiUID)
 		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(Equal(1))
+		Eventually(func(g Gomega, pollCtx context.Context) {
+			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, vmStatus)).To(Succeed())
+			g.Expect(vmStatus.Status.Ready).To(BeTrue())
+			g.Expect(vmStatus.Status.PrintableStatus).To(Equal(kubevirtcorev1.VirtualMachineStatusRunning))
+		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(Succeed())
 	})
 })
 
@@ -282,6 +302,15 @@ func shouldRecordMigration(candidate, observed *kubevirtcorev1.VirtualMachineIns
 func nodeReady(node *corev1.Node) bool {
 	for _, condition := range node.Status.Conditions {
 		if condition.Type == corev1.NodeReady {
+			return condition.Status == corev1.ConditionTrue
+		}
+	}
+	return false
+}
+
+func vmiReady(vmi *kubevirtcorev1.VirtualMachineInstance) bool {
+	for _, condition := range vmi.Status.Conditions {
+		if condition.Type == kubevirtcorev1.VirtualMachineInstanceReady {
 			return condition.Status == corev1.ConditionTrue
 		}
 	}

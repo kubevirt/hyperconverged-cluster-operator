@@ -61,14 +61,21 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 				"DeschedulerPolicy must contain at least one profile")
 		}
 
-		args, found, err := deschedulerWorkloadArgs(ctx, k8sClient)
+		workloads, found, err := deschedulerWorkloads(ctx, k8sClient)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue(),
 			"a labeled Descheduler ConfigMap exists but no CronJob, Deployment, or Pod consumes it")
-		Expect(hasPolicyConfigFile(args)).To(BeTrue(),
+		policyWorkloads := 0
+		for _, workload := range workloads {
+			if !workloadHasPolicyConfigFile(workload) {
+				continue
+			}
+			policyWorkloads++
+			Expect(workloadPolicyContainersHaveBackgroundGate(workload)).To(BeTrue(),
+				"Descheduler workload %s must contain --feature-gates=EvictionsInBackground=true in every policy-consuming container", workload.identity)
+		}
+		Expect(policyWorkloads).To(BeNumerically(">", 0),
 			"Descheduler workload must read /policy-dir/policy.yaml from the labeled policy ConfigMap")
-		Expect(hasBackgroundEvictionGate(args)).To(BeTrue(),
-			"Descheduler workload must contain --feature-gates=EvictionsInBackground=true for asynchronous KubeVirt eviction")
 	})
 
 	It("should expose documented fields when the optional KubeDescheduler CRD is installed", func(ctx context.Context) {
@@ -95,15 +102,23 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 	})
 })
 
-func deschedulerWorkloadArgs(ctx context.Context, k8sClient kubernetes.Interface) ([]string, bool, error) {
-	args := make([]string, 0)
+type deschedulerWorkload struct {
+	identity   string
+	containers [][]string
+}
+
+func deschedulerWorkloads(ctx context.Context, k8sClient kubernetes.Interface) ([]deschedulerWorkload, bool, error) {
+	workloads := make([]deschedulerWorkload, 0)
 
 	cronJobs, err := k8sClient.BatchV1().CronJobs("").List(ctx, metav1.ListOptions{LabelSelector: deschedulerLabelSelector})
 	if err != nil {
 		return nil, false, err
 	}
 	for _, cronJob := range cronJobs.Items {
-		args = append(args, containerArgs(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers)...)
+		workloads = append(workloads, deschedulerWorkload{
+			identity:   fmt.Sprintf("CronJob %s/%s", cronJob.Namespace, cronJob.Name),
+			containers: containerArgsByContainer(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers),
+		})
 	}
 
 	deployments, err := k8sClient.AppsV1().Deployments("").List(ctx, metav1.ListOptions{LabelSelector: deschedulerLabelSelector})
@@ -111,7 +126,10 @@ func deschedulerWorkloadArgs(ctx context.Context, k8sClient kubernetes.Interface
 		return nil, false, err
 	}
 	for _, deployment := range deployments.Items {
-		args = append(args, containerArgs(deployment.Spec.Template.Spec.Containers)...)
+		workloads = append(workloads, deschedulerWorkload{
+			identity:   fmt.Sprintf("Deployment %s/%s", deployment.Namespace, deployment.Name),
+			containers: containerArgsByContainer(deployment.Spec.Template.Spec.Containers),
+		})
 	}
 
 	pods, err := k8sClient.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: deschedulerLabelSelector})
@@ -119,19 +137,50 @@ func deschedulerWorkloadArgs(ctx context.Context, k8sClient kubernetes.Interface
 		return nil, false, err
 	}
 	for _, pod := range pods.Items {
-		args = append(args, containerArgs(pod.Spec.Containers)...)
+		if pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {
+			continue
+		}
+		workloads = append(workloads, deschedulerWorkload{
+			identity:   fmt.Sprintf("Pod %s/%s", pod.Namespace, pod.Name),
+			containers: containerArgsByContainer(pod.Spec.Containers),
+		})
 	}
 
-	return args, len(args) > 0, nil
+	return workloads, len(workloads) > 0, nil
 }
 
-func containerArgs(containers []corev1.Container) []string {
-	args := make([]string, 0)
+func containerArgsByContainer(containers []corev1.Container) [][]string {
+	result := make([][]string, 0, len(containers))
 	for _, container := range containers {
+		args := make([]string, 0, len(container.Command)+len(container.Args))
 		args = append(args, container.Command...)
 		args = append(args, container.Args...)
+		result = append(result, args)
 	}
-	return args
+	return result
+}
+
+func workloadHasPolicyConfigFile(workload deschedulerWorkload) bool {
+	for _, args := range workload.containers {
+		if hasPolicyConfigFile(args) {
+			return true
+		}
+	}
+	return false
+}
+
+func workloadPolicyContainersHaveBackgroundGate(workload deschedulerWorkload) bool {
+	policyContainerFound := false
+	for _, args := range workload.containers {
+		if !hasPolicyConfigFile(args) {
+			continue
+		}
+		policyContainerFound = true
+		if !hasBackgroundEvictionGate(args) {
+			return false
+		}
+	}
+	return policyContainerFound
 }
 
 func hasBackgroundEvictionGate(args []string) bool {

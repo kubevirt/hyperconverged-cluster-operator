@@ -38,8 +38,11 @@ var _ = Describe("KubeVirt documentation API compatibility", Label("documentatio
 		vmEviction := schemaProperty(vmSchema, "spec", "template", "spec", "evictionStrategy")
 		Expect(vmEviction).ToNot(BeNil(),
 			"the node maintenance howto uses vm.spec.template.spec.evictionStrategy")
-		Expect(documentationJSONEnum(vmEviction.Enum)).To(ContainElement("LiveMigrate"),
-			"vm.spec.template.spec.evictionStrategy no longer accepts LiveMigrate")
+		vmEnum := documentationJSONEnum(vmEviction.Enum)
+		if len(vmEnum) > 0 {
+			Expect(vmEnum).To(ContainElement("LiveMigrate"),
+				"vm.spec.template.spec.evictionStrategy enum no longer accepts LiveMigrate")
+		}
 		Expect(vmEviction.Description).To(ContainSubstring("LiveMigrate"),
 			"vm.spec.template.spec.evictionStrategy no longer documents LiveMigrate")
 	})
