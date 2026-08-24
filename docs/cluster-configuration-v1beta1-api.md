@@ -148,11 +148,8 @@ virtual machine.
 ## withHostPassthroughCPU Feature Gate
 This feature gate is deprecated and is ignored.
 
-### deployKubeSecondaryDNS Feature Gate
-Set the `deployKubeSecondaryDNS` feature gate to true to allow deploying KubeSecondaryDNS by CNAO.
-For additional information, see here: [KubeSecondaryDNS](https://github.com/kubevirt/kubesecondarydns)
-
-**Default**: `false`
+## deployKubeSecondaryDNS Feature Gate
+This feature gate is deprecated and is ignored.
 
 ### persistentReservation Feature Gate (deprecated)
 
@@ -314,7 +311,6 @@ spec:
   workloads: {}
   featureGates:
     alignCPUs: true
-    deployKubeSecondaryDNS: true
 ```
 
 ## Live Migration Configurations
@@ -841,23 +837,6 @@ spec:
     insecureRegistries:
       - "private-registry-example-1:5000"
       - "private-registry-example-2:5000"
-```
-
-## KubeSecondaryDNS Name Server IP
-Set the `spec.deployKubeSecondaryDNS` field gate to `true` to allow deploying KubeSecondaryDNS by CNAO.
-
-In order to set KSD's NameServerIP, set it on HyperConverged CR under spec.kubeSecondaryDNSNameServerIP field.
-Default: empty string. Value is a string representation of IPv4 (i.e "127.0.0.1").
-For more info see [deployKubeSecondaryDNS Feature Gate](#deploykubesecondarydns-feature-gate).
-
-### KubeSecondaryDNS Name Server IP example
-```yaml
-apiVersion: hco.kubevirt.io/v1beta1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  kubeSecondaryDNSNameServerIP: "127.0.0.1"
 ```
 
 ## Network Binding plugin

@@ -52,10 +52,6 @@ func (c ClusterInfoMock) IsRunningLocally() bool {
 	return c.runningLocally
 }
 
-func (ClusterInfoMock) GetBaseDomain() string {
-	return ""
-}
-
 func (c ClusterInfoMock) IsManagedByOLM() bool {
 	return c.isManagedByOLM
 }

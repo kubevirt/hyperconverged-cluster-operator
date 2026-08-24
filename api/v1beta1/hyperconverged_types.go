@@ -67,7 +67,7 @@ type HyperConvergedSpec struct {
 
 	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
-	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}
+	// +kubebuilder:default={"downwardMetrics": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}
 	// +optional
 	// +k8s:conversion-gen=false
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
@@ -210,7 +210,7 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	TektonTasksNamespace *string `json:"tektonTasksNamespace,omitempty"`
 
-	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
+	// Deprecated: This field is ignored.
 	// +optional
 	// +k8s:conversion-gen=false
 	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
@@ -400,10 +400,8 @@ type HyperConvergedFeatureGates struct {
 	// +hco:fgphase:discontinued
 	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
 
-	// Deploy KubeSecondaryDNS by CNAO
-	// +optional
-	// +kubebuilder:default=false
-	// +default=false
+	// Deprecated: This feature gate is ignored.
+	// +hco:fgphase:discontinued
 	DeployKubeSecondaryDNS *bool `json:"deployKubeSecondaryDNS,omitempty"`
 
 	// Deprecated: this feature gate is ignored.
@@ -627,7 +625,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec         `json:"spec,omitempty"`
 	Status hcov1.HyperConvergedStatus `json:"status,omitempty"`

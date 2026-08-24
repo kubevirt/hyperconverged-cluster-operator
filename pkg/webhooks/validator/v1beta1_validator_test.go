@@ -505,6 +505,11 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				Entry("should trigger a warning if the deployTektonTaskResources=true FG exists in the CR",
 					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: new(true)}, "deployTektonTaskResources"),
 
+				Entry("should trigger a warning if the deployKubeSecondaryDNS=false FG exists in the CR",
+					v1beta1.HyperConvergedFeatureGates{DeployKubeSecondaryDNS: new(false)}, "deployKubeSecondaryDNS"),
+				Entry("should trigger a warning if the deployKubeSecondaryDNS=true FG exists in the CR",
+					v1beta1.HyperConvergedFeatureGates{DeployKubeSecondaryDNS: new(true)}, "deployKubeSecondaryDNS"),
+
 				Entry("should trigger a warning if the enableManagedTenantQuota=false FG exists in the CR",
 					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: new(false)}, "enableManagedTenantQuota"),
 				Entry("should trigger a warning if the enableManagedTenantQuota=true FG exists in the CR",
@@ -544,7 +549,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 						EnableManagedTenantQuota:    new(false),
 						DeployVMConsoleProxy:        new(false),
 						DeployKubeSecondaryDNS:      new(false),
-					}, "enableManagedTenantQuota", "nonRoot", "enableApplicationAwareQuota", "enableCommonBootImageImport", "deployVmConsoleProxy"),
+					}, "enableManagedTenantQuota", "nonRoot", "enableApplicationAwareQuota", "enableCommonBootImageImport", "deployVmConsoleProxy", "deployKubeSecondaryDNS"),
 			)
 		})
 
@@ -1470,6 +1475,11 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				Entry("should trigger a warning if the deployTektonTaskResources=true FG exists in the CR",
 					v1beta1.HyperConvergedFeatureGates{DeployTektonTaskResources: new(true)}, "deployTektonTaskResources"),
 
+				Entry("should trigger a warning if the deployKubeSecondaryDNS=false FG exists in the CR",
+					v1beta1.HyperConvergedFeatureGates{DeployKubeSecondaryDNS: new(false)}, "deployKubeSecondaryDNS"),
+				Entry("should trigger a warning if the deployKubeSecondaryDNS=true FG exists in the CR",
+					v1beta1.HyperConvergedFeatureGates{DeployKubeSecondaryDNS: new(true)}, "deployKubeSecondaryDNS"),
+
 				Entry("should trigger a warning if the enableManagedTenantQuota=false FG exists in the CR",
 					v1beta1.HyperConvergedFeatureGates{EnableManagedTenantQuota: new(false)}, "enableManagedTenantQuota"),
 				Entry("should trigger a warning if the enableManagedTenantQuota=true FG exists in the CR",
@@ -1616,21 +1626,6 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				Entry("should not trigger warning if deployVmConsoleProxy (false) wasn't changed", new(false), new(false)),
 			)
 
-			//nolint:staticcheck
-			DescribeTable("should not return warning for deployKubeSecondaryDNS if not change", func(ctx context.Context, newFG, oldFG *bool) {
-				cli := getFakeClient(hco)
-				wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
-				newHCO := hco.DeepCopy()
-				hco.Spec.FeatureGates.DeployKubeSecondaryDNS = newFG
-				newHCO.Spec.FeatureGates.DeployKubeSecondaryDNS = oldFG
-
-				Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)).Error().To(Succeed())
-			},
-				Entry("should not trigger warning if deployKubeSecondaryDNS (true) disappeared", new(true), nil),
-				Entry("should not trigger warning if deployKubeSecondaryDNS (false) disappeared", new(false), nil),
-				Entry("should not trigger warning if deployKubeSecondaryDNS (true) wasn't changed", new(true), new(true)),
-				Entry("should not trigger warning if deployKubeSecondaryDNS (false) wasn't changed", new(false), new(false)),
-			)
 		})
 
 		Context("validate tuning policy on update", func() {

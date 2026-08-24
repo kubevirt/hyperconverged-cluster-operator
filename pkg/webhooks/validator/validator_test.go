@@ -441,6 +441,8 @@ var _ = Describe("v1 webhooks validator", func() {
 					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: new(hcov1fg.Enabled)}}, new(false), "disableMDevConfiguration"),
 				Entry("should trigger a warning if the disableMDevConfiguration FG exists in the CR",
 					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}, new(false), "disableMDevConfiguration"),
+				Entry("should trigger a warning if the discontinued deployKubeSecondaryDNS FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: new(hcov1fg.Enabled)}}, nil, "deployKubeSecondaryDNS"),
 			)
 		})
 

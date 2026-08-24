@@ -25,11 +25,6 @@
     "description": "ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs."
   },
   {
-    "name": "deployKubeSecondaryDNS",
-    "phase": "alpha",
-    "description": "Deploy KubeSecondaryDNS by CNAO"
-  },
-  {
     "name": "deployObservabilityController",
     "phase": "alpha",
     "description": "Deploy the virt-observability-controller component. When enabled, the controller exposes KubeVirt metrics and manages PrometheusRule resources independently from the KubeVirt control plane."

@@ -351,10 +351,6 @@ var _ = Describe("test clusterInfo", func() {
 
 		Expect(GetClusterInfo().IsOpenshift()).To(BeTrue(), "should return true for IsOpenshift()")
 		Expect(GetClusterInfo().IsManagedByOLM()).To(BeTrue(), "should return true for IsManagedByOLM()")
-
-		By("Check clusterInfo additional fields (for openshift)", func() {
-			Expect(GetClusterInfo().GetBaseDomain()).To(Equal(baseDomain), "should return expected base domain")
-		})
 	})
 
 	It("check Init on openshift, without OLM", func() {
