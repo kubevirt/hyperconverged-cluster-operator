@@ -21,7 +21,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	netresinjector "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/netresinjector"
 	observabilitycontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/observabilitycontroller"
-	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -90,11 +89,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			handlers.NewCliDownloadHandler(client, scheme),
 			handlers.NewCliDownloadsRouteHandler(client, scheme),
 			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService()),
-			waspagent.NewWaspAgentServiceAccountHandler(client, scheme),
-			waspagent.NewWaspAgentSCCHandler(client, scheme),
-			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
-			waspagent.NewWaspAgentClusterRoleHandler(client, scheme),
-			waspagent.NewWaspAgentClusterRoleBindingHandler(client, scheme),
 			handlers.NewVirtioWinCmReaderRoleHandler(client, scheme),
 			handlers.NewVirtioWinCmReaderRoleBindingHandler(client, scheme),
 		}...)

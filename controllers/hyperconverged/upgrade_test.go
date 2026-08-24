@@ -17,6 +17,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -732,6 +733,12 @@ var _ = Describe("Upgrade Mode", func() {
 			iommufdSaToBeRemoved  *corev1.ServiceAccount
 			iommufdSccToBeRemoved *securityv1.SecurityContextConstraints
 
+			waspDSToBeRemoved                 *appsv1.DaemonSet
+			waspSCCToBeRemoved                *securityv1.SecurityContextConstraints
+			waspSAToBeRemoved                 *corev1.ServiceAccount
+			waspClusterRoleToBeRemoved        *rbacv1.ClusterRole
+			waspClusterRoleBindingToBeRemoved *rbacv1.ClusterRoleBinding
+
 			resources []client.Object
 		)
 
@@ -837,6 +844,49 @@ var _ = Describe("Upgrade Mode", func() {
 				},
 			}
 
+			waspDSToBeRemoved = &appsv1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "wasp-agent",
+					Namespace: namespace,
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+			waspSCCToBeRemoved = &securityv1.SecurityContextConstraints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "wasp",
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+			waspSAToBeRemoved = &corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "wasp",
+					Namespace: namespace,
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+			waspClusterRoleToBeRemoved = &rbacv1.ClusterRole{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "wasp-cluster",
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+			waspClusterRoleBindingToBeRemoved = &rbacv1.ClusterRoleBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "wasp-cluster",
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+
 			resources = append(expected.toArray(),
 				dsToBeRemoved,
 				nadToBeRemoved,
@@ -849,6 +899,11 @@ var _ = Describe("Upgrade Mode", func() {
 				iommufdDsToBeRemoved,
 				iommufdSaToBeRemoved,
 				iommufdSccToBeRemoved,
+				waspDSToBeRemoved,
+				waspSCCToBeRemoved,
+				waspSAToBeRemoved,
+				waspClusterRoleToBeRemoved,
+				waspClusterRoleBindingToBeRemoved,
 			)
 		})
 		It("should remove passt objects when upgrading from < 1.19.0", func(ctx context.Context) {
@@ -1068,6 +1123,104 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(iommufdDsToBeRemoved), foundDS)).To(Succeed())
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(iommufdSaToBeRemoved), foundSA)).To(Succeed())
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(iommufdSccToBeRemoved), foundSCC)).To(Succeed())
+		})
+
+		It("should remove wasp agent objects when upgrading from < 1.19.0", func(ctx context.Context) {
+			waspRelatedObjects := []corev1.ObjectReference{
+				{
+					APIVersion:      "apps/v1",
+					Kind:            "DaemonSet",
+					Name:            waspDSToBeRemoved.Name,
+					Namespace:       waspDSToBeRemoved.Namespace,
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "v1",
+					Kind:            "ServiceAccount",
+					Name:            waspSAToBeRemoved.GetName(),
+					Namespace:       waspSAToBeRemoved.GetNamespace(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "security.openshift.io/v1",
+					Kind:            "SecurityContextConstraints",
+					Name:            waspSCCToBeRemoved.GetName(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "rbac.authorization.k8s.io/v1",
+					Kind:            "ClusterRole",
+					Name:            waspClusterRoleToBeRemoved.GetName(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "rbac.authorization.k8s.io/v1",
+					Kind:            "ClusterRoleBinding",
+					Name:            waspClusterRoleBindingToBeRemoved.GetName(),
+					ResourceVersion: "999",
+				},
+			}
+
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
+
+			for _, objRef := range waspRelatedObjects {
+				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+			}
+
+			cl := commontestutils.InitClient(resources)
+
+			foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			checkAvailability(foundResource, metav1.ConditionTrue)
+
+			foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			checkAvailability(foundResource, metav1.ConditionTrue)
+
+			foundDS := &appsv1.DaemonSet{}
+			foundSA := &corev1.ServiceAccount{}
+			foundSCC := &securityv1.SecurityContextConstraints{}
+			foundClusterRole := &rbacv1.ClusterRole{}
+			foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+
+			err := cl.Get(ctx, client.ObjectKeyFromObject(waspDSToBeRemoved), foundDS)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			err = cl.Get(ctx, client.ObjectKeyFromObject(waspSAToBeRemoved), foundSA)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			err = cl.Get(ctx, client.ObjectKeyFromObject(waspSCCToBeRemoved), foundSCC)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			err = cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleToBeRemoved), foundClusterRole)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			err = cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleBindingToBeRemoved), foundClusterRoleBinding)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			for _, objRef := range waspRelatedObjects {
+				Expect(foundResource.Status.RelatedObjects).ToNot(ContainElement(objRef))
+			}
+		})
+
+		It("should not remove wasp agent objects when upgrading from >= 1.19.0", func(ctx context.Context) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.19.0")
+
+			cl := commontestutils.InitClient(resources)
+			foundResource, _, _ := doReconcile(cl, expected.hco, nil)
+			checkAvailability(foundResource, metav1.ConditionTrue)
+
+			foundDS := &appsv1.DaemonSet{}
+			foundSA := &corev1.ServiceAccount{}
+			foundSCC := &securityv1.SecurityContextConstraints{}
+			foundClusterRole := &rbacv1.ClusterRole{}
+			foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspDSToBeRemoved), foundDS)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSAToBeRemoved), foundSA)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSCCToBeRemoved), foundSCC)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleToBeRemoved), foundClusterRole)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleBindingToBeRemoved), foundClusterRoleBinding)).To(Succeed())
 		})
 	})
 
