@@ -21,7 +21,6 @@ import (
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -583,120 +582,6 @@ var _ = Describe("CNA Operand", func() {
 				ovsDeployExpected: false,
 			}),
 		)
-
-		type ksdAnnotationParams struct {
-			ksdExists          bool
-			setFeatureGate     bool
-			featureGateValue   featuregates.State
-			ksdDeployExpected  bool
-			expectedBaseDomain string
-		}
-
-		ksdTester := func(o ksdAnnotationParams) {
-			existingCNAO, err := NewNetworkAddons(hco)
-			Expect(err).ToNot(HaveOccurred())
-			if o.ksdExists {
-				existingCNAO.Spec.KubeSecondaryDNS = &networkaddonsshared.KubeSecondaryDNS{}
-			}
-
-			const kubeSecondaryDNSNameServerIP = "127.0.0.1"
-			if o.setFeatureGate {
-				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-					{Name: "deployKubeSecondaryDNS", State: new(o.featureGateValue)},
-				}
-
-				hco.Spec.Networking = &hcov1.NetworkingConfig{
-					KubeSecondaryDNSNameServerIP: new(kubeSecondaryDNSNameServerIP),
-				}
-			}
-
-			cl := commontestutils.InitClient([]client.Object{hco, existingCNAO})
-			handler := NewCnaHandler(cl, commontestutils.GetScheme())
-			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(HaveOccurred())
-
-			foundCNAO := &networkaddonsv1.NetworkAddonsConfig{}
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Name: existingCNAO.Name, Namespace: existingCNAO.Namespace},
-					foundCNAO),
-			).To(Succeed())
-
-			if o.ksdDeployExpected {
-				Expect(foundCNAO.Spec.KubeSecondaryDNS).ToNot(BeNil(), "KSD spec should be added")
-				Expect(foundCNAO.Spec.KubeSecondaryDNS.Domain).To(Equal(o.expectedBaseDomain),
-					"Expected domain should be set on KSD spec")
-				Expect(foundCNAO.Spec.KubeSecondaryDNS.NameServerIP).To(Equal(kubeSecondaryDNSNameServerIP),
-					"Expected NameServerIP should be set on KSD spec")
-			} else {
-				Expect(foundCNAO.Spec.KubeSecondaryDNS).To(BeNil(), "KSD spec should not be added")
-			}
-		}
-
-		Context("With K8s", func() {
-			DescribeTable("when reconciling kube-secondary-dns", ksdTester,
-				Entry("should have KSD if feature gate is set to true", ksdAnnotationParams{
-					ksdExists:          false,
-					setFeatureGate:     true,
-					featureGateValue:   featuregates.Enabled,
-					ksdDeployExpected:  true,
-					expectedBaseDomain: "",
-				}),
-				Entry("should not have KSD if feature gate is set to false", ksdAnnotationParams{
-					ksdExists:          true,
-					setFeatureGate:     true,
-					featureGateValue:   featuregates.Disabled,
-					ksdDeployExpected:  false,
-					expectedBaseDomain: "",
-				}),
-				Entry("should not have KSD if feature gate does not exist", ksdAnnotationParams{
-					ksdExists:          true,
-					setFeatureGate:     false,
-					featureGateValue:   featuregates.Disabled,
-					ksdDeployExpected:  false,
-					expectedBaseDomain: "",
-				}),
-			)
-		})
-
-		Context("With Openshift Mock", func() {
-			BeforeEach(func() {
-				getClusterInfo := hcoutil.GetClusterInfo
-
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return &commontestutils.ClusterInfoMock{}
-				}
-
-				DeferCleanup(func() {
-					hcoutil.GetClusterInfo = getClusterInfo
-				})
-			})
-
-			DescribeTable("when reconciling kube-secondary-dns", ksdTester,
-				Entry("should have KSD if feature gate is set to true", ksdAnnotationParams{
-					ksdExists:          false,
-					setFeatureGate:     true,
-					featureGateValue:   featuregates.Enabled,
-					ksdDeployExpected:  true,
-					expectedBaseDomain: commontestutils.BaseDomain,
-				}),
-				Entry("should not have KSD if feature gate is set to false", ksdAnnotationParams{
-					ksdExists:          true,
-					setFeatureGate:     true,
-					featureGateValue:   featuregates.Disabled,
-					ksdDeployExpected:  false,
-					expectedBaseDomain: "",
-				}),
-				Entry("should not have KSD if feature gate does not exist", ksdAnnotationParams{
-					ksdExists:          true,
-					setFeatureGate:     false,
-					featureGateValue:   featuregates.Disabled,
-					ksdDeployExpected:  false,
-					expectedBaseDomain: "",
-				}),
-			)
-		})
 
 		It("when running on openshift, it should override kubernetes-ipam-controller default network NAD namespace", func() {
 			getClusterInfo := hcoutil.GetClusterInfo
