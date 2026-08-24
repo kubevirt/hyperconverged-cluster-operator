@@ -46,8 +46,10 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 
 		customizations, ok := spec.Properties["profileCustomizations"]
 		Expect(ok).To(BeTrue(), "KubeDescheduler.spec.profileCustomizations is missing from the served schema")
-		_, ok = customizations.Properties["devEnableEvictionsInBackground"]
+		backgroundEvictions, ok := customizations.Properties["devEnableEvictionsInBackground"]
 		Expect(ok).To(BeTrue(), "the documented background-eviction field is missing from the served schema")
+		Expect(backgroundEvictions.Type).To(Equal("boolean"),
+			"the documented background-eviction field is no longer boolean")
 
 		mode, ok := spec.Properties["mode"]
 		Expect(ok).To(BeTrue(), "KubeDescheduler.spec.mode is missing from the served schema")
