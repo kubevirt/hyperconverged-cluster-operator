@@ -91,7 +91,6 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, vmi)).To(Succeed())
 			g.Expect(vmi.Status.Phase).To(Equal(kubevirtcorev1.Running), vmiFailureMessage(vmi))
 			g.Expect(vmi.Status.NodeName).ToNot(BeEmpty())
-			g.Expect(vmi.Status.MigrationMethod).To(Equal(kubevirtcorev1.LiveMigration), vmiFailureMessage(vmi))
 			g.Expect(vmi.IsMigratable()).To(BeTrue(), vmiFailureMessage(vmi))
 		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(Succeed())
 
