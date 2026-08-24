@@ -9,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/net"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -151,19 +150,6 @@ func NewNetworkAddons(hc *hcov1.HyperConverged) (*networkaddonsv1.NetworkAddonsC
 		KubevirtIpamController: ipam,
 	}
 
-	nameServerIP, err := getKSDNameServerIP(hc.Spec.Networking)
-	if err != nil {
-		return nil, err
-	}
-
-	if hc.Spec.FeatureGates.IsEnabled("deployKubeSecondaryDNS") {
-		baseDomain := util.GetClusterInfo().GetBaseDomain()
-		cnaoSpec.KubeSecondaryDNS = &networkaddonsshared.KubeSecondaryDNS{
-			Domain:       baseDomain,
-			NameServerIP: nameServerIP,
-		}
-	}
-
 	cnaoSpec.Ovs = hcoAnnotation2CnaoSpec(hc.Annotations)
 
 	if np := hc.Spec.Deployment.NodePlacements; np != nil {
@@ -184,24 +170,11 @@ func NewNetworkAddons(hc *hcov1.HyperConverged) (*networkaddonsv1.NetworkAddonsC
 	cna := NewNetworkAddonsWithNameOnly()
 	cna.Spec = cnaoSpec
 
-	if err = operands.ApplyPatchToSpec(hc, common.JSONPatchCNAOAnnotationName, cna); err != nil {
+	if err := operands.ApplyPatchToSpec(hc, common.JSONPatchCNAOAnnotationName, cna); err != nil {
 		return nil, err
 	}
 
 	return reformatobj.ReformatObj(cna)
-}
-
-func getKSDNameServerIP(nt *hcov1.NetworkingConfig) (string, error) {
-	if nt == nil {
-		return "", nil
-	}
-
-	nameServerIP := ptr.Deref(nt.KubeSecondaryDNSNameServerIP, "")
-	if nameServerIP != "" && !net.IsIPv4String(nameServerIP) {
-		return "", errors.New("kubeSecondaryDNSNameServerIP isn't a valid IPv4")
-	}
-
-	return nameServerIP, nil
 }
 
 func NewNetworkAddonsWithNameOnly() *networkaddonsv1.NetworkAddonsConfig {

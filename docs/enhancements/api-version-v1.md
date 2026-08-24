@@ -128,7 +128,7 @@ spec:
   ...
   featureGates:
       - name: downwardMetrics # this feature gate is enabled
-      - name: deployKubeSecondaryDNS # this feature gate is enabled
+      - name: alignCPUs # this feature gate is enabled
         state: Enabled
       - name: videoConfig # this feature gate is disabled
         state: Disabled
@@ -230,9 +230,11 @@ will be moved under the new `security` field:
 In `v1beta1`, the following fields are directly under `spec`. In `v1`, they
 will be moved under the new `networking` field:
 
-* `kubeSecondaryDNSNameServerIP`
 * `kubeMacPoolConfiguration`
 * `networkBinding`
+
+`kubeSecondaryDNSNameServerIP` is a deprecated, ignored field. It exists in both
+`v1beta1` and `v1` for API compatibility but is not converted between versions.
 
 #### WorkloadSources
 In `v1beta1`, the following fields are directly under `spec`. In `v1`, they

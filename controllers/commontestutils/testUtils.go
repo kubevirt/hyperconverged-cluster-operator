@@ -267,9 +267,6 @@ func (ClusterInfoMock) IsRunningLocally() bool {
 func (ClusterInfoMock) IsManagedByOLM() bool {
 	return true
 }
-func (ClusterInfoMock) GetBaseDomain() string {
-	return BaseDomain
-}
 func (c ClusterInfoMock) IsConsolePluginImageProvided() bool {
 	return true
 }

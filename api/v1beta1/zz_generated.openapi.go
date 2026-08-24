@@ -169,8 +169,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"deployKubeSecondaryDNS": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deploy KubeSecondaryDNS by CNAO",
-							Default:     false,
+							Description: "Deprecated: This feature gate is ignored.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -526,7 +525,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 					},
 					"kubeSecondaryDNSNameServerIP": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS",
+							Description: "Deprecated: This field is ignored.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
