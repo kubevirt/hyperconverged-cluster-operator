@@ -137,12 +137,16 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(BeTrue())
 
 		By("verifying that the same VMI UID is Running on a different node")
-		var (
-			observedMigrationName  string
-			observedMigrationPhase kubevirtcorev1.VirtualMachineInstanceMigrationPhase
-			observedMigrationState *kubevirtcorev1.VirtualMachineInstanceMigrationState
-		)
+		var observedMigration *kubevirtcorev1.VirtualMachineInstanceMigration
 		Eventually(func(g Gomega, pollCtx context.Context) bool {
+			// Capture the VMIM before checking the VMI node: completed migrations may be
+			// garbage-collected shortly after the VMI is observed on its target node.
+			migrations := &kubevirtcorev1.VirtualMachineInstanceMigrationList{}
+			g.Expect(cli.List(pollCtx, migrations, client.InNamespace(tests.TestNamespace))).To(Succeed())
+			if candidate := preferredMigrationForVMI(migrations.Items, vm.Name); candidate != nil && shouldRecordMigration(candidate, observedMigration) {
+				observedMigration = candidate.DeepCopy()
+			}
+
 			current := &kubevirtcorev1.VirtualMachineInstance{}
 			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, current)).To(Succeed())
 			g.Expect(current.UID).To(Equal(vmiUID), vmiFailureMessage(current))
@@ -152,28 +156,25 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 				return false
 			}
 
-			migrations := &kubevirtcorev1.VirtualMachineInstanceMigrationList{}
-			g.Expect(cli.List(pollCtx, migrations, client.InNamespace(tests.TestNamespace))).To(Succeed())
-			for i := range migrations.Items {
-				migration := &migrations.Items[i]
-				if migration.Spec.VMIName != vm.Name {
-					continue
-				}
-				observedMigrationName = migration.Name
-				observedMigrationPhase = migration.Status.Phase
-				observedMigrationState = migration.Status.MigrationState
-				if migration.Status.Phase == kubevirtcorev1.MigrationSucceeded {
-					return true
-				}
-			}
-			return false
+			return observedMigration != nil && observedMigration.Status.Phase == kubevirtcorev1.MigrationSucceeded
 		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(BeTrue(), func() string {
-			return fmt.Sprintf("VMI did not complete migration from cordoned node %s; VMIM=%s phase=%s", sourceNode, observedMigrationName, observedMigrationPhase)
+			if observedMigration == nil {
+				return fmt.Sprintf("VMI did not complete migration from cordoned node %s; no matching VMIM was observed", sourceNode)
+			}
+			return fmt.Sprintf("VMI did not complete migration from cordoned node %s; VMIM=%s phase=%s", sourceNode, observedMigration.Name, observedMigration.Status.Phase)
 		})
-		Expect(observedMigrationName).ToNot(BeEmpty(), "the eviction did not create a VMIM for the test VMI")
-		Expect(observedMigrationState).ToNot(BeNil(), "the completed VMIM did not expose migration state")
-		Expect(observedMigrationState.SourceNode).To(Equal(sourceNode))
-		Expect(observedMigrationState.TargetNode).ToNot(BeEmpty())
+		Expect(observedMigration).ToNot(BeNil(), "the eviction did not create a VMIM for the test VMI")
+		Expect(observedMigration.Status.Phase).To(Equal(kubevirtcorev1.MigrationSucceeded),
+			fmt.Sprintf("VMIM %s did not complete successfully", observedMigration.Name))
+		observedMigrationState := observedMigration.Status.MigrationState
+		Expect(observedMigrationState).ToNot(BeNil(),
+			fmt.Sprintf("completed VMIM %s did not expose migrationState with sourceNode and targetNode", observedMigration.Name))
+		Expect(observedMigrationState.SourceNode).ToNot(BeEmpty(),
+			fmt.Sprintf("completed VMIM %s migrationState.sourceNode is empty", observedMigration.Name))
+		Expect(observedMigrationState.SourceNode).To(Equal(sourceNode),
+			fmt.Sprintf("completed VMIM %s migrationState.sourceNode does not match the VMI source", observedMigration.Name))
+		Expect(observedMigrationState.TargetNode).ToNot(BeEmpty(),
+			fmt.Sprintf("completed VMIM %s migrationState.targetNode is empty", observedMigration.Name))
 		Expect(observedMigrationState.TargetNode).ToNot(Equal(sourceNode))
 
 		By("verifying that exactly one virt-launcher remains active")
@@ -241,6 +242,41 @@ func activeVirtLauncherCount(pods *corev1.PodList, vmName string, vmiUID types.U
 		}
 	}
 	return count
+}
+
+func preferredMigrationForVMI(migrations []kubevirtcorev1.VirtualMachineInstanceMigration, vmiName string) *kubevirtcorev1.VirtualMachineInstanceMigration {
+	var preferred *kubevirtcorev1.VirtualMachineInstanceMigration
+	for i := range migrations {
+		candidate := &migrations[i]
+		if candidate.Spec.VMIName != vmiName {
+			continue
+		}
+		if preferred == nil || migrationIsPreferred(candidate, preferred) {
+			preferred = candidate
+		}
+	}
+	return preferred
+}
+
+func migrationIsPreferred(candidate, current *kubevirtcorev1.VirtualMachineInstanceMigration) bool {
+	candidateSucceeded := candidate.Status.Phase == kubevirtcorev1.MigrationSucceeded
+	currentSucceeded := current.Status.Phase == kubevirtcorev1.MigrationSucceeded
+	if candidateSucceeded != currentSucceeded {
+		return candidateSucceeded
+	}
+	return candidate.CreationTimestamp.Time.After(current.CreationTimestamp.Time)
+}
+
+func shouldRecordMigration(candidate, observed *kubevirtcorev1.VirtualMachineInstanceMigration) bool {
+	if observed == nil {
+		return true
+	}
+	// Keep updating the same object as its phase/state changes, while retaining
+	// a previously observed successful migration if that object is garbage-collected.
+	if candidate.Name == observed.Name {
+		return true
+	}
+	return migrationIsPreferred(candidate, observed)
 }
 
 func nodeReady(node *corev1.Node) bool {
