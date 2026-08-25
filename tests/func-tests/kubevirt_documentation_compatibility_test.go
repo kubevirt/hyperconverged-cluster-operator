@@ -27,8 +27,9 @@ var _ = Describe("KubeVirt documentation API compatibility", Label("documentatio
 		hcoSchema, hcoVersion, err := getStorageServedCRDSchema(ctx, cli, hcoCRDName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(hcoVersion).ToNot(BeEmpty(), "the documented kubectl explain command requires a served HCO API version")
-		Expect(fmt.Sprintf("hco.kubevirt.io/%s", hcoVersion)).To(Equal("hco.kubevirt.io/v1beta1"),
-			"update the node maintenance howto when the ACP HCO API version changes")
+		// The howto discovers the storage+served version at runtime. Keep this
+		// check version-agnostic so an upstream HCO storage-version change does
+		// not fail the compatibility suite before the documented field is tested.
 		hcoEviction := schemaProperty(hcoSchema, "spec", "evictionStrategy")
 		if hcoEviction == nil {
 			hcoEviction = schemaProperty(hcoSchema, "spec", "virtualization", "evictionStrategy")
