@@ -311,11 +311,6 @@ func main() {
 	err = collectors.SetupCollectors(mgr.GetClient(), operatorNamespace)
 	cmdHelper.ExitOnError(err, "failed to setup metrics controllers: %v")
 
-	if ci.IsOpenshift() {
-		err = checkWaspAgentImageEnvExists()
-		cmdHelper.ExitOnError(err, "failed to retrieve wasp agent image env var")
-	}
-
 	err = checkAIEWebhookImageEnvExists()
 	cmdHelper.ExitOnError(err, "failed to retrieve AIE webhook image env var")
 
@@ -523,14 +518,6 @@ func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
 	}
 
 	return err
-}
-
-func checkWaspAgentImageEnvExists() error {
-	if _, exists := os.LookupEnv(hcoutil.WaspAgentImageEnvV); !exists {
-		return fmt.Errorf("%s env var not found", hcoutil.WaspAgentImageEnvV)
-	}
-
-	return nil
 }
 
 func checkAIEWebhookImageEnvExists() error {

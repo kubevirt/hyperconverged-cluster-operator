@@ -100,7 +100,6 @@ function get_current_versions {
     ["LIVENESS_PROBE"]=""
     ["CSI_SNAPSHOT"]=""
     ["CSI_SIG_STORAGE"]=""
-    ["WASP_AGENT"]=""
     ["OBSERVABILITY_CONTROLLER"]=""
   )
 
@@ -132,7 +131,6 @@ function get_updated_versions {
     ["LIVENESS_PROBE"]="kubernetes-csi/livenessprobe"
     ["CSI_SNAPSHOT"]="kubernetes-csi/external-snapshotter"
     ["CSI_SIG_STORAGE"]="kubernetes-csi/external-provisioner"
-    ["WASP_AGENT"]="openshift-virtualization/wasp-agent"
     ["OBSERVABILITY_CONTROLLER"]="kubevirt/kubevirt-observability-controller"
   )
 

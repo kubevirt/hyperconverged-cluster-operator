@@ -37,7 +37,6 @@ type DeploymentOperatorParams struct {
 	KVUIPluginImage               string
 	KVUIProxyImage                string
 	NetworkResourcesInjectorImage string
-	WaspAgentImage                string
 	AIEWebhookImage               string
 	ObservabilityControllerImage  string
 	ImagePullPolicy               string
@@ -228,10 +227,6 @@ func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.NetworkResourcesInjectorImageEnvV,
 			Value: params.NetworkResourcesInjectorImage,
-		},
-		{
-			Name:  util.WaspAgentImageEnvV,
-			Value: params.WaspAgentImage,
 		},
 		{
 			Name:  util.AIEWebhookImageEnvV,
