@@ -49,7 +49,9 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 		tests.FailIfSingleNodeCluster(len(workers) < 2)
 
 		availableWorkers := 0
+		workerNodeNames := make(map[string]struct{}, len(workers))
 		for i := range workers {
+			workerNodeNames[workers[i].Name] = struct{}{}
 			if !workers[i].Spec.Unschedulable && nodeReady(&workers[i]) {
 				availableWorkers++
 			}
@@ -104,6 +106,7 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 		sourceNode := vmi.Status.NodeName
 		vmiUID := vmi.UID
 		Expect(sourceNode).ToNot(BeEmpty())
+		Expect(workerNodeNames).To(HaveKey(sourceNode), "VMI must start on a worker node")
 		Expect(vmiUID).ToNot(BeEmpty())
 		sourceNodeObject, err := cliSet.CoreV1().Nodes().Get(ctx, sourceNode, metav1.GetOptions{})
 		Expect(err).ToNot(HaveOccurred())
@@ -191,6 +194,7 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 		Expect(observedMigrationState.TargetNode).ToNot(BeEmpty(),
 			fmt.Sprintf("completed VMIM %s migrationState.targetNode is empty", observedMigration.Name))
 		Expect(observedMigrationState.TargetNode).ToNot(Equal(sourceNode))
+		Expect(workerNodeNames).To(HaveKey(observedMigrationState.TargetNode), "VMI must migrate to a worker node")
 
 		By("verifying that exactly one virt-launcher remains active")
 		Eventually(func(g Gomega, pollCtx context.Context) int {
@@ -222,6 +226,7 @@ func nodeMaintenanceVM(name string) *kubevirtcorev1.VirtualMachine {
 				},
 				Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
 					EvictionStrategy: &strategy,
+					NodeSelector:     map[string]string{libnode.WorkerNodeLabel: ""},
 					Domain: kubevirtcorev1.DomainSpec{
 						Resources: kubevirtcorev1.ResourceRequirements{
 							Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("128Mi")},
