@@ -497,9 +497,9 @@ spec:
         - name: VIRT_SYNCHRONIZATIONCONTROLLER_IMAGE
           value: quay.io/kubevirt/virt-synchronization-controller@sha256:631ade5aced9ffb248f2725759c7d37376d596875b05f6a331a12342a281a1ce
         - name: VIRT_TEMPLATE_APISERVER_IMAGE
-          value: quay.io/kubevirt/virt-template-apiserver@sha256:22e30fae8ec41238764fa07733a4107812b9997207002a0a8c4da234d99a3c5f
+          value: quay.io/kubevirt/virt-template-apiserver@sha256:0e685ae6aa8b4b1055c128224978c2fff3c4149e22579828832deba956da7236
         - name: VIRT_TEMPLATE_CONTROLLER_IMAGE
-          value: quay.io/kubevirt/virt-template-controller@sha256:e9fee9511f0198dbc5906417ea71785e5db3390ab4f76cc7f2bb7ca04e80d96c
+          value: quay.io/kubevirt/virt-template-controller@sha256:e154cb8fe93551f0120c3575669be4a1ffd8f701219c78814bbec5246f063ce7
         - name: GS_IMAGE
           value: quay.io/kubevirt/libguestfs-tools@sha256:c5347bf0d9a88e9ef48d52a7f9fb7a09bab523226ef451a963016ec15ce82879
         - name: PR_HELPER_IMAGE
