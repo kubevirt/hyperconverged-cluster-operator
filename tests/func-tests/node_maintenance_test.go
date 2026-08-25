@@ -87,7 +87,7 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 			}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(cleanupCtx).Should(Succeed())
 		})
 
-		vmi := &kubevirtcorev1.VirtualMachineInstance{}
+		vmi := new(kubevirtcorev1.VirtualMachineInstance)
 		By("waiting for the VM's VMI to become Running and live-migratable")
 		Eventually(func(g Gomega, pollCtx context.Context) {
 			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, vmi)).To(Succeed())
@@ -96,7 +96,7 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 			g.Expect(vmiReady(vmi)).To(BeTrue(), vmiFailureMessage(vmi))
 			g.Expect(vmi.IsMigratable()).To(BeTrue(), vmiFailureMessage(vmi))
 		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(Succeed())
-		vmStatus := &kubevirtcorev1.VirtualMachine{}
+		vmStatus := new(kubevirtcorev1.VirtualMachine)
 		Eventually(func(g Gomega, pollCtx context.Context) {
 			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, vmStatus)).To(Succeed())
 			g.Expect(vmStatus.Status.Ready).To(BeTrue())
@@ -114,10 +114,10 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 		sourceWasUnschedulable = sourceNodeObject.Spec.Unschedulable
 		Expect(sourceWasUnschedulable).To(BeFalse(), "VMI started on an already cordoned node")
 
-		launcherPod := &corev1.Pod{}
+		launcherPod := new(corev1.Pod)
 		By("finding the virt-launcher pod on the source node")
 		Eventually(func(g Gomega, pollCtx context.Context) {
-			pods := &corev1.PodList{}
+			pods := new(corev1.PodList)
 			g.Expect(cli.List(pollCtx, pods, client.InNamespace(tests.TestNamespace))).To(Succeed())
 			for i := range pods.Items {
 				if pods.Items[i].Spec.NodeName == sourceNode && pods.Items[i].Status.Phase == corev1.PodRunning && isVirtLauncherForVMI(&pods.Items[i], vm.Name, vmiUID) {
@@ -152,7 +152,7 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 		Eventually(func(g Gomega, pollCtx context.Context) bool {
 			// Capture the VMIM before checking the VMI node: completed migrations may be
 			// garbage-collected shortly after the VMI is observed on its target node.
-			migrations := &kubevirtcorev1.VirtualMachineInstanceMigrationList{}
+			migrations := new(kubevirtcorev1.VirtualMachineInstanceMigrationList)
 			g.Expect(cli.List(pollCtx, migrations, client.InNamespace(tests.TestNamespace))).To(Succeed())
 			for i := range migrations.Items {
 				if migrations.Items[i].Spec.VMIName == vm.Name {
@@ -163,7 +163,7 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 				observedMigration = candidate.DeepCopy()
 			}
 
-			current := &kubevirtcorev1.VirtualMachineInstance{}
+			current := new(kubevirtcorev1.VirtualMachineInstance)
 			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, current)).To(Succeed())
 			g.Expect(current.UID).To(Equal(vmiUID), vmiFailureMessage(current))
 			g.Expect(current.Status.Phase).To(Equal(kubevirtcorev1.Running), vmiFailureMessage(current))
@@ -195,10 +195,15 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 			fmt.Sprintf("completed VMIM %s migrationState.targetNode is empty", observedMigration.Name))
 		Expect(observedMigrationState.TargetNode).ToNot(Equal(sourceNode))
 		Expect(workerNodeNames).To(HaveKey(observedMigrationState.TargetNode), "VMI must migrate to a worker node")
+		finalVMI := new(kubevirtcorev1.VirtualMachineInstance)
+		Eventually(func(g Gomega, pollCtx context.Context) {
+			g.Expect(cli.Get(pollCtx, client.ObjectKey{Namespace: tests.TestNamespace, Name: vm.Name}, finalVMI)).To(Succeed())
+			g.Expect(finalVMI.Status.NodeName).To(Equal(observedMigrationState.TargetNode), vmiFailureMessage(finalVMI))
+		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(Succeed())
 
 		By("verifying that exactly one virt-launcher remains active")
 		Eventually(func(g Gomega, pollCtx context.Context) int {
-			pods := &corev1.PodList{}
+			pods := new(corev1.PodList)
 			g.Expect(cli.List(pollCtx, pods, client.InNamespace(tests.TestNamespace))).To(Succeed())
 			return activeVirtLauncherCount(pods, vm.Name, vmiUID)
 		}).WithTimeout(nodeMaintenanceTimeout).WithPolling(nodeMaintenancePolling).WithContext(ctx).Should(Equal(1))
@@ -211,21 +216,23 @@ var _ = Describe("KubeVirt node maintenance", Serial, Label(tests.HighlyAvailabl
 })
 
 func nodeMaintenanceVM(name string) *kubevirtcorev1.VirtualMachine {
-	strategy := kubevirtcorev1.EvictionStrategyLiveMigrate
-	runStrategy := kubevirtcorev1.RunStrategyAlways
+	strategy := new(kubevirtcorev1.EvictionStrategy)
+	*strategy = kubevirtcorev1.EvictionStrategyLiveMigrate
+	runStrategy := new(kubevirtcorev1.VirtualMachineRunStrategy)
+	*runStrategy = kubevirtcorev1.RunStrategyAlways
 	return &kubevirtcorev1.VirtualMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: tests.TestNamespace,
 		},
 		Spec: kubevirtcorev1.VirtualMachineSpec{
-			RunStrategy: &runStrategy,
+			RunStrategy: runStrategy,
 			Template: &kubevirtcorev1.VirtualMachineInstanceTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{virtLauncherDomainLabel: name},
 				},
 				Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
-					EvictionStrategy: &strategy,
+					EvictionStrategy: strategy,
 					NodeSelector:     map[string]string{libnode.WorkerNodeLabel: ""},
 					Domain: kubevirtcorev1.DomainSpec{
 						Resources: kubevirtcorev1.ResourceRequirements{
@@ -233,7 +240,7 @@ func nodeMaintenanceVM(name string) *kubevirtcorev1.VirtualMachine {
 						},
 						Devices: kubevirtcorev1.Devices{Interfaces: []kubevirtcorev1.Interface{{
 							Name:                   kubevirtcorev1.DefaultPodNetwork().Name,
-							InterfaceBindingMethod: kubevirtcorev1.InterfaceBindingMethod{Masquerade: &kubevirtcorev1.InterfaceMasquerade{}},
+							InterfaceBindingMethod: kubevirtcorev1.InterfaceBindingMethod{Masquerade: new(kubevirtcorev1.InterfaceMasquerade)},
 						}}},
 					},
 					Networks: []kubevirtcorev1.Network{*kubevirtcorev1.DefaultPodNetwork()},

@@ -44,8 +44,10 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 		if len(configMaps.Items) == 0 {
 			Skip("optional Descheduler plugin is not installed; no labeled policy ConfigMap was found")
 		}
+		policyConfigMaps := make(map[string]struct{}, len(configMaps.Items))
 
 		for _, configMap := range configMaps.Items {
+			policyConfigMaps[configMap.Name] = struct{}{}
 			rawPolicy, ok := configMap.Data["policy.yaml"]
 			Expect(ok).To(BeTrue(), "Descheduler ConfigMap %s/%s has no data.policy.yaml", configMap.Namespace, configMap.Name)
 			Expect(strings.TrimSpace(rawPolicy)).ToNot(BeEmpty(), "Descheduler ConfigMap %s/%s has an empty data.policy.yaml", configMap.Namespace, configMap.Name)
@@ -67,11 +69,11 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 			"a labeled Descheduler ConfigMap exists but no CronJob, Deployment, or Pod consumes it")
 		policyWorkloads := 0
 		for _, workload := range workloads {
-			if !workloadHasPolicyConfigFile(workload) {
+			if !workloadHasPolicyConfigFile(workload, policyConfigMaps) {
 				continue
 			}
 			policyWorkloads++
-			Expect(workloadPolicyContainersHaveBackgroundGate(workload)).To(BeTrue(),
+			Expect(workloadPolicyContainersHaveBackgroundGate(workload, policyConfigMaps)).To(BeTrue(),
 				"Descheduler workload %s must contain --feature-gates=EvictionsInBackground=true in every policy-consuming container", workload.identity)
 		}
 		Expect(policyWorkloads).To(BeNumerically(">", 0),
@@ -80,7 +82,7 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 
 	It("should expose documented fields when the optional KubeDescheduler CRD is installed", func(ctx context.Context) {
 		cli := tests.GetControllerRuntimeClient()
-		crd := &apiextensionsv1.CustomResourceDefinition{}
+		crd := new(apiextensionsv1.CustomResourceDefinition)
 		if err := cli.Get(ctx, client.ObjectKey{Name: deschedulerCRDName}, crd); apierrors.IsNotFound(err) {
 			Skip(fmt.Sprintf("optional OpenShift Descheduler operator is not installed; CRD %q was not found", deschedulerCRDName))
 		} else {
@@ -105,6 +107,8 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 type deschedulerWorkload struct {
 	identity   string
 	containers [][]string
+	volumes    []corev1.Volume
+	mounts     [][]corev1.VolumeMount
 }
 
 func deschedulerWorkloads(ctx context.Context, k8sClient kubernetes.Interface) ([]deschedulerWorkload, bool, error) {
@@ -118,6 +122,8 @@ func deschedulerWorkloads(ctx context.Context, k8sClient kubernetes.Interface) (
 		workloads = append(workloads, deschedulerWorkload{
 			identity:   fmt.Sprintf("CronJob %s/%s", cronJob.Namespace, cronJob.Name),
 			containers: containerArgsByContainer(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers),
+			volumes:    cronJob.Spec.JobTemplate.Spec.Template.Spec.Volumes,
+			mounts:     volumeMountsByContainer(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers),
 		})
 	}
 
@@ -129,6 +135,8 @@ func deschedulerWorkloads(ctx context.Context, k8sClient kubernetes.Interface) (
 		workloads = append(workloads, deschedulerWorkload{
 			identity:   fmt.Sprintf("Deployment %s/%s", deployment.Namespace, deployment.Name),
 			containers: containerArgsByContainer(deployment.Spec.Template.Spec.Containers),
+			volumes:    deployment.Spec.Template.Spec.Volumes,
+			mounts:     volumeMountsByContainer(deployment.Spec.Template.Spec.Containers),
 		})
 	}
 
@@ -143,6 +151,8 @@ func deschedulerWorkloads(ctx context.Context, k8sClient kubernetes.Interface) (
 		workloads = append(workloads, deschedulerWorkload{
 			identity:   fmt.Sprintf("Pod %s/%s", pod.Namespace, pod.Name),
 			containers: containerArgsByContainer(pod.Spec.Containers),
+			volumes:    pod.Spec.Volumes,
+			mounts:     volumeMountsByContainer(pod.Spec.Containers),
 		})
 	}
 
@@ -160,27 +170,56 @@ func containerArgsByContainer(containers []corev1.Container) [][]string {
 	return result
 }
 
-func workloadHasPolicyConfigFile(workload deschedulerWorkload) bool {
-	for _, args := range workload.containers {
-		if hasPolicyConfigFile(args) {
+func volumeMountsByContainer(containers []corev1.Container) [][]corev1.VolumeMount {
+	result := make([][]corev1.VolumeMount, 0, len(containers))
+	for _, container := range containers {
+		result = append(result, container.VolumeMounts)
+	}
+	return result
+}
+
+func workloadHasPolicyConfigFile(workload deschedulerWorkload, policyConfigMaps map[string]struct{}) bool {
+	for index, args := range workload.containers {
+		if hasPolicyConfigFile(args) && policyMountIsConfigMap(workload, index, policyConfigMaps) {
 			return true
 		}
 	}
 	return false
 }
 
-func workloadPolicyContainersHaveBackgroundGate(workload deschedulerWorkload) bool {
+func workloadPolicyContainersHaveBackgroundGate(workload deschedulerWorkload, policyConfigMaps map[string]struct{}) bool {
 	policyContainerFound := false
-	for _, args := range workload.containers {
+	for index, args := range workload.containers {
 		if !hasPolicyConfigFile(args) {
 			continue
 		}
 		policyContainerFound = true
-		if !hasBackgroundEvictionGate(args) {
+		if !policyMountIsConfigMap(workload, index, policyConfigMaps) || !hasBackgroundEvictionGate(args) {
 			return false
 		}
 	}
 	return policyContainerFound
+}
+
+func policyMountIsConfigMap(workload deschedulerWorkload, containerIndex int, policyConfigMaps map[string]struct{}) bool {
+	if containerIndex >= len(workload.mounts) {
+		return false
+	}
+	for _, mount := range workload.mounts[containerIndex] {
+		if mount.MountPath != "/policy-dir" {
+			continue
+		}
+		for _, volume := range workload.volumes {
+			if volume.Name != mount.Name || volume.ConfigMap == nil {
+				continue
+			}
+			_, found := policyConfigMaps[volume.ConfigMap.LocalObjectReference.Name]
+			if found {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func hasBackgroundEvictionGate(args []string) bool {

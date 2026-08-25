@@ -24,7 +24,8 @@ var _ = Describe("KubeVirt documentation API compatibility", Label("documentatio
 	It("should expose the eviction strategy fields used by the node maintenance howto", func(ctx context.Context) {
 		cli := tests.GetControllerRuntimeClient()
 
-		hcoSchema := getStorageServedCRDSchema(ctx, cli, hcoCRDName)
+		hcoSchema, err := getStorageServedCRDSchema(ctx, cli, hcoCRDName)
+		Expect(err).ToNot(HaveOccurred())
 		hcoEviction := schemaProperty(hcoSchema, "spec", "evictionStrategy")
 		if hcoEviction == nil {
 			hcoEviction = schemaProperty(hcoSchema, "spec", "virtualization", "evictionStrategy")
@@ -34,7 +35,8 @@ var _ = Describe("KubeVirt documentation API compatibility", Label("documentatio
 		Expect(documentationJSONEnum(hcoEviction.Enum)).To(ContainElement("LiveMigrate"),
 			"the documented HCO evictionStrategy path no longer accepts LiveMigrate")
 
-		vmSchema := getStorageServedCRDSchema(ctx, cli, vmCRDName)
+		vmSchema, err := getStorageServedCRDSchema(ctx, cli, vmCRDName)
+		Expect(err).ToNot(HaveOccurred())
 		vmEviction := schemaProperty(vmSchema, "spec", "template", "spec", "evictionStrategy")
 		Expect(vmEviction).ToNot(BeNil(),
 			"the node maintenance howto uses vm.spec.template.spec.evictionStrategy")
@@ -47,17 +49,18 @@ var _ = Describe("KubeVirt documentation API compatibility", Label("documentatio
 	})
 })
 
-func getStorageServedCRDSchema(ctx context.Context, cli client.Client, name string) *apiextensionsv1.JSONSchemaProps {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	ExpectWithOffset(1, cli.Get(ctx, client.ObjectKey{Name: name}, crd)).To(Succeed(),
-		fmt.Sprintf("CRD %q must be installed for KubeVirt documentation compatibility checks", name))
+func getStorageServedCRDSchema(ctx context.Context, cli client.Client, name string) (*apiextensionsv1.JSONSchemaProps, error) {
+	GinkgoHelper()
+	crd := new(apiextensionsv1.CustomResourceDefinition)
+	if err := cli.Get(ctx, client.ObjectKey{Name: name}, crd); err != nil {
+		return nil, fmt.Errorf("CRD %q must be installed for KubeVirt documentation compatibility checks: %w", name, err)
+	}
 	for _, version := range crd.Spec.Versions {
 		if version.Storage && version.Served && version.Schema != nil && version.Schema.OpenAPIV3Schema != nil {
-			return version.Schema.OpenAPIV3Schema
+			return version.Schema.OpenAPIV3Schema, nil
 		}
 	}
-	Fail(fmt.Sprintf("CRD %q has no storage=true, served=true OpenAPI schema", name))
-	return nil
+	return nil, fmt.Errorf("CRD %q has no storage=true, served=true OpenAPI schema", name)
 }
 
 func schemaProperty(schema *apiextensionsv1.JSONSchemaProps, path ...string) *apiextensionsv1.JSONSchemaProps {
