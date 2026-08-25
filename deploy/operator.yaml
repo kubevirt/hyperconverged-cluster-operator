@@ -82,8 +82,6 @@ spec:
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: NETWORK_RESOURCES_INJECTOR_IMAGE
           value: ghcr.io/k8snetworkplumbingwg/network-resources-injector@sha256:737225a33c418899667707a6e79668bb1a64c6b993bf7486074c5b8085d4ab7d
-        - name: WASP_AGENT_IMAGE
-          value: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
         - name: AIE_WEBHOOK_IMAGE
           value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
         - name: OBSERVABILITY_CONTROLLER_IMAGE
