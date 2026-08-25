@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
-    createdAt: "2026-08-24 05:17:17"
+    createdAt: "2026-08-25 05:13:32"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -5490,7 +5490,7 @@ spec:
                 - name: OPERATOR_VERSION
                   value: v0.2.0
                 - name: CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/kubevirt-migration-controller@sha256:d235178862451a14826894d9ddf8af96898fc098ae6e7af56987f694cfd57c5b
+                  value: quay.io/kubevirt/kubevirt-migration-controller@sha256:f941804b4cbe41b460102f7137f31c8bb2909499cb4bfc399064401ed3879c1b
                 - name: VERBOSITY
                   value: "1"
                 - name: PULL_POLICY
@@ -6701,7 +6701,7 @@ spec:
     name: kubevirt-apiserver-proxy
   - image: quay.io/openshift-virtualization/kubevirt-metrics-exporter@sha256:a6337b9bbaa0b66835b2b09afffa39766b1fa283d1c29c02087873e9b8097121
     name: kubevirt-metrics-exporter
-  - image: quay.io/kubevirt/kubevirt-migration-controller@sha256:d235178862451a14826894d9ddf8af96898fc098ae6e7af56987f694cfd57c5b
+  - image: quay.io/kubevirt/kubevirt-migration-controller@sha256:f941804b4cbe41b460102f7137f31c8bb2909499cb4bfc399064401ed3879c1b
     name: kubevirt-migration-controller
   - image: quay.io/kubevirt/kubevirt-migration-operator@sha256:54bd78472e336f176db777df1c02fbebeb34049bad067949666c76ea15f84141
     name: kubevirt-migration-operator
