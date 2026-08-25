@@ -47,7 +47,7 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 		policyConfigMaps := make(map[string]struct{}, len(configMaps.Items))
 
 		for _, configMap := range configMaps.Items {
-			policyConfigMaps[configMap.Name] = struct{}{}
+			policyConfigMaps[configMap.Namespace+"/"+configMap.Name] = struct{}{}
 			rawPolicy, ok := configMap.Data["policy.yaml"]
 			Expect(ok).To(BeTrue(), "Descheduler ConfigMap %s/%s has no data.policy.yaml", configMap.Namespace, configMap.Name)
 			Expect(strings.TrimSpace(rawPolicy)).ToNot(BeEmpty(), "Descheduler ConfigMap %s/%s has an empty data.policy.yaml", configMap.Namespace, configMap.Name)
@@ -106,6 +106,7 @@ var _ = Describe("KubeVirt Descheduler documentation compatibility", Label("desc
 
 type deschedulerWorkload struct {
 	identity   string
+	namespace  string
 	containers [][]string
 	volumes    []corev1.Volume
 	mounts     [][]corev1.VolumeMount
@@ -121,6 +122,7 @@ func deschedulerWorkloads(ctx context.Context, k8sClient kubernetes.Interface) (
 	for _, cronJob := range cronJobs.Items {
 		workloads = append(workloads, deschedulerWorkload{
 			identity:   fmt.Sprintf("CronJob %s/%s", cronJob.Namespace, cronJob.Name),
+			namespace:  cronJob.Namespace,
 			containers: containerArgsByContainer(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers),
 			volumes:    cronJob.Spec.JobTemplate.Spec.Template.Spec.Volumes,
 			mounts:     volumeMountsByContainer(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers),
@@ -134,6 +136,7 @@ func deschedulerWorkloads(ctx context.Context, k8sClient kubernetes.Interface) (
 	for _, deployment := range deployments.Items {
 		workloads = append(workloads, deschedulerWorkload{
 			identity:   fmt.Sprintf("Deployment %s/%s", deployment.Namespace, deployment.Name),
+			namespace:  deployment.Namespace,
 			containers: containerArgsByContainer(deployment.Spec.Template.Spec.Containers),
 			volumes:    deployment.Spec.Template.Spec.Volumes,
 			mounts:     volumeMountsByContainer(deployment.Spec.Template.Spec.Containers),
@@ -150,6 +153,7 @@ func deschedulerWorkloads(ctx context.Context, k8sClient kubernetes.Interface) (
 		}
 		workloads = append(workloads, deschedulerWorkload{
 			identity:   fmt.Sprintf("Pod %s/%s", pod.Namespace, pod.Name),
+			namespace:  pod.Namespace,
 			containers: containerArgsByContainer(pod.Spec.Containers),
 			volumes:    pod.Spec.Volumes,
 			mounts:     volumeMountsByContainer(pod.Spec.Containers),
@@ -213,7 +217,7 @@ func policyMountIsConfigMap(workload deschedulerWorkload, containerIndex int, po
 			if volume.Name != mount.Name || volume.ConfigMap == nil {
 				continue
 			}
-			_, found := policyConfigMaps[volume.ConfigMap.LocalObjectReference.Name]
+			_, found := policyConfigMaps[workload.namespace+"/"+volume.ConfigMap.LocalObjectReference.Name]
 			if found {
 				return true
 			}
