@@ -373,7 +373,6 @@ ${TOOLS}/manifest-templator \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
-  --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}"
 
@@ -439,7 +438,6 @@ ${TOOLS}/csv-merger \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
-  --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
   ${NETWORK_POLICIES_PARAMS} \
