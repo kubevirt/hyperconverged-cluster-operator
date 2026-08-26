@@ -59,9 +59,9 @@ var (
 	kvVirtIOWinImage              = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
 	kvVirtIOWinDataFile           = flag.String("kv-virtiowin-data-file", "", "Path to the data file inside the VirtIO Win image")
 	kvVirtIOWinMountPath          = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
-	waspAgentImage                = flag.String("wasp-agent-image-name", "", "wasp-agent image")
+	_                             = flag.String("wasp-agent-image-name", "", "ignored: not in use")
 	aieWebhookImage               = flag.String("aie-webhook-image-name", "", "AIE webhook image")
-	_                             = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
+	_                             = flag.String("iommufd-device-plugin-image-name", "", "ignored: not in use")
 	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
 	machinetype                   = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
@@ -448,7 +448,6 @@ func getOperatorParameters() *manifests.DeploymentOperatorParams {
 		VirtIOWinContainer:            *kvVirtIOWinImage,
 		VirtIOWinDataFile:             *kvVirtIOWinDataFile,
 		VirtIOWinMountPath:            *kvVirtIOWinMountPath,
-		WaspAgentImage:                *waspAgentImage,
 		AIEWebhookImage:               *aieWebhookImage,
 		ObservabilityControllerImage:  *observabilityControllerImage,
 		Smbios:                        *smbios,

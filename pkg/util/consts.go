@@ -34,7 +34,6 @@ const (
 	KVUIProxyImageEnvV                      = "KV_CONSOLE_PROXY_IMAGE"
 	NetworkResourcesInjectorImageEnvV       = "NETWORK_RESOURCES_INJECTOR_IMAGE"
 	VirtioWinImageEnvV                      = "VIRTIOWIN_CONTAINER"
-	WaspAgentImageEnvV                      = "WASP_AGENT_IMAGE"
 	AIEWebhookImageEnvV                     = "AIE_WEBHOOK_IMAGE"
 	ObservabilityControllerImageEnvV        = "OBSERVABILITY_CONTROLLER_IMAGE"
 	DeployNetworkPoliciesEnvV               = "DEPLOY_NETWORK_POLICIES"
