@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
-    createdAt: "2026-08-25 05:13:53"
+    createdAt: "2026-08-26 05:13:27"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4574,7 +4574,7 @@ spec:
                 - name: AIE_WEBHOOK_IMAGE
                   value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
                 - name: OBSERVABILITY_CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/virt-observability-controller@sha256:170a30602ba326b11b298f511553fbf479a5447632f051ed915f6af1b0e612a0
+                  value: quay.io/kubevirt/virt-observability-controller@sha256:80881e4146de0478ccdeac5f82257f141dd7b684199f7b33b1f717e6cafa090d
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -6745,7 +6745,7 @@ spec:
     name: virt-handler
   - image: quay.io/kubevirt/virt-launcher@sha256:f23102ca00bf12f7962021adfdfdad63c873b01a03001a6d20d5813950254b9c
     name: virt-launcher
-  - image: quay.io/kubevirt/virt-observability-controller@sha256:170a30602ba326b11b298f511553fbf479a5447632f051ed915f6af1b0e612a0
+  - image: quay.io/kubevirt/virt-observability-controller@sha256:80881e4146de0478ccdeac5f82257f141dd7b684199f7b33b1f717e6cafa090d
     name: virt-observability-controller
   - image: quay.io/kubevirt/virt-operator@sha256:d08b5b5ad1c0d694fad13279e44b44b6fad961aa7508acd53b87ce6ef468cbae
     name: virt-operator
