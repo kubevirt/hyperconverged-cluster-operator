@@ -14,6 +14,8 @@ const (
 	tlsCertificateName = "virt-network-resources-injector-cert"
 	tlsMountPath       = "/etc/tls"
 	webhookConfigName  = "virt-network-resources-injector-config"
+	serverPort         = 6443
+	healthCheckPort    = 8444
 )
 
 func shouldDeploy(hc *hcov1.HyperConverged) bool {
