@@ -1,7 +1,9 @@
 package featuregates
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -72,6 +74,38 @@ func (fg *FeatureGate) UnmarshalJSON(bytes []byte) error {
 // +kubebuilder:validation:MaxItems=64
 // +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, x.name.lowerAscii() == y.name.lowerAscii()))",message="feature gate names must be unique (case-insensitive)"
 type HyperConvergedFeatureGates []FeatureGate
+
+// UnmarshalJSON decodes a JSON array into the feature gate list.
+//
+// Some objects persisted before v1.19 have spec.featureGates stored as an empty
+// JSON object ("{}") instead of an empty array, a legacy artifact of an older,
+// struct-based representation. That shape can't be produced by any current
+// code path, but it can still be read back from etcd, and a strict array
+// decode of it fails every caller that unmarshals the object - including the
+// CRD conversion webhook, which has no chance to recover since it decodes the
+// raw bytes before ConvertFrom/ConvertTo ever run (see
+// pkg/webhooks/mutator/hyperConvergedMutator.go's recoverBadFeatureGates for
+// the equivalent admission-webhook-only recovery). Treat an empty object as
+// an empty list so a stale record like that can still be read.
+func (fgs *HyperConvergedFeatureGates) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) > 0 && trimmed[0] == '{' {
+		var obj map[string]json.RawMessage
+		if err := json.Unmarshal(trimmed, &obj); err != nil {
+			return err
+		}
+
+		if len(obj) != 0 {
+			return fmt.Errorf("featureGates: got an object with %d field(s), expected a JSON array", len(obj))
+		}
+
+		*fgs = nil
+		return nil
+	}
+
+	type plain HyperConvergedFeatureGates
+	return json.Unmarshal(data, (*plain)(fgs))
+}
 
 // Enable enables a feature gate by its name
 func (fgs *HyperConvergedFeatureGates) Enable(name string) {

@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"testing"
@@ -519,6 +520,23 @@ var _ = Describe("api/v1beta1", func() {
 				// beta defaults stay true
 				Expect(result.DecentralizedLiveMigration).To(HaveValue(BeTrue()))
 				Expect(result.DeclarativeHotplugVolumes).To(HaveValue(BeTrue()))
+			})
+
+			It("should decode a stored hub object whose spec.featureGates is a legacy empty object, not an array (issue #4549)", func() {
+				// The CRD conversion webhook decodes the raw stored (hub, v1) bytes into
+				// hcov1.HyperConverged *before* ConvertFrom/ConvertTo ever run - see
+				// vendor/sigs.k8s.io/controller-runtime/pkg/webhook/conversion/conversion.go's
+				// handleConvertRequest. A pre-v1.19 record with spec.featureGates stored as
+				// "{}" used to fail that decode outright, before our conversion code had any
+				// chance to run.
+				rawHub := []byte(`{"apiVersion":"hco.kubevirt.io/v1","kind":"HyperConverged","metadata":{"name":"kubevirt-hyperconverged"},"spec":{"featureGates":{}}}`)
+
+				hub := &hcov1.HyperConverged{}
+				Expect(json.Unmarshal(rawHub, hub)).To(Succeed())
+				Expect(hub.Spec.FeatureGates).To(BeEmpty())
+
+				v1beta1HC := &HyperConverged{}
+				Expect(v1beta1HC.ConvertFrom(hub)).To(Succeed())
 			})
 
 			It("v1-only feature gates should survive roundtrip", func() {

@@ -157,6 +157,32 @@ var _ = Describe("FeatureGate", func() {
 			))
 		})
 
+		It("should unmarshal a legacy empty-object shape as an empty list (issue #4549)", func() {
+			fgs := featuregates.HyperConvergedFeatureGates{
+				{Name: "shouldBeCleared"},
+			}
+
+			Expect(json.Unmarshal([]byte(`{}`), &fgs)).To(Succeed())
+			Expect(fgs).To(BeEmpty())
+		})
+
+		It("should reject a non-empty object shape", func() {
+			fgs := featuregates.HyperConvergedFeatureGates{}
+
+			err := json.Unmarshal([]byte(`{"incrementalBackup":true}`), &fgs)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should unmarshal a legacy empty-object shape nested in a struct field (conversion webhook repro)", func() {
+			type specStub struct {
+				FeatureGates featuregates.HyperConvergedFeatureGates `json:"featureGates"`
+			}
+
+			spec := specStub{}
+			Expect(json.Unmarshal([]byte(`{"featureGates":{}}`), &spec)).To(Succeed())
+			Expect(spec.FeatureGates).To(BeEmpty())
+		})
+
 		It("should unmarshal a yaml array of FGs", func() {
 			fgBytes := []byte(`- name: noEnabledField
 - name: enabledFG
