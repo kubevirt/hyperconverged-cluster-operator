@@ -28,6 +28,8 @@ else
 	TEMP_ARCH := $(UNAME_ARCH)
 endif
 
+INSTALLATION_NAMESPACE ?= kubevirt-hyperconverged
+
 ARCH ?= $(TEMP_ARCH)
 
 # Prow doesn't have docker command
@@ -37,7 +39,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate gogenerate prepare-tools-crd go-fix generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring update-kv-fg-file
+sanity: generate gogenerate generate-crd generate-crd-for-csv go-fix generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring update-kv-fg-file
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -62,7 +64,7 @@ build: build-operator build-csv-merger build-webhook
 build-operator: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 
-build-csv-merger: ## Build binary from source
+build-csv-merger: generate-crd-for-csv ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/csv-merger ./tools/csv-merger
 
 build-manifest-templator: ## Build binary from source
@@ -77,7 +79,7 @@ sort-feature-gates:
 	jq 'sort_by((if .phase == "beta" then 0 elif .phase == "alpha" then 1 else 2 end), .name)' pkg/featuregatedetails/feature-gates.json > pkg/featuregatedetails/feature-gates.temp
 	mv pkg/featuregatedetails/feature-gates.temp pkg/featuregatedetails/feature-gates.json
 
-build-crd-creator: generate
+build-crd-creator: # this should run from a builder image. and so it assumes that everything is pre generated
 	go build -ldflags="${LDFLAGS}" -o _out/crd-creator ./tools/crd-creator
 
 build-manifest-splitter:
@@ -86,7 +88,7 @@ build-manifest-splitter:
 build-webhook: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
-build-manifests: prepare-tools-crd build-csv-merger build-manifest-splitter build-manifest-templator
+build-manifests: generate-crd generate-crd-for-csv build-csv-merger build-manifest-splitter build-manifest-templator
 	DUMP_NETWORK_POLICIES=$(DUMP_NETWORK_POLICIES) ./hack/build-manifests.sh
 
 build-manifests-prev:
@@ -124,10 +126,10 @@ container-build: container-build-operator container-build-webhook container-buil
 
 build-push-multi-arch-images: build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-functest-image build-push-multi-arch-artifacts-server
 
-container-build-operator: gogenerate prepare-tools-crd
+container-build-operator: gogenerate generate-crd-for-csv
 	. "hack/cri-bin.sh" && $$CRI_BIN build --platform=linux/$(ARCH) -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
-build-push-multi-arch-operator-image: gogenerate prepare-tools-crd
+build-push-multi-arch-operator-image: gogenerate generate-crd-for-csv
 	IMAGE_NAME=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) SHA=SHA DOCKER_FILE=build/Dockerfile ./hack/build-push-multi-arch-images.sh
 
 container-build-webhook:
@@ -254,10 +256,12 @@ gogenerate: generate
 generate-crd: generate build-crd-creator
 	./_out/crd-creator --output-file=config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
 	@echo "the CRD file was generated in config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml"
-
-prepare-tools-crd: generate-crd
-	cp config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml ./tools/csv-merger/generated-crd.yaml
 	cp config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml ./tools/manifest-templator/generated-crd.yaml
+	@echo "the CRD file was generated in tools/manifest-templator/generated-crd.yaml"
+
+generate-crd-for-csv: build-crd-creator # this should run from a builder image. and so it assumes that everything is pre generated
+	./_out/crd-creator --output-file=./tools/csv-merger/generated-crd.yaml --webhook-name=hco-webhook --namespace=$(INSTALLATION_NAMESPACE)
+	@echo "the CRD file was generated in tools/csv-merger/generated-crd.yaml"
 
 generate: generate-feature-gates
 	./hack/generate.sh
@@ -280,10 +284,10 @@ help: ## Show this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ''
 
-test-unit: gogenerate prepare-tools-crd
+test-unit: gogenerate generate-crd
 	./hack/unit-test.sh
 
-test-unit-coverage: gogenerate prepare-tools-crd
+test-unit-coverage: gogenerate generate-crd
 	./hack/unit-test-coverage.sh
 
 test-fuzz-api-conversion: generate

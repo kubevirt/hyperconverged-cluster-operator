@@ -4,6 +4,18 @@ kind: CustomResourceDefinition
 metadata:
   name: hyperconvergeds.hco.kubevirt.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: hyperconverged-cluster-webhook-service
+          namespace: kubevirt-hyperconverged
+          path: /convert
+          port: 4343
+      conversionReviewVersions:
+      - v1
+      - v1beta1
   group: hco.kubevirt.io
   names:
     categories:
