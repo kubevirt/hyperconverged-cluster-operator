@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-tools/pkg/loader"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
@@ -22,14 +23,21 @@ import (
 const (
 	objectType = "object"
 	importPath = "github.com/kubevirt/hyperconverged-cluster-operator/api/..."
+
+	defaultNamespace   = "kubevirt-hyperconverged"
+	defaultWebhookName = hcoutil.HCOWebhookName
 )
 
 var (
-	fileName string
+	fileName    string
+	namespace   string
+	webhookName string
 )
 
 func init() {
 	flag.StringVar(&fileName, "output-file", "", "CRD output file name")
+	flag.StringVar(&namespace, "namespace", defaultNamespace, "the installation namespace")
+	flag.StringVar(&webhookName, "webhook-name", defaultWebhookName, "the webhook deployment name, to generate the service name out of it")
 
 	flag.Parse()
 }
@@ -101,11 +109,27 @@ func getOperatorCRD() (*extv1.CustomResourceDefinition, error) {
 			Properties: map[string]extv1.JSONSchemaProps{
 				"name": {
 					Type:    "string",
-					Pattern: hcov1beta1.HyperConvergedName,
+					Pattern: hcov1.HyperConvergedName,
 				},
 			},
 		}
 	}
+
+	c.Spec.Conversion = &extv1.CustomResourceConversion{
+		Strategy: extv1.WebhookConverter,
+		Webhook: &extv1.WebhookConversion{
+			ClientConfig: &extv1.WebhookClientConfig{
+				Service: &extv1.ServiceReference{
+					Namespace: namespace,
+					Name:      webhookName + "-service",
+					Path:      new(hcoutil.HCOConversionWebhookPath),
+					Port:      new(int32(hcoutil.WebhookPort)),
+				},
+			},
+			ConversionReviewVersions: []string{hcov1.APIVersionV1, hcov1beta1.APIVersionBeta},
+		},
+	}
+
 	return &c, nil
 }
 
