@@ -3,6 +3,8 @@ package netresinjector
 import (
 	"fmt"
 	"os"
+	"path"
+	"strconv"
 	"strings"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -14,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -244,7 +247,7 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 						Name:    "webhook-server",
 						Image:   image,
 						Command: []string{"webhook"},
-						Args:    tlsArgs(minTLSVersion, ianaCiphers),
+						Args:    cmdArgs(minTLSVersion, ianaCiphers),
 						Env: []corev1.EnvVar{
 							{
 								Name: "NAMESPACE",
@@ -257,6 +260,32 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 							},
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						LivenessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path:   "/healthz",
+									Port:   intstr.FromInt32(healthCheckPort),
+									Scheme: corev1.URISchemeHTTP,
+								},
+							},
+							InitialDelaySeconds: 15,
+							TimeoutSeconds:      1,
+							PeriodSeconds:       20,
+							SuccessThreshold:    1,
+							FailureThreshold:    3,
+						},
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								TCPSocket: &corev1.TCPSocketAction{
+									Port: intstr.FromInt32(serverPort),
+								},
+							},
+							InitialDelaySeconds: 5,
+							TimeoutSeconds:      1,
+							PeriodSeconds:       10,
+							SuccessThreshold:    1,
+							FailureThreshold:    3,
+						},
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resourceCPURequest,
@@ -302,12 +331,12 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	return dep
 }
 
-func tlsArgs(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ianaCiphers []string) []string {
+func cmdArgs(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ianaCiphers []string) []string {
 	args := []string{
 		"-bind-address=0.0.0.0",
-		"-port=6443",
-		"-tls-private-key-file=" + tlsMountPath + "/tls.key",
-		"-tls-cert-file=" + tlsMountPath + "/tls.crt",
+		"-port=" + strconv.Itoa(serverPort),
+		"-tls-private-key-file=" + path.Join(tlsMountPath, "tls.key"),
+		"-tls-cert-file=" + path.Join(tlsMountPath, "tls.crt"),
 		"-insecure=true",
 		"-logtostderr=true",
 		"-alsologtostderr=true",
