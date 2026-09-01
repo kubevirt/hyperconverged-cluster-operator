@@ -11,6 +11,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -68,7 +69,10 @@ func removeOldImageStream(req *common.HcoRequest, cl client.Client, requiredISLi
 	req.Logger.Info("reading ImageStreams")
 	err := cl.List(req.Ctx, existingISList, client.MatchingLabels{hcoutil.AppLabelManagedBy: hcoutil.OperatorName})
 	if err != nil {
-		req.Logger.Error(err, "failed to read list of ImageStreams")
+		if _, isNonMatchErr := errors.AsType[*apimetav1.NoKindMatchError](err); !isNonMatchErr {
+			req.Logger.Error(err, "failed to read list of ImageStreams")
+		}
+
 		return
 	}
 

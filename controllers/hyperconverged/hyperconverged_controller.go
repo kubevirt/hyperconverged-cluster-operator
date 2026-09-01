@@ -2,6 +2,7 @@ package hyperconverged
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -437,7 +438,7 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest) (*reconcile.Result, error) {
 	modified, err := r.migrateBeforeUpgrade(req)
 	if err != nil {
-		return &reconcile.Result{RequeueAfter: requeueAfter}, err
+		return new(reconcile.Result), err
 	}
 
 	if modified {
@@ -1180,23 +1181,26 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 }
 
 func (r *ReconcileHyperConverged) removeLeftover(req *common.HcoRequest, knownHcoSV semver.Version, p upgradepatch.ObjectToBeRemoved) (bool, error) {
-	if p.IsAffectedRange(knownHcoSV) {
-		removeRelatedObject(req, r.client, p.GroupVersionKind, p.ObjectKey)
-		u := &unstructured.Unstructured{}
-		u.SetGroupVersionKind(p.GroupVersionKind)
-		gerr := r.client.Get(req.Ctx, p.ObjectKey, u)
-		if gerr != nil {
-			if apierrors.IsNotFound(gerr) {
-				return false, nil
-			}
-
-			req.Logger.Error(gerr, "failed looking for leftovers", "objectToBeRemoved", p)
-			return false, gerr
-		}
-		return r.deleteObj(req, u, false)
-
+	if !p.IsAffectedRange(knownHcoSV) {
+		return false, nil
 	}
-	return false, nil
+	removeRelatedObject(req, r.client, p.GroupVersionKind, p.ObjectKey)
+	u := &unstructured.Unstructured{}
+	u.SetGroupVersionKind(p.GroupVersionKind)
+	gerr := r.client.Get(req.Ctx, p.ObjectKey, u)
+	if gerr != nil {
+		if apierrors.IsNotFound(gerr) {
+			return false, nil
+		}
+
+		if _, isNonMatchErr := errors.AsType[*apimetav1.NoKindMatchError](gerr); isNonMatchErr {
+			return false, nil
+		}
+
+		req.Logger.Error(gerr, "failed looking for leftovers", "objectToBeRemoved", p)
+		return false, gerr
+	}
+	return r.deleteObj(req, u, false)
 }
 
 func (r *ReconcileHyperConverged) deleteObj(req *common.HcoRequest, obj client.Object, protectNonHCOObjects bool) (bool, error) {

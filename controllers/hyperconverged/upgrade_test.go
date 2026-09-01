@@ -22,6 +22,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -290,14 +291,13 @@ var _ = Describe("Upgrade Mode", func() {
 			} else {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(errorMessage))
-				Expect(res.RequeueAfter).To(Equal(requeueAfter))
+				Expect(res.IsZero()).To(BeTrueBecause("when returning error, the result must be empty"))
 				Expect(ok).To(BeTrue())
 				Expect(ver).To(Equal(testHcoVersion))
 				// try a second time
 				res, err = r.Reconcile(context.TODO(), request)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(errorMessage))
-				Expect(res.RequeueAfter).To(Equal(requeueAfter))
+				Expect(err).To(MatchError(ContainSubstring(errorMessage)))
+				Expect(res.IsZero()).To(BeTrueBecause("when returning error, the result must be empty"))
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: request.Name, Namespace: request.Namespace},
@@ -309,7 +309,7 @@ var _ = Describe("Upgrade Mode", func() {
 				// and a third
 				res, err = r.Reconcile(context.TODO(), request)
 				Expect(err).To(MatchError(ContainSubstring(errorMessage)))
-				Expect(res.RequeueAfter).To(Equal(requeueAfter))
+				Expect(res.IsZero()).To(BeTrueBecause("when returning error, the result must be empty"))
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: request.Name, Namespace: request.Namespace},
@@ -742,6 +742,43 @@ var _ = Describe("Upgrade Mode", func() {
 			resources []client.Object
 		)
 
+		getWaspRelatedObjects := func() []corev1.ObjectReference {
+			return []corev1.ObjectReference{
+				{
+					APIVersion:      "apps/v1",
+					Kind:            "DaemonSet",
+					Name:            waspDSToBeRemoved.Name,
+					Namespace:       waspDSToBeRemoved.Namespace,
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "v1",
+					Kind:            "ServiceAccount",
+					Name:            waspSAToBeRemoved.GetName(),
+					Namespace:       waspSAToBeRemoved.GetNamespace(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "security.openshift.io/v1",
+					Kind:            "SecurityContextConstraints",
+					Name:            waspSCCToBeRemoved.GetName(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "rbac.authorization.k8s.io/v1",
+					Kind:            "ClusterRole",
+					Name:            waspClusterRoleToBeRemoved.GetName(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "rbac.authorization.k8s.io/v1",
+					Kind:            "ClusterRoleBinding",
+					Name:            waspClusterRoleBindingToBeRemoved.GetName(),
+					ResourceVersion: "999",
+				},
+			}
+		}
+
 		BeforeEach(func() {
 			dsToBeRemoved = &appsv1.DaemonSet{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1124,40 +1161,7 @@ var _ = Describe("Upgrade Mode", func() {
 		})
 
 		It("should remove wasp agent objects when upgrading from < 1.19.0", func(ctx context.Context) {
-			waspRelatedObjects := []corev1.ObjectReference{
-				{
-					APIVersion:      "apps/v1",
-					Kind:            "DaemonSet",
-					Name:            waspDSToBeRemoved.Name,
-					Namespace:       waspDSToBeRemoved.Namespace,
-					ResourceVersion: "999",
-				},
-				{
-					APIVersion:      "v1",
-					Kind:            "ServiceAccount",
-					Name:            waspSAToBeRemoved.GetName(),
-					Namespace:       waspSAToBeRemoved.GetNamespace(),
-					ResourceVersion: "999",
-				},
-				{
-					APIVersion:      "security.openshift.io/v1",
-					Kind:            "SecurityContextConstraints",
-					Name:            waspSCCToBeRemoved.GetName(),
-					ResourceVersion: "999",
-				},
-				{
-					APIVersion:      "rbac.authorization.k8s.io/v1",
-					Kind:            "ClusterRole",
-					Name:            waspClusterRoleToBeRemoved.GetName(),
-					ResourceVersion: "999",
-				},
-				{
-					APIVersion:      "rbac.authorization.k8s.io/v1",
-					Kind:            "ClusterRoleBinding",
-					Name:            waspClusterRoleBindingToBeRemoved.GetName(),
-					ResourceVersion: "999",
-				},
-			}
+			waspRelatedObjects := getWaspRelatedObjects()
 
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
 
@@ -1219,6 +1223,126 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSCCToBeRemoved), foundSCC)).To(Succeed())
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleToBeRemoved), foundClusterRole)).To(Succeed())
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleBindingToBeRemoved), foundClusterRoleBinding)).To(Succeed())
+		})
+
+		Context("error handling", func() {
+			It("should return error when removing object returns error", func(ctx context.Context) {
+				UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
+
+				cl := commontestutils.InitClient(resources)
+				cl.InitiateDeleteErrors(func(obj client.Object) error {
+					if obj.GetObjectKind().GroupVersionKind().Kind == "ServiceAccount" &&
+						obj.GetName() == waspSAToBeRemoved.GetName() {
+						return fmt.Errorf("a fake error")
+					}
+					return nil
+				})
+
+				r := initReconciler(cl, nil)
+				Expect(r.Reconcile(ctx, request)).Error().To(HaveOccurred())
+
+				foundDS := &appsv1.DaemonSet{}
+				foundSA := &corev1.ServiceAccount{}
+				foundSCC := &securityv1.SecurityContextConstraints{}
+				foundClusterRole := &rbacv1.ClusterRole{}
+				foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+
+				By("should not find the first few objects, that were removed before the error occurred")
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspDSToBeRemoved), foundDS)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSCCToBeRemoved), foundSCC)).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+				By("should find the last few objects, that were not removed after the error occurred")
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSAToBeRemoved), foundSA)).To(Succeed())
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleToBeRemoved), foundClusterRole)).To(Succeed())
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleBindingToBeRemoved), foundClusterRoleBinding)).To(Succeed())
+			})
+
+			It("should ignore not found error when removing object returns error", func(ctx context.Context) {
+				resources = slices.DeleteFunc(resources, func(obj client.Object) bool {
+					sa, isAS := obj.(*corev1.ServiceAccount)
+					return isAS && sa.Name == waspSAToBeRemoved.GetName()
+				})
+
+				UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
+
+				cl := commontestutils.InitClient(resources)
+
+				r := initReconciler(cl, nil)
+				_, err := r.Reconcile(ctx, request)
+				Expect(err).ToNot(HaveOccurred())
+
+				foundDS := &appsv1.DaemonSet{}
+				foundSA := &corev1.ServiceAccount{}
+				foundSCC := &securityv1.SecurityContextConstraints{}
+				foundClusterRole := &rbacv1.ClusterRole{}
+				foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+
+				By("should not find any object, as the error was ignored")
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspDSToBeRemoved), foundDS)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSCCToBeRemoved), foundSCC)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSAToBeRemoved), foundSA)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleToBeRemoved), foundClusterRole)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleBindingToBeRemoved), foundClusterRoleBinding)).To(MatchError(apierrors.IsNotFound, "not found error"))
+			})
+
+			It("should ignore not match error when removing object returns error", func(ctx context.Context) {
+				waspRelatedObjects := getWaspRelatedObjects()
+
+				UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
+
+				for _, objRef := range waspRelatedObjects {
+					Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+				}
+
+				cl := commontestutils.InitClient(resources)
+
+				cl.InitiateDeleteErrors(func(obj client.Object) error {
+					if obj.GetObjectKind().GroupVersionKind().Kind == "ServiceAccount" &&
+						obj.GetName() == waspSAToBeRemoved.GetName() {
+						return &apimetav1.NoKindMatchError{
+							GroupKind: obj.GetObjectKind().GroupVersionKind().GroupKind(),
+						}
+					}
+					return nil
+				})
+
+				cl.InitiateGetErrors(func(objKey client.ObjectKey) error {
+					if objKey.Name == waspSAToBeRemoved.GetName() && objKey.Namespace == waspSAToBeRemoved.GetNamespace() {
+						return &apimetav1.NoKindMatchError{
+							GroupKind: schema.GroupKind{Kind: "ServiceAccount", Group: corev1.SchemeGroupVersion.Group},
+						}
+					}
+					return nil
+				})
+
+				r := initReconciler(cl, nil)
+				Expect(r.Reconcile(ctx, request)).Error().To(Succeed())
+
+				foundDS := &appsv1.DaemonSet{}
+				foundSA := &corev1.ServiceAccount{}
+				foundSCC := &securityv1.SecurityContextConstraints{}
+				foundClusterRole := &rbacv1.ClusterRole{}
+				foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+
+				By("should not delete the errored object") // this is only to validate. in the real world, if the type is not known, it can't be even created.
+				cl.InitiateGetErrors(nil)
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSAToBeRemoved), foundSA)).To(Succeed()) // Just to prove it was skipped with no error
+
+				By("should delete all the other objects")
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspDSToBeRemoved), foundDS)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspSCCToBeRemoved), foundSCC)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleToBeRemoved), foundClusterRole)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKeyFromObject(waspClusterRoleBindingToBeRemoved), foundClusterRoleBinding)).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+				hc := new(hcov1.HyperConverged)
+				Expect(cl.Get(ctx, client.ObjectKey{Name: name, Namespace: waspDSToBeRemoved.Namespace}, hc)).To(Succeed())
+
+				for _, objRef := range waspRelatedObjects {
+					obj, err := objectreferencesv1.FindObjectReference(hc.Status.RelatedObjects, objRef)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(obj).To(BeNil())
+				}
+			})
 		})
 	})
 
