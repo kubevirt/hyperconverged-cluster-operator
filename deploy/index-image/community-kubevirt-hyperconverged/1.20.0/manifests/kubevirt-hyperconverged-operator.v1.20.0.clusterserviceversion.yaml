@@ -3727,6 +3727,7 @@ spec:
           - patch
           - update
           - watch
+          - deletecollection
         - apiGroups:
           - migrations.kubevirt.io
           resources:
@@ -4556,7 +4557,7 @@ spec:
                 - name: AAQ_VERSION
                   value: v1.8.0
                 - name: MIGRATION_OPERATOR_VERSION
-                  value: v0.2.0
+                  value: v0.3.0
                 - name: AUTOPILOT_VERSION
                   value: v0.1.2
                 - name: VM_FILE_RESTORE_OPERATOR_VERSION
@@ -5465,7 +5466,9 @@ spec:
                 app.kubernetes.io/part-of: hyperconverged-cluster
                 app.kubernetes.io/version: 1.20.0
                 name: kubevirt-migration-operator
+                np.kubevirt.io/allow-access-cluster-services: "true"
                 operator.migrations.kubevirt.io: ""
+                prometheus.migrations.kubevirt.io: "true"
             spec:
               affinity:
                 podAffinity:
@@ -5486,7 +5489,7 @@ spec:
                 - name: DEPLOY_CLUSTER_RESOURCES
                   value: "true"
                 - name: OPERATOR_VERSION
-                  value: v0.2.0
+                  value: v0.3.0
                 - name: CONTROLLER_IMAGE
                   value: quay.io/kubevirt/kubevirt-migration-controller@sha256:f941804b4cbe41b460102f7137f31c8bb2909499cb4bfc399064401ed3879c1b
                 - name: VERBOSITY
@@ -5495,8 +5498,8 @@ spec:
                   value: IfNotPresent
                 - name: MONITORING_NAMESPACE
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/kubevirt-migration-operator@sha256:54bd78472e336f176db777df1c02fbebeb34049bad067949666c76ea15f84141
-                image: quay.io/kubevirt/kubevirt-migration-operator@sha256:54bd78472e336f176db777df1c02fbebeb34049bad067949666c76ea15f84141
+                  value: quay.io/kubevirt/kubevirt-migration-operator@sha256:8ef62b4ee87a655cc8e744b585149bfcc7757a9308aff4352690da32d0e68cca
+                image: quay.io/kubevirt/kubevirt-migration-operator@sha256:8ef62b4ee87a655cc8e744b585149bfcc7757a9308aff4352690da32d0e68cca
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6701,7 +6704,7 @@ spec:
     name: kubevirt-metrics-exporter
   - image: quay.io/kubevirt/kubevirt-migration-controller@sha256:f941804b4cbe41b460102f7137f31c8bb2909499cb4bfc399064401ed3879c1b
     name: kubevirt-migration-controller
-  - image: quay.io/kubevirt/kubevirt-migration-operator@sha256:54bd78472e336f176db777df1c02fbebeb34049bad067949666c76ea15f84141
+  - image: quay.io/kubevirt/kubevirt-migration-operator@sha256:8ef62b4ee87a655cc8e744b585149bfcc7757a9308aff4352690da32d0e68cca
     name: kubevirt-migration-operator
   - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:9a0183d08db45d34bfe8dfd007ac7c58d57cfb1c386d0fac6d0ea780ab4cb660
     name: kubevirt-plugin
