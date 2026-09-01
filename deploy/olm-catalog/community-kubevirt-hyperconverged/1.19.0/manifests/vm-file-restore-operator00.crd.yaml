@@ -104,11 +104,6 @@ spec:
                     - name
                     type: object
                 type: object
-              sourcePartition:
-                description: SourcePartition specifies the partition number on the
-                  backup volume to restore from.
-                format: int32
-                type: integer
               sourcePath:
                 description: |-
                   SourcePath specifies the file or directory path to restore from the backup.
@@ -135,11 +130,6 @@ spec:
                 - name
                 type: object
                 x-kubernetes-map-type: atomic
-              targetPath:
-                description: |-
-                  TargetPath specifies where to restore files in the target VM filesystem.
-                  If not specified, files are restored to their original locations.
-                type: string
             required:
             - source
             - target
@@ -254,8 +244,10 @@ spec:
                 - Failed
                 type: string
               restoredFilesCount:
-                description: RestoredFilesCount is the number of files successfully
-                  restored.
+                description: |-
+                  RestoredFilesCount is the number of files successfully restored.
+                  Omitted when no automatic file transfer was performed (manual mode or not yet started);
+                  0 means the transfer ran but no files were copied (e.g. files already up-to-date).
                 format: int32
                 type: integer
               sshRetries:
