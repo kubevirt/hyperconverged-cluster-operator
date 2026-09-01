@@ -739,8 +739,8 @@ kubevirt.io/containerized-data-importer-api v1.66.0 h1:gzgGSP3y8rSyeJ9QuvJ2ScOaU
 kubevirt.io/containerized-data-importer-api v1.66.0/go.mod h1:NKj7UdbTzu08JsBGeu3WxSu6qPZ4+w673Ha7Z55JvlA=
 kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4 h1:fZYvD3/Vnitfkx6IJxjLAk8ugnZQ7CXVYcRfkSKmuZY=
 kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4/go.mod h1:018lASpFYBsYN6XwmA2TIrPCx6e0gviTd/ZNtSitKgc=
-kubevirt.io/kubevirt-migration-operator v0.2.0 h1:XeKuwfuXbHr6csWNa+jjD4NYc9KKnHgeAV+eCHra0EA=
-kubevirt.io/kubevirt-migration-operator v0.2.0/go.mod h1:EuedSrCbsaswvQvleeeRjqkKNOZfN8qOOgUocFgvw3U=
+kubevirt.io/kubevirt-migration-operator v0.3.0 h1:lv7KA09joP/0RJPFPbrs+yLfEfTLjw5bwhP/xxtTO+Q=
+kubevirt.io/kubevirt-migration-operator v0.3.0/go.mod h1:EuedSrCbsaswvQvleeeRjqkKNOZfN8qOOgUocFgvw3U=
 kubevirt.io/ssp-operator/api v0.27.0 h1:WQ6FnzSwQowMyUG7Gsef5vJuNDL7FYRZyZKZ55oiyI8=
 kubevirt.io/ssp-operator/api v0.27.0/go.mod h1:rEeyNgkw1S+1RZskXGyHmy6hx20IvdVmcJsgjdVhp8g=
 kubevirt.io/vm-file-restore-operator v0.0.6 h1:C0OV3/xnbulKyx+T4mBW8L4RXWVC8IYtaCr8Ikr/41M=
