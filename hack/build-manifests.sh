@@ -460,6 +460,7 @@ rendered_keywords="$(echo "$rendered_csv" |grep 'keywords' -A 3)"
 rm -f ${CRD_DIR}/*
 cp -f ${TEMPDIR}/*.${CRD_EXT} ${CRD_DIR}
 cp -f ${TEMPDIR}/*.${CRD_EXT} ${CSV_DIR}
+cp tools/csv-merger/generated-crd.yaml ${CSV_DIR}/hco00.crd.yaml
 
 # Validate the yaml files
 (cd ${CRD_DIR} && $CRI_BIN run --rm -v "$(pwd)":/yaml quay.io/pusher/yamllint yamllint -d "{extends: relaxed, rules: {line-length: disable}}" /yaml)
