@@ -743,8 +743,8 @@ kubevirt.io/kubevirt-migration-operator v0.3.0 h1:lv7KA09joP/0RJPFPbrs+yLfEfTLjw
 kubevirt.io/kubevirt-migration-operator v0.3.0/go.mod h1:EuedSrCbsaswvQvleeeRjqkKNOZfN8qOOgUocFgvw3U=
 kubevirt.io/ssp-operator/api v0.27.0 h1:WQ6FnzSwQowMyUG7Gsef5vJuNDL7FYRZyZKZ55oiyI8=
 kubevirt.io/ssp-operator/api v0.27.0/go.mod h1:rEeyNgkw1S+1RZskXGyHmy6hx20IvdVmcJsgjdVhp8g=
-kubevirt.io/vm-file-restore-operator v0.0.6 h1:C0OV3/xnbulKyx+T4mBW8L4RXWVC8IYtaCr8Ikr/41M=
-kubevirt.io/vm-file-restore-operator v0.0.6/go.mod h1:Ml30qmUDVqrD+LEeVyuXWFXCT9aneW+tJ4aRBmcNnaM=
+kubevirt.io/vm-file-restore-operator v0.0.7 h1:ef6cHemF5DEhLd3eappwbQXIRKTif8o879N3LVAL16o=
+kubevirt.io/vm-file-restore-operator v0.0.7/go.mod h1:Ml30qmUDVqrD+LEeVyuXWFXCT9aneW+tJ4aRBmcNnaM=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 h1:hSfpvjjTQXQY2Fol2CS0QHMNs/WI1MOSGzCm1KhM5ec=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0/go.mod h1:Ve9uj1L+deCXFrPOk1LpFXqTg7LCFzFso6PA48q/XZw=
 sigs.k8s.io/controller-runtime v0.24.1 h1:miPEwrmirImAvgME1L9qebGHrOnGJoVmVdtOU9fRfo4=

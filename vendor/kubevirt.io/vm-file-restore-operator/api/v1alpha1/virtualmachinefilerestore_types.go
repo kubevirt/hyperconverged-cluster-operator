@@ -35,15 +35,6 @@ type VirtualMachineFileRestoreSpec struct {
 	// If not specified, manual restore mode is enabled (volume is hotplugged but no automatic restore).
 	// +optional
 	SourcePath string `json:"sourcePath,omitempty"`
-
-	// TargetPath specifies where to restore files in the target VM filesystem.
-	// If not specified, files are restored to their original locations.
-	// +optional
-	TargetPath string `json:"targetPath,omitempty"`
-
-	// SourcePartition specifies the partition number on the backup volume to restore from.
-	// +optional
-	SourcePartition *int32 `json:"sourcePartition,omitempty"`
 }
 
 // RestoreSource defines the source for file restoration.
@@ -117,8 +108,10 @@ type VirtualMachineFileRestoreStatus struct {
 	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
 
 	// RestoredFilesCount is the number of files successfully restored.
+	// Omitted when no automatic file transfer was performed (manual mode or not yet started);
+	// 0 means the transfer ran but no files were copied (e.g. files already up-to-date).
 	// +optional
-	RestoredFilesCount int32 `json:"restoredFilesCount,omitempty"`
+	RestoredFilesCount *int32 `json:"restoredFilesCount,omitempty"`
 
 	// ErrorMessage provides details about any error that occurred during restoration.
 	// +optional
