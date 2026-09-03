@@ -102,6 +102,7 @@ var _ = Describe("TLS Security Profile", func() {
 				Custom: &openshiftconfigv1.CustomTLSProfile{
 					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
 						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						Groups:        openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Groups,
 						MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
 					},
 				},
@@ -119,6 +120,7 @@ var _ = Describe("TLS Security Profile", func() {
 				Custom: &openshiftconfigv1.CustomTLSProfile{
 					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
 						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						Groups:        openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Groups,
 						MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
 					},
 				},
@@ -223,6 +225,7 @@ var _ = Describe("TLS Security Profile", func() {
 				Custom: &openshiftconfigv1.CustomTLSProfile{
 					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
 						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						Groups:        openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Groups,
 						MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
 					},
 				},
@@ -459,7 +462,159 @@ var _ = Describe("TLS Security Profile", func() {
 
 	})
 
+	Describe("GetGroups", func() {
+		BeforeEach(func() {
+			setAPIServerProfile(nil)
+		})
+
+		It("should return Intermediate groups when using default profile", func() {
+			groups := GetGroups(nil)
+			expectedGroups := openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Groups
+			Expect(groups).To(Equal(expectedGroups))
+		})
+
+		It("should return Old profile groups", func() {
+			groups := GetGroups(&oldTLSSecurityProfile)
+			expectedGroups := openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileOldType].Groups
+			Expect(groups).To(Equal(expectedGroups))
+		})
+
+		It("should return Modern profile groups", func() {
+			groups := GetGroups(&modernTLSSecurityProfile)
+			expectedGroups := openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileModernType].Groups
+			Expect(groups).To(Equal(expectedGroups))
+		})
+
+		It("should return custom groups when specified", func() {
+			customGroups := []openshiftconfigv1.TLSGroup{
+				openshiftconfigv1.TLSGroupX25519,
+				openshiftconfigv1.TLSGroupSecP256r1,
+			}
+			profile := &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						Groups:        customGroups,
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+
+			groups := GetGroups(profile)
+			Expect(groups).To(Equal(customGroups))
+		})
+
+		It("should return nil groups for custom profile with no groups set", func() {
+			profile := &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+
+			groups := GetGroups(profile)
+			Expect(groups).To(BeNil())
+		})
+
+		It("should return empty slice for custom profile with explicitly empty groups", func() {
+			profile := &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						Groups:        []openshiftconfigv1.TLSGroup{},
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+
+			groups := GetGroups(profile)
+			Expect(groups).To(BeEmpty())
+		})
+	})
+
+	Describe("GetGroupsInGolangFormat", func() {
+		BeforeEach(func() {
+			setAPIServerProfile(nil)
+		})
+
+		It("should convert Intermediate groups to CurveIDs", func() {
+			curveIDs := GetGroupsInGolangFormat(nil)
+			Expect(curveIDs).To(Equal([]tls.CurveID{
+				tls.X25519MLKEM768,
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+			}))
+		})
+
+		It("should return nil for custom profile with no groups", func() {
+			profile := &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+
+			curveIDs := GetGroupsInGolangFormat(profile)
+			Expect(curveIDs).To(BeNil())
+		})
+
+		It("should return nil for custom profile with explicitly empty groups", func() {
+			profile := &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						Groups:        []openshiftconfigv1.TLSGroup{},
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+
+			curveIDs := GetGroupsInGolangFormat(profile)
+			Expect(curveIDs).To(BeNil())
+		})
+
+		It("should skip invalid groups and return only valid CurveIDs", func() {
+			profile := &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						Groups: []openshiftconfigv1.TLSGroup{
+							openshiftconfigv1.TLSGroupX25519,
+							"InvalidGroup",
+							openshiftconfigv1.TLSGroupSecP256r1,
+						},
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+
+			curveIDs := GetGroupsInGolangFormat(profile)
+			Expect(curveIDs).To(Equal([]tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+			}))
+		})
+	})
+
 	Describe("MutateTLSConfig", func() {
+		expectedCurvePreferences := []tls.CurveID{
+			tls.X25519MLKEM768,
+			tls.X25519,
+			tls.CurveP256,
+			tls.CurveP384,
+		}
+
 		It("should use HCO profile if provided", func() {
 			SetHyperConvergedTLSSecurityProfile(&oldTLSSecurityProfile)
 			setAPIServerProfile(&modernTLSSecurityProfile)
@@ -496,6 +651,7 @@ var _ = Describe("TLS Security Profile", func() {
 				tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
 			}
 			Expect(config.CipherSuites).To(Equal(expectedTLSCiphers))
+			Expect(config.CurvePreferences).To(Equal(expectedCurvePreferences))
 		})
 
 		It("should use APIServer profile if HCO one is not provided", func() {
@@ -511,6 +667,7 @@ var _ = Describe("TLS Security Profile", func() {
 
 			Expect(config.MinVersion).To(Equal(uint16(tls.VersionTLS13)))
 			Expect(config.CipherSuites).To(BeEmpty())
+			Expect(config.CurvePreferences).To(Equal(expectedCurvePreferences))
 		})
 
 		It("should use intermediate profile if both HCO and APIServer profiles are not provided", func() {
@@ -537,6 +694,34 @@ var _ = Describe("TLS Security Profile", func() {
 				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
 			}
 			Expect(config.CipherSuites).To(Equal(expectedTLSCiphers))
+			Expect(config.CurvePreferences).To(Equal(expectedCurvePreferences))
+		})
+
+		It("should not set CurvePreferences when custom profile has no groups", func() {
+			customProfile := openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+			SetHyperConvergedTLSSecurityProfile(&customProfile)
+			DeferCleanup(func() {
+				SetHyperConvergedTLSSecurityProfile(nil)
+				setAPIServerProfile(nil)
+			})
+			setAPIServerProfile(nil)
+
+			tlsConfig := &tls.Config{}
+
+			MutateTLSConfig(tlsConfig)
+
+			config, err := tlsConfig.GetConfigForClient(nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(config.CurvePreferences).To(BeNil())
 		})
 	})
 })

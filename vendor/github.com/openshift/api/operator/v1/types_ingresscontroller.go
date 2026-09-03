@@ -385,6 +385,31 @@ type IngressControllerSpec struct {
 	// +kubebuilder:default:="Continue"
 	// +default="Continue"
 	ClosedClientConnectionPolicy IngressControllerClosedClientConnectionPolicy `json:"closedClientConnectionPolicy,omitempty"`
+
+	// haproxyVersion specifies the HAProxy version to use for this
+	// IngressController.
+	//
+	// OpenShift 5.0 introduces HAProxy 3.2 as its default version and supports
+	// HAProxy 2.8 from OpenShift 4.22 for migration purposes. When an OpenShift
+	// release introduces a new default HAProxy version, that HAProxy version
+	// becomes available as a pinnable value in subsequent OpenShift releases,
+	// providing a smooth migration path for administrators who want to defer
+	// HAProxy upgrades.
+	//
+	// Valid values for OpenShift 5.0:
+	// - Unset (default): Uses HAProxy 3.2 (the default for OpenShift 5.0)
+	// - "3.2": Explicitly pins HAProxy 3.2 for preservation during cluster
+	//   upgrades to future OpenShift releases
+	// - "2.8": Uses HAProxy 2.8 from OpenShift 4.22 (migration support, will
+	//   be dropped in the next OpenShift release)
+	//
+	// If a specific HAProxy version is set and would become unsupported in a
+	// target cluster upgrade, a preflight check will block the cluster upgrade
+	// until this field is updated to unset or a supported version.
+	//
+	// +optional
+	// +openshift:enable:FeatureGate=IngressControllerMultipleHAProxyVersions
+	HAProxyVersion HAProxyVersion `json:"haproxyVersion,omitempty"`
 }
 
 // httpCompressionPolicy turns on compression for the specified MIME types.
@@ -898,7 +923,89 @@ type AWSNetworkLoadBalancerParameters struct {
 	// +kubebuilder:validation:XValidation:rule=`self.all(x, self.exists_one(y, x == y))`,message="eipAllocations cannot contain duplicates"
 	// +kubebuilder:validation:MaxItems=10
 	EIPAllocations []EIPAllocation `json:"eipAllocations"`
+
+	// securityGroups is a list of security group IDs to attach to the
+	// Network Load Balancer. When specified, these security groups replace
+	// the managed security group that the Cloud Controller Manager would
+	// otherwise create automatically. The user is responsible for
+	// configuring the ingress and egress rules on the specified security
+	// groups.
+	//
+	// The specified security groups must exist in the same VPC as the
+	// cluster and must allow the necessary traffic for the
+	// IngressController to function.
+	//
+	// When this field is omitted, the Cloud Controller Manager
+	// automatically creates and manages a security group for the NLB.
+	//
+	// Each security group ID must be unique and must begin with "sg-"
+	// followed by 8 or 17 lowercase hexadecimal characters
+	// (e.g. "sg-abcd1234" or "sg-abcd1234abcd12345"). At least 1 and
+	// at most 5 security groups can be specified.
+	//
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=5
+	// +kubebuilder:validation:XValidation:rule=`self.all(x, self.exists_one(y, x == y))`,message="securityGroups cannot contain duplicates"
+	// +openshift:enable:FeatureGate=IngressControllerLBSecurityGroupsAWS
+	SecurityGroups []SecurityGroupID `json:"securityGroups,omitempty"`
+
+	// protocol specifies whether the Network Load Balancer uses PROXY
+	// protocol to forward connections to the IngressController.
+	//
+	// When set to "TCP", the NLB uses AWS's native client IP preservation.
+	// This may cause hairpin connection failures for internal load
+	// balancers when connections are made from pods to router pods on
+	// the same node.
+	//
+	// When set to "PROXY", the NLB disables native client IP preservation
+	// and uses PROXY protocol v2. The IngressController enables PROXY
+	// protocol on HAProxy so that it can parse PROXY protocol headers to
+	// obtain the original client IP. This avoids hairpin connection
+	// failures.
+	//
+	// The following values are valid for this field:
+	//
+	// * "TCP".
+	// * "PROXY".
+	//
+	// When omitted, this means the user has no opinion and the value is
+	// left to the platform to choose a reasonable default, which is subject to
+	// change over time. The current default is "PROXY".
+	//
+	// Note that changing this field may cause brief connection failures
+	// during the transition as the NLB attribute change and router rollout
+	// occur independently.
+	//
+	// +optional
+	Protocol NLBProtocol `json:"protocol,omitempty"`
 }
+
+// SecurityGroupID is an AWS EC2 security group ID.
+// Values must begin with "sg-" followed by 8 or 17 lowercase
+// hexadecimal characters (e.g. "sg-abcd1234" or
+// "sg-abcd1234abcd12345").
+//
+// +kubebuilder:validation:MinLength=11
+// +kubebuilder:validation:MaxLength=20
+// +kubebuilder:validation:XValidation:rule=`self.startsWith('sg-') && self.substring(3).matches('^[0-9a-f]{8}$|^[0-9a-f]{17}$')`,message="securityGroups must be 'sg-' followed by 8 or 17 lowercase hexadecimal characters"
+type SecurityGroupID string
+
+// NLBProtocol specifies whether the AWS Network Load Balancer uses
+// PROXY protocol to forward connections to the IngressController.
+// +kubebuilder:validation:Enum=TCP;PROXY
+// +enum
+type NLBProtocol string
+
+const (
+	// NLBProtocolTCP instructs the NLB to forward connections using TCP
+	// without PROXY protocol.
+	NLBProtocolTCP NLBProtocol = "TCP"
+	// NLBProtocolProxy instructs the NLB to forward connections using
+	// PROXY protocol v2.
+	NLBProtocolProxy NLBProtocol = "PROXY"
+)
 
 // EIPAllocation is an ID for an Elastic IP (EIP) address that can be allocated to an ELB in the AWS environment.
 // Values must begin with `eipalloc-` followed by exactly 17 hexadecimal (`[0-9a-fA-F]`) characters.
@@ -2034,6 +2141,7 @@ type IngressControllerTuningOptions struct {
 	// processes in router containers with the following metric:
 	// 'container_memory_working_set_bytes{container="router",namespace="openshift-ingress"}/container_processes{container="router",namespace="openshift-ingress"}'.
 	//
+	// +kubebuilder:validation:XValidation:rule="self == 0 || self == -1 || (self >= 2000 && self <= 2000000)",message="maxConnections must be 0, -1, or between 2000 and 2000000"
 	// +optional
 	MaxConnections int32 `json:"maxConnections,omitempty"`
 
@@ -2068,7 +2176,50 @@ type IngressControllerTuningOptions struct {
 	// +kubebuilder:validation:Type:=string
 	// +optional
 	ReloadInterval metav1.Duration `json:"reloadInterval,omitempty"`
+
+	// configurationManagement specifies how OpenShift router should update
+	// the HAProxy configuration.  The following values are valid for this
+	// field:
+	//
+	// * "ForkAndReload".
+	// * "Dynamic".
+	//
+	// Omitting this field means that the user has no opinion and the
+	// platform may choose a reasonable default. This default is subject to
+	// change over time.  The current default is "ForkAndReload".
+	//
+	// "ForkAndReload" means that OpenShift router should rewrite the
+	// HAProxy configuration file and instruct HAProxy to fork and reload.
+	// This is OpenShift router's traditional approach.
+	//
+	// "Dynamic" means that OpenShift router may use HAProxy's control
+	// socket for some configuration updates and fall back to fork and
+	// reload for other configuration updates.  This is a newer approach,
+	// which may be less mature than ForkAndReload.  This setting can
+	// improve load-balancing fairness and metrics accuracy and reduce CPU
+	// and memory usage if HAProxy has frequent configuration updates for
+	// route and endpoints updates.
+	//
+	// Note: The "Dynamic" option is currently experimental and should not
+	// be enabled on production clusters.
+	//
+	// +openshift:enable:FeatureGate=IngressControllerDynamicConfigurationManager
+	// +optional
+	ConfigurationManagement IngressControllerConfigurationManagement `json:"configurationManagement,omitempty"`
 }
+
+// IngressControllerConfigurationManagement specifies whether always to use
+// fork-and-reload to update the HAProxy configuration or whether to use
+// HAProxy's control socket for some configuration updates.
+//
+// +enum
+// +kubebuilder:validation:Enum=Dynamic;ForkAndReload
+type IngressControllerConfigurationManagement string
+
+const (
+	IngressControllerConfigurationManagementDynamic       IngressControllerConfigurationManagement = "Dynamic"
+	IngressControllerConfigurationManagementForkAndReload IngressControllerConfigurationManagement = "ForkAndReload"
+)
 
 // HTTPEmptyRequestsPolicy indicates how HTTP connections for which no request
 // is received should be handled.
@@ -2174,6 +2325,19 @@ type IngressControllerStatus struct {
 	// routeSelector is the actual routeSelector in use.
 	// +optional
 	RouteSelector *metav1.LabelSelector `json:"routeSelector,omitempty"`
+
+	// effectiveHAProxyVersion reports the HAProxy version currently in use by
+	// this IngressController. This reflects the resolved value of the
+	// spec.haproxyVersion field. When omitted, the effective value has not yet
+	// been resolved by the operator or the feature is not enabled for this cluster.
+	//
+	// Examples for OpenShift 5.0:
+	// - "3.2": Using HAProxy 3.2
+	// - "2.8": Using HAProxy 2.8
+	//
+	// +optional
+	// +openshift:enable:FeatureGate=IngressControllerMultipleHAProxyVersions
+	EffectiveHAProxyVersion HAProxyVersion `json:"effectiveHAProxyVersion,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -2241,4 +2405,19 @@ const (
 	// The router will complete the TLS handshake and wait for the backend
 	// server's response regardless of the client having closed the connection.
 	IngressControllerClosedClientConnectionPolicyContinue IngressControllerClosedClientConnectionPolicy = "Continue"
+)
+
+// HAProxyVersion is a string representing a HAProxy minor version in "X.Y"
+// format. The allowed values are constrained by enum validation and vary by
+// OpenShift release.
+//
+// +kubebuilder:validation:Enum="2.8";"3.2"
+type HAProxyVersion string
+
+const (
+	// HAProxyVersion28 represents HAProxy 2.8, shipped with OpenShift 4.22.
+	HAProxyVersion28 HAProxyVersion = "2.8"
+
+	// HAProxyVersion32 represents HAProxy 3.2, introduced in OpenShift 5.0.
+	HAProxyVersion32 HAProxyVersion = "3.2"
 )
