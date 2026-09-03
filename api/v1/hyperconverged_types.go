@@ -96,10 +96,6 @@ type HyperConvergedSpec struct {
 	//   virt-launcher pod's filesystem via virtiofs.
 	//   Phase: alpha
 	//
-	// * deployKubeSecondaryDNS:
-	//   Deploy KubeSecondaryDNS by CNAO
-	//   Phase: alpha
-	//
 	// * deployObservabilityController:
 	//   Deploy the virt-observability-controller component. When enabled, the
 	//   controller exposes KubeVirt metrics and manages PrometheusRule resources
@@ -379,10 +375,6 @@ type PersistentReservationConfiguration struct {
 
 // NetworkingConfig contains all the networking configurations
 type NetworkingConfig struct {
-	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
-	// +optional
-	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
-
 	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
 	// +optional
 	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`

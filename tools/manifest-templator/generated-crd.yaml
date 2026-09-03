@@ -2273,10 +2273,6 @@ spec:
                     virt-launcher pod's filesystem via virtiofs.
                     Phase: alpha
 
-                  * deployKubeSecondaryDNS:
-                    Deploy KubeSecondaryDNS by CNAO
-                    Phase: alpha
-
                   * deployObservabilityController:
                     Deploy the virt-observability-controller component. When enabled, the
                     controller exposes KubeVirt metrics and manages PrometheusRule resources
@@ -2367,10 +2363,6 @@ spec:
                         or both omitted
                       rule: (has(self.rangeStart) && has(self.rangeEnd)) || (!has(self.rangeStart)
                         && !has(self.rangeEnd))
-                  kubeSecondaryDNSNameServerIP:
-                    description: KubeSecondaryDNSNameServerIP defines name server
-                      IP used by KubeSecondaryDNS
-                    type: string
                   networkBinding:
                     additionalProperties:
                       properties:
@@ -5576,7 +5568,6 @@ spec:
                 containerPathVolumes: false
                 decentralizedLiveMigration: true
                 declarativeHotplugVolumes: true
-                deployKubeSecondaryDNS: false
                 downwardMetrics: false
                 incrementalBackup: false
                 objectGraph: false
@@ -6723,7 +6714,6 @@ spec:
                   containerPathVolumes: false
                   decentralizedLiveMigration: true
                   declarativeHotplugVolumes: true
-                  deployKubeSecondaryDNS: false
                   downwardMetrics: false
                   incrementalBackup: false
                   objectGraph: false
@@ -6763,8 +6753,7 @@ spec:
                       This feature is in Technical Preview.
                     type: boolean
                   deployKubeSecondaryDNS:
-                    default: false
-                    description: Deploy KubeSecondaryDNS by CNAO
+                    description: 'Deprecated: This feature gate is ignored.'
                     type: boolean
                   deployKubevirtIpamController:
                     description: 'Deprecated: this feature gate is ignored.'
@@ -7988,8 +7977,7 @@ spec:
                   rule: (has(self.rangeStart) && has(self.rangeEnd)) || (!has(self.rangeStart)
                     && !has(self.rangeEnd))
               kubeSecondaryDNSNameServerIP:
-                description: KubeSecondaryDNSNameServerIP defines name server IP used
-                  by KubeSecondaryDNS
+                description: 'Deprecated: This field is ignored.'
                 type: string
               liveMigrationConfig:
                 default:

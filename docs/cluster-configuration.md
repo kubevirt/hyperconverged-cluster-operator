@@ -100,12 +100,6 @@ virtual machine.
 
 **Graduation Status**: Alpha
 
-### deployKubeSecondaryDNS Feature Gate
-Add the `deployKubeSecondaryDNS` feature gate to allow deploying KubeSecondaryDNS by CNAO.
-For additional information, see here: [KubeSecondaryDNS](https://github.com/kubevirt/kubesecondarydns)
-
-**Default**: `Disabled`
-
 ### persistentReservation Feature Gate (deprecated)
 
 The `persistentReservation` feature gate is deprecated. Use
@@ -1289,29 +1283,6 @@ spec:
 
 ## Networking Configurations
 The `spec.networking` field contains all the configurations for networking.
-
-### KubeSecondaryDNS Name Server IP
-Enable the `deployKubeSecondaryDNS` feature gate, to allow deploying KubeSecondaryDNS by CNAO.
-
-In order to set KSD's NameServerIP, set it on HyperConverged CR under `spec.networking.kubeSecondaryDNSNameServerIP`
-field.
-
-Default: empty string. Value is a string representation of IPv4 (i.e "127.0.0.1").
-
-For more info see [deployKubeSecondaryDNS Feature Gate](#deploykubesecondarydns-feature-gate).
-
-#### KubeSecondaryDNS Name Server IP example
-```yaml
-apiVersion: hco.kubevirt.io/v1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  featureGates:
-    name: deployKubeSecondaryDNS
-  networking:
-    kubeSecondaryDNSNameServerIP: "127.0.0.1"
-```
 
 ### Network Binding plugin
 In order to set NetworkBinding, set it on HyperConverged CR under `spec.networking.networkBinding` field.

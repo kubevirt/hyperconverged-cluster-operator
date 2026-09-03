@@ -293,7 +293,6 @@ NetworkingConfig contains all the networking configurations
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| kubeSecondaryDNSNameServerIP | KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS | *string |  | false |
 | kubeMacPoolConfiguration | KubeMacPoolConfiguration holds kubemacpool MAC address range configuration. | *[KubeMacPoolConfig](#kubemacpoolconfig) |  | false |
 | networkBinding | NetworkBinding defines the network binding plugins. Those bindings can be used when defining virtual machine interfaces. | map[string]v1.InterfaceBindingPlugin |  | false |
 
@@ -536,7 +535,6 @@ A feature gate may be in the following phases:
 | template | VirtualMachine Templates provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable VM blueprints with parameterized values that can be processed to create virtual machine. the "template" feature gate enables this feature. Note: this feature is in Tech Preview. | beta |
 | alignCPUs | Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. | alpha |
 | containerPathVolumes | ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs. | alpha |
-| deployKubeSecondaryDNS | Deploy KubeSecondaryDNS by CNAO | alpha |
 | deployObservabilityController | Deploy the virt-observability-controller component. When enabled, the controller exposes KubeVirt metrics and manages PrometheusRule resources independently from the KubeVirt control plane. | alpha |
 | downwardMetrics | Allow to expose a limited set of host metrics to guests. | alpha |
 | incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Developer Preview. | alpha |

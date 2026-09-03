@@ -96,24 +96,6 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		}
 	}
 
-	// converting the DeployKubeSecondaryDNS v1beta1 alpha feature gate to v1
-	v1Idx = out.Index("deployKubeSecondaryDNS")
-	v1Found = v1Idx >= 0
-	if in.DeployKubeSecondaryDNS == nil {
-		if v1Found {
-			*out = slices.Delete(*out, v1Idx, v1Idx+1)
-		}
-	} else {
-		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
-		if (!v1Found && *in.DeployKubeSecondaryDNS) || (v1Found && v1Enabled != *in.DeployKubeSecondaryDNS) {
-			if *in.DeployKubeSecondaryDNS {
-				out.Enable("deployKubeSecondaryDNS")
-			} else {
-				out.Disable("deployKubeSecondaryDNS")
-			}
-		}
-	}
-
 	// converting the DownwardMetrics v1beta1 alpha feature gate to v1
 	v1Idx = out.Index("downwardMetrics")
 	v1Found = v1Idx >= 0
@@ -187,9 +169,6 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 
 	// converting the containerPathVolumes v1 alpha feature gate to v1beta1
 	out.ContainerPathVolumes = new(in.IsEnabled("containerPathVolumes"))
-
-	// converting the deployKubeSecondaryDNS v1 alpha feature gate to v1beta1
-	out.DeployKubeSecondaryDNS = new(in.IsEnabled("deployKubeSecondaryDNS"))
 
 	// converting the downwardMetrics v1 alpha feature gate to v1beta1
 	out.DownwardMetrics = new(in.IsEnabled("downwardMetrics"))
