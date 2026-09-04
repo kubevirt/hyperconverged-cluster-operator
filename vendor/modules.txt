@@ -1147,7 +1147,7 @@ kubevirt.io/kubevirt-migration-operator/api/v1alpha1
 # kubevirt.io/ssp-operator/api v0.26.0
 ## explicit; go 1.25.7
 kubevirt.io/ssp-operator/api/v1beta3
-# kubevirt.io/vm-file-restore-operator v0.0.7
+# kubevirt.io/vm-file-restore-operator v0.0.8
 ## explicit; go 1.26
 kubevirt.io/vm-file-restore-operator/api/v1alpha1
 # sigs.k8s.io/controller-runtime v0.24.1
