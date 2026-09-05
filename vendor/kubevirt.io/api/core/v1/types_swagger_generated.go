@@ -139,14 +139,14 @@ func (VolumeStatus) SwaggerDoc() map[string]string {
 func (KernelInfo) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":         "KernelInfo show info about the kernel image",
-		"checksum": "+kubebuilder:validation:Format:=int64\n+kubebuilder:validation:Minimum:=0\n+kubebuilder:validation:Maximum:=4294967295\nChecksum is the checksum of the kernel image",
+		"checksum": "+kubebuilder:validation:Format:=int64\n+kubebuilder:validation:Minimum:=0\n+kubebuilder:validation:Maximum:=4294967295\ndeprecated; Checksum is the checksum of the kernel image",
 	}
 }
 
 func (InitrdInfo) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":         "InitrdInfo show info about the initrd file",
-		"checksum": "+kubebuilder:validation:Format:=int64\n+kubebuilder:validation:Minimum:=0\n+kubebuilder:validation:Maximum:=4294967295\nChecksum is the checksum of the initrd file",
+		"checksum": "+kubebuilder:validation:Format:=int64\n+kubebuilder:validation:Minimum:=0\n+kubebuilder:validation:Maximum:=4294967295\ndeprecated; Checksum is the checksum of the initrd file",
 	}
 }
 
@@ -179,7 +179,7 @@ func (HotplugVolumeStatus) SwaggerDoc() map[string]string {
 func (ContainerDiskInfo) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":         "ContainerDiskInfo shows info about the containerdisk",
-		"checksum": "+kubebuilder:validation:Format:=int64\n+kubebuilder:validation:Minimum:=0\n+kubebuilder:validation:Maximum:=4294967295\nChecksum is the checksum of the rootdisk or kernel artifacts inside the containerdisk",
+		"checksum": "+kubebuilder:validation:Format:=int64\n+kubebuilder:validation:Minimum:=0\n+kubebuilder:validation:Maximum:=4294967295\ndeprecated; Checksum is the checksum of the rootdisk or kernel artifacts inside the containerdisk",
 	}
 }
 
@@ -510,6 +510,13 @@ func (VirtualMachineInstanceBackupStatus) SwaggerDoc() map[string]string {
 		"checkpointName": "CheckpointName is the name of the checkpoint created for the backup\n+optional",
 		"volumes":        "Volumes lists the volumes included in the backup\n+optional\n+listType=atomic",
 		"quiesceStatus":  "QuiesceStatus indicates whether filesystem freeze succeeded, failed, or was skipped.\n+optional",
+	}
+}
+
+func (VirtualMachineInstanceBackupVolumeInfo) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":           "VirtualMachineInstanceBackupVolumeInfo contains information about a volume included in a backup\n+k8s:openapi-gen=true",
+		"volumeName": "VolumeName is the volume name from VMI spec",
 	}
 }
 
@@ -1021,21 +1028,32 @@ func (TLSConfiguration) SwaggerDoc() map[string]string {
 func (StallDetectorOptions) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"stallMargin":               "StallMargin is the fractional tolerance, expressed as a percentage, used when\ncomparing remaining migration bytes against the best observed value to detect stalls\nand local minima. A stall is reported when remaining bytes stay above\n(1 - StallMargin/100) of the outside-window minimum.\nDefaults to 4.\n+kubebuilder:validation:Minimum=0\n+kubebuilder:validation:Maximum=100\n+optional",
-		"ewmaAlpha":                 "EwmaAlpha is the smoothing factor for the exponentially weighted moving average of\nobserved migration bandwidth. Must be in the range (0, 1]; zero is invalid because\nthe estimate would never incorporate new samples. Higher values weight recent samples\nmore heavily.\nDefaults to \"0.4\".\n+optional",
-		"stallProgressTimeout":      "StallProgressTimeout is the duration in seconds of the sliding window used to track\nminimum remaining-bytes and detect when migration progress has stalled.\nDefaults to 40.\n+optional",
-		"switchoverTimeout":         "SwitchoverTimeout is the duration in seconds allowed for a stop-and-copy or post-copy\nswitchover to complete after being triggered before the migration is aborted.\nDefaults to 60.\n+optional",
-		"precopyPossibleFactor":     "PrecopyPossibleFactor is the maximum factor by which estimated downtime may exceed\nMaxDowntime while still attempting a soft stop-and-copy instead of aborting the migration.\nDefaults to \"1.5\".\n+optional",
-		"patienceWindowDecayFactor": "PatienceWindowDecayFactor is the factor by which the relaxation patience window is\nmultiplied after each best-remaining-bytes relaxation step.\nDefaults to \"0.5\".\n+optional",
+		"ewmaAlpha":                 "EwmaAlpha is the smoothing factor for the exponentially weighted moving average of\nobserved migration bandwidth. Must be in the range (0, 1]; zero is invalid because\nthe estimate would never incorporate new samples. Higher values weight recent samples\nmore heavily.\nDefaults to 0.4.\n+optional",
+		"stallProgressTimeout":      "StallProgressTimeout is the duration in seconds of the sliding window used to track\nminimum remaining-bytes and detect when migration progress has stalled.\nDefaults to 40.\n+optional\n+kubebuilder:validation:Minimum=0",
+		"switchoverTimeout":         "SwitchoverTimeout is the duration in seconds allowed for a stop-and-copy or post-copy\nswitchover to complete after being triggered before the migration is aborted.\nDefaults to 60.\n+optional\n+kubebuilder:validation:Minimum=0",
+		"precopyPossibleFactor":     "PrecopyPossibleFactor is the maximum factor by which estimated downtime may exceed\nMaxDowntime while still attempting a soft stop-and-copy instead of aborting the migration.\nDefaults to 1.5.\n+optional",
+		"patienceWindowDecayFactor": "PatienceWindowDecayFactor is the factor by which the relaxation patience window is\nmultiplied after each best-remaining-bytes relaxation step.\nDefaults to 0.5.\n+optional",
 		"searchLocalMinima":         "SearchLocalMinima controls whether convergence actions are delayed until remaining bytes\nreach a local minimum near the best observed value. When false, actions may trigger\nas soon as a stall is detected.\nDefaults to true.\n+optional",
-		"completionTimeoutFactor":   "CompletionTimeoutFactor multiplies the computed migration completion timeout to determine\nthe total time budget for deciding whether a forced switchover can still finish in time,\nand to extend the abort deadline after initiating a completion-timeout-driven switchover.\nDefaults to \"2\".\n+optional",
+		"completionTimeoutFactor":   "CompletionTimeoutFactor multiplies the computed migration completion timeout to determine\nthe total time budget for deciding whether a forced switchover can still finish in time,\nand to extend the abort deadline after initiating a completion-timeout-driven switchover.\nDefaults to 2.\n+optional",
 	}
 }
 
 func (ExperimentalMigrationOptions) SwaggerDoc() map[string]string {
 	return map[string]string{
-		"":              "ExperimentalMigrationOptions is an alpha API for experimental migration tunables.\nIt is intended for experimental purposes only and will be removed in the future.",
-		"stallDetector": "+optional",
-		"compression":   "Compression selects the algorithm for compressing the live migration\ndata stream. When omitted (nil) or set to \"none\", compression is\ndisabled.\n+kubebuilder:validation:Enum=none;zstd\n+optional",
+		"":               "ExperimentalMigrationOptions is an alpha API for experimental migration tunables.\nIt is intended for experimental purposes only and will be removed in the future.",
+		"stallDetector":  "+optional",
+		"downtimeTuning": "DowntimeTuning configures iteration-aware downtime ramping for live\nmigration convergence.\n+optional",
+		"compression":    "Compression selects the algorithm for compressing the live migration\ndata stream. When omitted (nil) or set to \"none\", compression is\ndisabled.\n+kubebuilder:validation:Enum=none;zstd\n+optional",
+	}
+}
+
+func (DowntimeTuningOptions) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":                    "DowntimeTuningOptions controls how virt-launcher gradually increases\nmax_downtime during live migration to help convergence.",
+		"initialMs":           "InitialMs is the initial max_downtime value in milliseconds\nset at the start of migration. Tuning steps increase from this value.\nDefaults to 150.\n+kubebuilder:validation:Minimum=1\n+optional",
+		"steps":               "Steps is the number of equal increments used to ramp from\nInitialMs to the cluster-level MaxDowntimeMs. Defaults to 7.\n+kubebuilder:validation:Minimum=1\n+optional",
+		"startAfterIteration": "StartAfterIteration is the memory copy iteration after which\ndowntime tuning begins. Defaults to 3.\n+kubebuilder:validation:Minimum=1\n+optional",
+		"cooldownSeconds":     "CooldownSeconds is the minimum interval in seconds\nbetween successive downtime increases. Defaults to 10.\n+kubebuilder:validation:Minimum=1\n+optional",
 	}
 }
 
@@ -1054,7 +1072,7 @@ func (VMIMConfigurationOptions) SwaggerDoc() map[string]string {
 		"unsafeMigrationOverride":           "UnsafeMigrationOverride allows live migrations to occur even if the compatibility check\nindicates the migration will be unsafe to the guest. Defaults to false",
 		"allowPostCopy":                     "AllowPostCopy enables post-copy live migrations. Such migrations allow even the busiest VMIs\nto successfully live-migrate. However, events like a network failure can cause a VMI crash.\nIf set to true, migrations will still start in pre-copy, but switch to post-copy when\nCompletionTimeoutPerGiB triggers. Defaults to false",
 		"allowWorkloadDisruption":           "AllowWorkloadDisruption indicates that the migration shouldn't be\ncanceled after acceptableCompletionTime is exceeded. Instead, if\npermitted, migration will be switched to post-copy or the VMI will be\npaused to allow the migration to complete",
-		"disableTLS":                        "When set to true, DisableTLS will disable the additional layer of live migration encryption\nprovided by KubeVirt. This is usually a bad idea. Defaults to false",
+		"disableTLS":                        "DisableTLS disables both TLS encryption and mutual TLS authentication\non the migration proxy when set to true. This removes all cryptographic\nprotection from the migration data stream.\nWhen disabled, implement network-level access controls to restrict\nmigration traffic to trusted sources only.\nDefaults to false.",
 		"network":                           "Network is the name of the CNI network to use for live migrations. By default, migrations go\nthrough the pod network.",
 		"matchSELinuxLevelOnMigration":      "By default, the SELinux level of target virt-launcher pods is forced to the level of the source virt-launcher.\nWhen set to true, MatchSELinuxLevelOnMigration lets the CRI auto-assign a random level to the target.\nThat will ensure the target virt-launcher doesn't share categories with another pod on the node.\nHowever, migrations will fail when using RWX volumes that don't automatically deal with SELinux levels.",
 		"experimental":                      "ExperimentalMigrationOptions is an alpha API. It is intended for experimental\npurposes only and will be removed in the future.",
@@ -1076,7 +1094,7 @@ func (MigrationConfiguration) SwaggerDoc() map[string]string {
 		"unsafeMigrationOverride":           "UnsafeMigrationOverride allows live migrations to occur even if the compatibility check\nindicates the migration will be unsafe to the guest. Defaults to false",
 		"allowPostCopy":                     "AllowPostCopy enables post-copy live migrations. Such migrations allow even the busiest VMIs\nto successfully live-migrate. However, events like a network failure can cause a VMI crash.\nIf set to true, migrations will still start in pre-copy, but switch to post-copy when\nCompletionTimeoutPerGiB triggers. Defaults to false",
 		"allowWorkloadDisruption":           "AllowWorkloadDisruption indicates that the migration shouldn't be\ncanceled after acceptableCompletionTime is exceeded. Instead, if\npermitted, migration will be switched to post-copy or the VMI will be\npaused to allow the migration to complete",
-		"disableTLS":                        "When set to true, DisableTLS will disable the additional layer of live migration encryption\nprovided by KubeVirt. This is usually a bad idea. Defaults to false",
+		"disableTLS":                        "DisableTLS disables both TLS encryption and mutual TLS authentication\non the migration proxy when set to true. This removes all cryptographic\nprotection from the migration data stream.\nWhen disabled, implement network-level access controls to restrict\nmigration traffic to trusted sources only.\nDefaults to false.",
 		"network":                           "Network is the name of the CNI network to use for live migrations. By default, migrations go\nthrough the pod network.",
 		"matchSELinuxLevelOnMigration":      "By default, the SELinux level of target virt-launcher pods is forced to the level of the source virt-launcher.\nWhen set to true, MatchSELinuxLevelOnMigration lets the CRI auto-assign a random level to the target.\nThat will ensure the target virt-launcher doesn't share categories with another pod on the node.\nHowever, migrations will fail when using RWX volumes that don't automatically deal with SELinux levels.",
 	}

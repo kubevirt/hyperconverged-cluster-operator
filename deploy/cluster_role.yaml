@@ -2484,12 +2484,6 @@ rules:
   - watch
   - get
 - apiGroups:
-  - k8s.cni.cncf.io
-  resources:
-  - network-attachment-definitions
-  verbs:
-  - get
-- apiGroups:
   - kubevirt.io
   resources:
   - virtualmachineinstances
@@ -2685,6 +2679,7 @@ rules:
   - virtualmachines/addvolume
   - virtualmachines/removevolume
   - virtualmachines/memorydump
+  - virtualmachines/removememorydump
   - virtualmachines/evacuate/cancel
   verbs:
   - update
@@ -2871,6 +2866,7 @@ rules:
   - virtualmachines/addvolume
   - virtualmachines/removevolume
   - virtualmachines/memorydump
+  - virtualmachines/removememorydump
   - virtualmachines/evacuate/cancel
   verbs:
   - update
@@ -3132,6 +3128,12 @@ rules:
   - list
   - watch
   - deletecollection
+- apiGroups:
+  - k8s.cni.cncf.io
+  resources:
+  - network-attachment-definitions
+  verbs:
+  - get
 - apiGroups:
   - authentication.k8s.io
   resources:

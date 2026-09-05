@@ -36,14 +36,14 @@ require (
 	golang.org/x/tools v0.49.0
 	gomodules.xyz/jsonpatch/v2 v2.5.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.36.3
-	k8s.io/apiextensions-apiserver v0.36.2
-	k8s.io/apimachinery v0.36.3
+	k8s.io/api v0.36.4
+	k8s.io/apiextensions-apiserver v0.36.4
+	k8s.io/apimachinery v0.36.4
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-helpers v0.34.3
 	k8s.io/kube-openapi v0.36.2
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
-	kubevirt.io/api v1.9.0
+	kubevirt.io/api v1.10.0-alpha.0
 	kubevirt.io/application-aware-quota v1.8.0
 	kubevirt.io/containerized-data-importer-api v1.66.0
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
