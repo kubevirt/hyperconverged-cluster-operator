@@ -138,7 +138,7 @@ var _ = Describe("Observability Controller Deployment", func() {
 			args := containerArgs()
 			Expect(args).To(ContainElement("--tls-security-profile=Custom"))
 			Expect(args).To(ContainElement("--tls-min-version=VersionTLS12"))
-			Expect(args).To(ContainElement("--tls-cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384"))
+			Expect(args).To(ContainElement("--tls-ciphers=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384"))
 		})
 
 		It("should not add cipher suites for Custom profile with TLS 1.3", func() {
@@ -154,7 +154,7 @@ var _ = Describe("Observability Controller Deployment", func() {
 			args := containerArgs()
 			Expect(args).To(ContainElement("--tls-security-profile=Custom"))
 			Expect(args).To(ContainElement("--tls-min-version=VersionTLS13"))
-			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-cipher-suites")))
+			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-ciphers")))
 		})
 
 		It("should not add cipher suites for Custom profile when cipher list is empty", func() {
