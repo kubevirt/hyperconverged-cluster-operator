@@ -69,7 +69,7 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 		args = append(args, "--tls-min-version="+string(profile.Custom.MinTLSVersion))
 
 		if profile.Custom.MinTLSVersion < openshiftconfigv1.VersionTLS13 && len(profile.Custom.Ciphers) > 0 {
-			args = append(args, "--tls-cipher-suites="+strings.Join(profile.Custom.Ciphers, ","))
+			args = append(args, "--tls-ciphers="+strings.Join(profile.Custom.Ciphers, ","))
 		}
 	}
 
