@@ -75,7 +75,7 @@ spec:
         - name: AUTOPILOT_VERSION
           value: v0.1.2
         - name: VM_FILE_RESTORE_OPERATOR_VERSION
-          value: v0.0.7
+          value: v0.0.8
         - name: INFLIGHT_OPERATIONS_VERSION
           value: v0.0.6
         - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -1279,10 +1279,10 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: OPERATOR_VERSION
-          value: v0.0.7
+          value: v0.0.8
         - name: VERBOSITY
           value: "1"
-        image: quay.io/kubevirt/vm-file-restore-operator@sha256:ef5aebae7af3efe89b5c98a51fed467e8e9fa8d003e58a4d82b9a9a2f1c67bc0
+        image: quay.io/kubevirt/vm-file-restore-operator@sha256:1df565524e2c5fbf16664b63c422e605bd34276c0cf9124a40f5e894d4eea6f6
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
