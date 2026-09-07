@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/library-go/pkg/crypto"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -130,22 +129,21 @@ const (
 
 // KubeVirt feature gates that are exposed in HCO API
 const (
-	kvDownwardMetrics              = "DownwardMetrics"
-	kvAlignCPUs                    = "AlignCPUs"
-	kvDecentralizedLiveMigration   = "DecentralizedLiveMigration"
-	kvObjectGraph                  = "ObjectGraph"
-	kvUtilityVolumes               = "UtilityVolumes"
-	kvIncrementalBackup            = "IncrementalBackup"
-	kvPasstBinding                 = "PasstBinding"
-	kvConfigurableHypervisor       = "ConfigurableHypervisor"
-	kvOptOutRoleAggregation        = "OptOutRoleAggregation"
-	kvContainerPathVolumes         = "ContainerPathVolumes"
-	kvPCINUMAAwareTopology         = "PCINUMAAwareTopology"
-	kvGraceIOVirtualization        = "GraceIOVirtualization"
-	kvIOMMUFD                      = "IOMMUFD"
-	kvTemplateFG                   = "Template"
-	kvRebootPolicyFG               = "RebootPolicy"
-	kvExternalNetResourceInjection = "ExternalNetResourceInjection"
+	kvDownwardMetrics            = "DownwardMetrics"
+	kvAlignCPUs                  = "AlignCPUs"
+	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
+	kvObjectGraph                = "ObjectGraph"
+	kvUtilityVolumes             = "UtilityVolumes"
+	kvIncrementalBackup          = "IncrementalBackup"
+	kvPasstBinding               = "PasstBinding"
+	kvConfigurableHypervisor     = "ConfigurableHypervisor"
+	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
+	kvContainerPathVolumes       = "ContainerPathVolumes"
+	kvPCINUMAAwareTopology       = "PCINUMAAwareTopology"
+	kvGraceIOVirtualization      = "GraceIOVirtualization"
+	kvIOMMUFD                    = "IOMMUFD"
+	kvTemplateFG                 = "Template"
+	kvRebootPolicyFG             = "RebootPolicy"
 )
 
 // CPU Plugin default values
@@ -993,11 +991,6 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled(kvRebootPolicyFG) {
 		fgs = append(fgs, kvRebootPolicyFG)
-	}
-
-	if common.ShouldDeployNetworkResourcesInjector(hc) &&
-		meta.IsStatusConditionTrue(hc.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady) {
-		fgs = append(fgs, kvExternalNetResourceInjection)
 	}
 
 	return fgs
