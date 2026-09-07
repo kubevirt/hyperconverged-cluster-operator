@@ -7,7 +7,7 @@ if [[ "$#" -ne 1 ]]; then
     echo "Usage: <target-for-graphs>"
 fi
 
-PREFIX=https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/origin-ci-test/logs
+PREFIX=https://gcs.ci.openshift.org/gcs/origin-ci-test/logs
 JOB_NAME=periodic-ci-kubevirt-hyperconverged-cluster-operator-main-hco-e2e-deploy-nightly-main-aws
 SUFFIX=artifacts/hco-e2e-deploy-nightly-main-aws/test/artifacts
 
@@ -19,7 +19,7 @@ ARTIFACTS_FOLDER=${PREFIX}/${JOB_NAME}/${LATEST_BUILD}/${SUFFIX}
 
 for f in "${filelist[@]}"
 do
-   curl "${ARTIFACTS_FOLDER}/${f}" -f -s -o "${graphs_files_dir}/${f}"
+   curl -L "${ARTIFACTS_FOLDER}/${f}" -f -s -o "${graphs_files_dir}/${f}"
    if [ "$(grep -c "<\!doctype html>" "${graphs_files_dir}/${f}" )" -ge 1 ]; then
 	echo "Got a placeholder HTML file from a failed nightly execution, aborting..."
 	exit 1
