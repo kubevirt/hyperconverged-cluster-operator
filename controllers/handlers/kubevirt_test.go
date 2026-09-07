@@ -16,7 +16,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -2505,42 +2504,6 @@ Version: 1.2.3`)
 					Expect(disabled).To(ContainElement(kvPasstBinding))
 				})
 
-				DescribeTable("should enable ExternalNetResourceInjection FG", func(deploy *bool) {
-					hco.Spec.Deployment.DeployNetworkResourcesInjector = deploy
-					apimeta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
-						Type:   hcov1.ConditionNetworkResourcesInjectorReady,
-						Status: metav1.ConditionTrue,
-						Reason: "DeploymentReady",
-					})
-					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-					fgs := getKvFeatureGateList(hco)
-					disabled := getKvDisabledFeatureGateList(fgs)
-					Expect(disabled).NotTo(ContainElement(kvExternalNetResourceInjection))
-				},
-					Entry("when enabled=true and ready=true", new(true)),
-					Entry("when enabled=nil (default) and ready=true", (*bool)(nil)),
-				)
-
-				DescribeTable("should disable ExternalNetResourceInjection FG", func(deploy *bool, conditionTrue bool) {
-					hco.Spec.Deployment.DeployNetworkResourcesInjector = deploy
-					if conditionTrue {
-						apimeta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
-							Type:   hcov1.ConditionNetworkResourcesInjectorReady,
-							Status: metav1.ConditionTrue,
-							Reason: "DeploymentReady",
-						})
-					}
-					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-					fgs := getKvFeatureGateList(hco)
-					disabled := getKvDisabledFeatureGateList(fgs)
-					Expect(disabled).To(ContainElement(kvExternalNetResourceInjection))
-				},
-					Entry("when enabled=true and ready=false", new(true), false),
-					Entry("when enabled=false and ready=true", new(false), true),
-					Entry("when enabled=false and ready=false", new(false), false),
-					Entry("when enabled=nil (default) and ready=false", (*bool)(nil), false),
-				)
-
 				It("should include all beta FG if not in the enabled list", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					fgs := getKvFeatureGateList(hco)
@@ -3491,28 +3454,6 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.RoleAggregationStrategy).To(BeNil())
 				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvOptOutRoleAggregation))
 			})
-		})
-
-		Context("DeployNetworkResourcesInjector", func() {
-			It("should add ExternalNetResourceInjection FG when NetResInj is ready", func() {
-				apimeta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
-					Type:   hcov1.ConditionNetworkResourcesInjectorReady,
-					Status: metav1.ConditionTrue,
-					Reason: "DeploymentReady",
-				})
-				kv, err := NewKubeVirt(hco)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvExternalNetResourceInjection))
-			})
-
-			It("should not add ExternalNetResourceInjection FG when NetResInj not ready", func() {
-				kv, err := NewKubeVirt(hco)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvExternalNetResourceInjection))
-			})
-
 		})
 
 		Context("VM state storage class", func() {
