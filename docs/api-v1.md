@@ -489,7 +489,7 @@ A feature gate may be in the following phases:
 
 | Name | Description | Phase |
 | ---- | ----------- | ----- |
-| decentralizedLiveMigration | DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Developer Preview. | beta |
+| decentralizedLiveMigration | DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Tech Preview. | beta |
 | videoConfig | VideoConfig allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview. | beta |
 | alignCPUs | Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. | alpha |
 | containerPathVolumes | ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs. | alpha |
@@ -498,7 +498,7 @@ A feature gate may be in the following phases:
 | disableMDevConfiguration | Disable mediated devices handling on KubeVirt | alpha |
 | downwardMetrics | Allow to expose a limited set of host metrics to guests. | alpha |
 | enableMultiArchBootImageImport | EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures. This feature is in Developer Preview. | alpha |
-| incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Tech Preview. | alpha |
+| incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Developer Preview. | alpha |
 | objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | alpha |
 | persistentReservation | Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod. | alpha |
 | autoResourceLimits | Deprecated: this feature gate is ignored. | deprecated |

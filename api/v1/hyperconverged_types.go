@@ -65,7 +65,7 @@ type HyperConvergedSpec struct {
 	//   DecentralizedLiveMigration enables the decentralized live migration
 	//   (cross-cluster migration) feature. This feature allows live migration of
 	//   VirtualMachineInstances between different clusters. This feature is in
-	//   Developer Preview.
+	//   Tech Preview.
 	//   Phase: beta
 	//
 	// * videoConfig:
@@ -117,7 +117,7 @@ type HyperConvergedSpec struct {
 	//   IncrementalBackup enables changed block tracking backups and incremental
 	//   backups using QEMU capabilities in KubeVirt. When enabled, this also
 	//   enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This
-	//   feature is in Tech Preview.
+	//   feature is in Developer Preview.
 	//   Phase: alpha
 	//
 	// * objectGraph:
