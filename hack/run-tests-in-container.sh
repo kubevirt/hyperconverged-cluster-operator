@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 export GINKGO_LABELS="${GINKGO_LABELS:-}"
+export S390X_GUESTLESS_KERNEL_IMAGE="${S390X_GUESTLESS_KERNEL_IMAGE:-}"
 set -exuo pipefail
 
 INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE:-"kubevirt-hyperconverged"}
@@ -73,6 +74,8 @@ spec:
       value: $INSTALLED_NAMESPACE
     - name: GINKGO_LABELS
       value: "${GINKGO_LABELS}"
+    - name: S390X_GUESTLESS_KERNEL_IMAGE
+      value: "${S390X_GUESTLESS_KERNEL_IMAGE}"
     image: $FUNC_TEST_IMAGE
     volumeMounts:
       - mountPath: /test/output

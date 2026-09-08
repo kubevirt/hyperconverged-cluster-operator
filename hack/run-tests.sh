@@ -30,7 +30,9 @@ printOperatorCondition
 
 GINKGO_LABELS="${GINKGO_LABELS:-}"
 echo "GINKGO_LABELS=${GINKGO_LABELS}"
-${TEST_OUT_PATH}/func-tests.test -ginkgo.v -ginkgo.junit-report="${TEST_OUT_PATH}/output/junit.xml" -installed-namespace="${INSTALLED_NAMESPACE}" -cdi-namespace="${INSTALLED_NAMESPACE}" --ginkgo.label-filter="${GINKGO_LABELS}" "$@" "${KUBECONFIG_FLAG}"
+S390X_GUESTLESS_KERNEL_IMAGE="${S390X_GUESTLESS_KERNEL_IMAGE:-quay.io/kubevirt/s390x-guestless-kernel:${KUBEVIRT_VERSION}}"
+echo "S390X_GUESTLESS_KERNEL_IMAGE=${S390X_GUESTLESS_KERNEL_IMAGE}"
+${TEST_OUT_PATH}/func-tests.test -ginkgo.v -ginkgo.junit-report="${TEST_OUT_PATH}/output/junit.xml" -installed-namespace="${INSTALLED_NAMESPACE}" -cdi-namespace="${INSTALLED_NAMESPACE}" -s390x-guestless-kernel-image="${S390X_GUESTLESS_KERNEL_IMAGE}" --ginkgo.label-filter="${GINKGO_LABELS}" "$@" "${KUBECONFIG_FLAG}"
 
 # wait a minute to allow all VMs to be deleted before attempting to change node placement configuration
 sleep 60
