@@ -66,8 +66,10 @@ const (
 )
 
 type config struct {
+	apiVersion      string
 	inputFiles      string
 	featureGateFile string
+	isDeprecated    bool
 }
 
 func main() {
@@ -89,7 +91,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = printAPIDocs(os.Stdout, types, cfg.featureGateFile)
+	err = printAPIDocs(os.Stdout, types, cfg)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -99,8 +101,10 @@ func main() {
 func getConfig() config {
 	cfg := config{}
 
+	flag.StringVar(&cfg.apiVersion, "api-version", "v1", "the API version for this document")
 	flag.StringVar(&cfg.inputFiles, "in", "", "comma separated list of input files")
 	flag.StringVar(&cfg.featureGateFile, "feature-gates", "", "feature gate file")
+	flag.BoolVar(&cfg.isDeprecated, "deprecated", false, "deprecated flag set to true")
 
 	flag.Parse()
 
@@ -138,6 +142,8 @@ type typeInfo struct {
 type KubeTypes []typeInfo
 
 type DocInfo struct {
+	APIVersion   string
+	IsDeprecated bool
 	KubeTypes    []KubeTypes
 	FeatureGates featuregates.FeatureGates
 }
@@ -411,7 +417,7 @@ func setK8sLinks() error {
 //go:embed api.md.gotemplate
 var templateFile embed.FS
 
-func printAPIDocs(w io.Writer, types []KubeTypes, featureGateFile string) error {
+func printAPIDocs(w io.Writer, types []KubeTypes, cfg config) error {
 	funcMap := template.FuncMap{
 		"ToLower": strings.ToLower,
 		"FirstItem": func(kubeTypes KubeTypes) typeInfo {
@@ -428,11 +434,13 @@ func printAPIDocs(w io.Writer, types []KubeTypes, featureGateFile string) error 
 	}
 
 	docInfo := DocInfo{
-		KubeTypes: types,
+		APIVersion:   cfg.apiVersion,
+		IsDeprecated: cfg.isDeprecated,
+		KubeTypes:    types,
 	}
 
-	if featureGateFile != "" {
-		err2 := handleFeatureGates(featureGateFile, types, &docInfo)
+	if cfg.featureGateFile != "" {
+		err2 := handleFeatureGates(cfg.featureGateFile, types, &docInfo)
 		if err2 != nil {
 			return err2
 		}

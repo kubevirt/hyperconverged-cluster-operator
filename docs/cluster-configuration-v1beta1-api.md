@@ -1,4 +1,7 @@
 # Cluster Configuration
+
+> **WARNING**: The `v1beta1` API version of the HyperConverged kind is deprecated and will be removed in a future version of HCO. Use the `v1` API version instead.
+
 ## Introduction
 The HyperConverged Cluster allows modifying the KubeVirt cluster configuration by editing the HyperConverged Cluster CR
 (Custom Resource).
