@@ -2,6 +2,7 @@ package observabilitycontroller
 
 import (
 	"os"
+	"slices"
 	"strings"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -68,8 +69,13 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	if profile.Type == openshiftconfigv1.TLSProfileCustomType {
 		args = append(args, "--tls-min-version="+string(profile.Custom.MinTLSVersion))
 
-		if profile.Custom.MinTLSVersion < openshiftconfigv1.VersionTLS13 && len(profile.Custom.Ciphers) > 0 {
-			args = append(args, "--tls-cipher-suites="+strings.Join(profile.Custom.Ciphers, ","))
+		if ciphers := strings.Join(profile.Custom.Ciphers, ","); ciphers != "" {
+			args = append(args, "--tls-ciphers="+ciphers)
+		}
+
+		groups := joinTLSGroups(profile.Custom.Groups)
+		if groups != "" {
+			args = append(args, "--tls-groups="+groups)
 		}
 	}
 
@@ -195,6 +201,20 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	}
 
 	return dep
+}
+
+func joinTLSGroups(tlsGroups []openshiftconfigv1.TLSGroup) string {
+	if len(tlsGroups) == 0 {
+		return ""
+	}
+
+	return strings.Join(slices.Collect(func(yield func(string) bool) {
+		for _, group := range tlsGroups {
+			if !yield(string(group)) {
+				return
+			}
+		}
+	}), ",")
 }
 
 func getMetricsAllowlist(hc *hcov1.HyperConverged) []string {

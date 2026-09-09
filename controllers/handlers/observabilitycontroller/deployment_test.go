@@ -123,6 +123,7 @@ var _ = Describe("Observability Controller Deployment", func() {
 			Expect(args).To(ContainElement("--tls-security-profile=Intermediate"))
 			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-min-version")))
 			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-cipher-suites")))
+			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-groups")))
 		})
 
 		It("should add tls-min-version and cipher suites for Custom profile with TLS 1.2", func() {
@@ -132,29 +133,18 @@ var _ = Describe("Observability Controller Deployment", func() {
 					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
 						Ciphers:       []string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"},
 						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+						Groups: []openshiftconfigv1.TLSGroup{
+							openshiftconfigv1.TLSGroupX25519MLKEM768,
+							openshiftconfigv1.TLSGroupSecP384r1,
+						},
 					},
 				},
 			})
 			args := containerArgs()
 			Expect(args).To(ContainElement("--tls-security-profile=Custom"))
 			Expect(args).To(ContainElement("--tls-min-version=VersionTLS12"))
-			Expect(args).To(ContainElement("--tls-cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384"))
-		})
-
-		It("should not add cipher suites for Custom profile with TLS 1.3", func() {
-			mockTLSSecProfile(&openshiftconfigv1.TLSSecurityProfile{
-				Type: openshiftconfigv1.TLSProfileCustomType,
-				Custom: &openshiftconfigv1.CustomTLSProfile{
-					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
-						Ciphers:       []string{"TLS_AES_128_GCM_SHA256"},
-						MinTLSVersion: openshiftconfigv1.VersionTLS13,
-					},
-				},
-			})
-			args := containerArgs()
-			Expect(args).To(ContainElement("--tls-security-profile=Custom"))
-			Expect(args).To(ContainElement("--tls-min-version=VersionTLS13"))
-			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-cipher-suites")))
+			Expect(args).To(ContainElement("--tls-ciphers=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384"))
+			Expect(args).To(ContainElement("--tls-groups=X25519MLKEM768,secp384r1"))
 		})
 
 		It("should not add cipher suites for Custom profile when cipher list is empty", func() {
@@ -163,13 +153,37 @@ var _ = Describe("Observability Controller Deployment", func() {
 				Custom: &openshiftconfigv1.CustomTLSProfile{
 					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
 						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+						Groups: []openshiftconfigv1.TLSGroup{
+							openshiftconfigv1.TLSGroupX25519MLKEM768,
+							openshiftconfigv1.TLSGroupSecP384r1,
+						},
 					},
 				},
 			})
 			args := containerArgs()
 			Expect(args).To(ContainElement("--tls-security-profile=Custom"))
 			Expect(args).To(ContainElement("--tls-min-version=VersionTLS12"))
+			Expect(args).To(ContainElement("--tls-groups=X25519MLKEM768,secp384r1"))
+
 			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-cipher-suites")))
+		})
+
+		It("should not add TLS groups for Custom profile when group list is empty", func() {
+			mockTLSSecProfile(&openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+						Ciphers:       []string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"},
+					},
+				},
+			})
+			args := containerArgs()
+			Expect(args).To(ContainElement("--tls-security-profile=Custom"))
+			Expect(args).To(ContainElement("--tls-min-version=VersionTLS12"))
+			Expect(args).To(ContainElement("--tls-ciphers=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384"))
+
+			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-groups")))
 		})
 	})
 
