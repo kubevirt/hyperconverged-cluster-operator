@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -94,6 +95,9 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: podLabels,
+				Annotations: map[string]string{
+					securityv1.RequiredSCCAnnotation: "restricted-v2",
+				},
 			},
 			Spec: corev1.PodSpec{
 				ServiceAccountName: serviceAccountName,
