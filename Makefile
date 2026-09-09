@@ -268,7 +268,7 @@ generate: generate-feature-gates
 
 generate-doc: build-docgen
 	_out/docgen --in=./api/v1/hyperconverged_types.go --feature-gates=pkg/featuregatedetails/feature-gates.json > docs/api.md
-	_out/docgen --in=./api/v1beta1/hyperconverged_types.go > docs/api-v1beta1.md
+	_out/docgen --in=./api/v1beta1/hyperconverged_types.go --api-version=v1beta1 --deprecated > docs/api-v1beta1.md
 	_out/metricsdocs > docs/metrics.md
 
 build-docgen:

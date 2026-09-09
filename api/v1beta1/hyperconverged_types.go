@@ -623,6 +623,7 @@ type ApplicationAwareConfigurations struct {
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:resource:scope=Namespaced,categories={all},shortName={hco,hcos}
 // +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion:warning="The v1beta1 API version is deprecated, and will be removed in a future version of HCO; use the v1 API version instead"
 type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

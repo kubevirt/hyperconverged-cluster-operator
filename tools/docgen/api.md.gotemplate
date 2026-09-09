@@ -42,12 +42,14 @@ A feature gate may be in the following phases:
 {{- end -}}
 {{ define "toc-line" }}* [{{ .Name }}](#{{ .Name | ToLower }}){{ end }}
 {{- /* the document starts here */ -}}
-# API Docs
+# {{.APIVersion}} API Documentation
 
-This Document documents the types introduced by the hyperconverged-cluster-operator to be consumed by users.
+This Document documents the `{{ .APIVersion }}` API version's types introduced by the hyperconverged-cluster-operator, to be consumed by users.
 
 > Note this document is generated from code comments. When contributing a change to this document please do so by changing the code comments.
-
+{{ if .IsDeprecated }}
+> **WARNING**: The `{{.APIVersion}}` API version is deprecated and will be removed in a future version of HCO; Use the `v1` API version instead.
+{{ end }}
 ## Table of Contents
 {{- range .KubeTypes }}
 {{ template "toc-line" . | FirstItem -}}
