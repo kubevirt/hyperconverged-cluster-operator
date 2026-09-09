@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,6 +56,8 @@ var _ = Describe("Observability Controller Deployment", func() {
 			Expect(dep.Spec.Replicas).To(HaveValue(Equal(int32(1))))
 			Expect(dep.Spec.Selector.MatchLabels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(dep.Spec.Selector.MatchLabels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentObservability)))
+
+			Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue(securityv1.RequiredSCCAnnotation, "restricted-v2"))
 
 			Expect(dep.Spec.Template.Spec.ServiceAccountName).To(Equal(serviceAccountName))
 			Expect(dep.Spec.Template.Spec.PriorityClassName).To(Equal("system-cluster-critical"))
