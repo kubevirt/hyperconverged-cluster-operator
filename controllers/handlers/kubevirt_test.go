@@ -39,7 +39,7 @@ var _ = Describe("KubeVirt Operand", func() {
 
 	const (
 		// Number of conditional featuregates always added by getFeatureGateChecks (one of the volume hotplug FGs and DecentralizedLiveMigration defaults)
-		conditionalFeatureGatesCount = 3
+		conditionalFeatureGatesCount = 4
 	)
 
 	var (
@@ -1992,6 +1992,7 @@ Version: 1.2.3`)
 							And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 							Not(ContainElement(kvContainerPathVolumes)),
 							ContainElement(kvTemplateFG),
+							ContainElement(kvRebootPolicy),
 						),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
@@ -2173,6 +2174,23 @@ Version: 1.2.3`)
 							}
 						},
 						Not(ContainElement(kvTemplateFG)),
+					),
+					// RebootPolicy
+					Entry("should add the Template feature gate if rebootPolicy is true in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "rebootPolicy", State: new(featuregates.Enabled)},
+							}
+						},
+						ContainElement(kvRebootPolicy),
+					),
+					Entry("should not add the Template feature gate if rebootPolicy is false in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "rebootPolicy", State: new(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvRebootPolicy)),
 					),
 				)
 			})

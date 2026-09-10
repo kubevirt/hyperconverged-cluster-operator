@@ -144,6 +144,7 @@ const (
 	kvGraceIOVirtualization        = "GraceIOVirtualization"
 	kvIOMMUFD                      = "IOMMUFD"
 	kvTemplateFG                   = "Template"
+	kvRebootPolicy                 = "RebootPolicy"
 	kvExternalNetResourceInjection = "ExternalNetResourceInjection"
 )
 
@@ -988,6 +989,10 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled(kvTemplateFG) {
 		fgs = append(fgs, kvTemplateFG)
+	}
+
+	if featureGates.IsEnabled(kvRebootPolicy) {
+		fgs = append(fgs, kvRebootPolicy)
 	}
 
 	if common.ShouldDeployNetworkResourcesInjector(hc) &&
