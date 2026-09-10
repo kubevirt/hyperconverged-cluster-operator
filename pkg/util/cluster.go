@@ -23,7 +23,6 @@ type ClusterInfo interface {
 	Init(ctx context.Context, cl client.Client, logger logr.Logger) error
 	IsOpenshift() bool
 	IsRunningLocally() bool
-	GetBaseDomain() string
 	IsManagedByOLM() bool
 	IsConsolePluginImageProvided() bool
 	IsMonitoringAvailable() bool
@@ -42,7 +41,6 @@ type ClusterInfoImp struct {
 	deschedulerAvailable       bool
 	singlestackipv6            bool
 	isHyperShiftManaged        bool
-	baseDomain                 string
 	logger                     logr.Logger
 }
 
@@ -182,22 +180,6 @@ func (c *ClusterInfoImp) IsHyperShiftManaged() bool {
 	return c.isHyperShiftManaged
 }
 
-func (c *ClusterInfoImp) GetBaseDomain() string {
-	return c.baseDomain
-}
-
-func getClusterBaseDomain(ctx context.Context, cl client.Client) (string, error) {
-	clusterDNS := &openshiftconfigv1.DNS{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster",
-		},
-	}
-	if err := cl.Get(ctx, client.ObjectKeyFromObject(clusterDNS), clusterDNS); err != nil {
-		return "", err
-	}
-	return clusterDNS.Spec.BaseDomain, nil
-}
-
 func isPrometheusExists(ctx context.Context, cl client.Client, logger logr.Logger) bool {
 	prometheusRuleCRDExists := isCRDExists(ctx, cl, PrometheusRuleCRDName, logger)
 	serviceMonitorCRDExists := isCRDExists(ctx, cl, ServiceMonitorCRDName, logger)
@@ -259,10 +241,6 @@ func (c *ClusterInfoImp) queryCluster(ctx context.Context, cl client.Client) err
 	} else {
 		c.runningInOpenshift = true
 		c.logger.Info("Cluster type = openshift", "version", clusterVersion.Status.Desired.Version)
-		c.baseDomain, err = getClusterBaseDomain(ctx, cl)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
