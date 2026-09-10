@@ -76,6 +76,11 @@ type HyperConvergedSpec struct {
 	//   feature is in Technical Preview.
 	//   Phase: beta
 	//
+	// * rebootPolicy:
+	//   RebootPolicy enables virtual machines to be recreated when they reboot
+	//   from within the guest operating system. This feature is in Tech Preview.
+	//   Phase: beta
+	//
 	// * template:
 	//   VirtualMachine Templates provide a native, in-cluster VM templating for
 	//   KubeVirt. They allow you to define reusable VM blueprints with
