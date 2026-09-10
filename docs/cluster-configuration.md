@@ -272,6 +272,21 @@ spec:
 
 **Graduation Status**: Alpha
 
+### RebootPolicy Feature Gate
+
+When a guest VM is rebooted, the vmi pod is not terminated and new VM settings
+are not applied post-reboot.
+
+When the RebootPolicy Feature Gate is enabled, it is possible to set the reboot
+policy for a VM, to specify how the domain should behave when a guest reboot is
+triggered.
+
+**Note**: this feature is in Tech Preview.
+
+**Default**: `Enabled`
+
+**Graduation Status**: Beta
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true` so users can bind their VM using the core Passt Network binding.
 
