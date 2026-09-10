@@ -100,6 +100,11 @@ const (
 
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
+
+	// Enables setting the RebootPolicy field on VMI's DomainSpec
+	// which allows terminating the VMI on guest reboot instead of silently rebooting,
+	// enabling the VM controller to recreate the VMI with updated configuration.
+	kvRebootPolicy = "RebootPolicy"
 )
 
 // KubeVirt architecture dependant feature gates.
@@ -115,6 +120,7 @@ var (
 		kvSnapshotGate,
 		kvHostDevicesGate,
 		kvKubevirtSeccompProfile,
+		kvRebootPolicy,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
