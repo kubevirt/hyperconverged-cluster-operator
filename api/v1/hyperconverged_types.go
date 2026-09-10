@@ -124,6 +124,16 @@ type HyperConvergedSpec struct {
 	//   This feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * workloadEncryptionSEV:
+	//   Enable AMD SEV and SEV-SNP workload encryption for confidential VMs. Note:
+	//   this feature is in Developer Preview.
+	//   Phase: alpha
+	//
+	// * workloadEncryptionTDX:
+	//   Enable Intel TDX workload encryption for confidential VMs. Note: this
+	//   feature is in Developer Preview.
+	//   Phase: alpha
+	//
 	// * disableMDevConfiguration:
 	//   Deprecated: This feature gate has graduated to a dedicated configuration
 	//   field; use spec.virtualization.mediatedDevicesConfiguration.enabled
@@ -307,6 +317,11 @@ type VirtualizationConfig struct {
 	// +optional
 	// +kubebuilder:validation:Enum=AggregateToDefault;Manual
 	RoleAggregationStrategy *v1.RoleAggregationStrategy `json:"roleAggregationStrategy,omitempty"`
+
+	// ConfidentialCompute configures cluster-level confidential computing settings,
+	// such as TDX attestation via QGS (Quote Generation Service).
+	// +optional
+	ConfidentialCompute *v1.ConfidentialComputeConfiguration `json:"confidentialCompute,omitempty"`
 
 	// VmiCPUAllocationRatio defines, for each requested virtual CPU,
 	// how much physical CPU to request per VMI from the

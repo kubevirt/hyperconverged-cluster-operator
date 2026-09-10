@@ -1069,6 +1069,11 @@ func (in *VirtualizationConfig) DeepCopyInto(out *VirtualizationConfig) {
 		*out = new(apicorev1.RoleAggregationStrategy)
 		**out = **in
 	}
+	if in.ConfidentialCompute != nil {
+		in, out := &in.ConfidentialCompute, &out.ConfidentialCompute
+		*out = new(apicorev1.ConfidentialComputeConfiguration)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.VmiCPUAllocationRatio != nil {
 		in, out := &in.VmiCPUAllocationRatio, &out.VmiCPUAllocationRatio
 		*out = new(int)

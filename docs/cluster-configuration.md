@@ -226,6 +226,54 @@ workload identity.
 
 **Graduation Status**: Alpha
 
+### workloadEncryptionSEV Feature Gate
+Add the `workloadEncryptionSEV` feature gate in order to enable AMD SEV and
+SEV-SNP workload encryption for confidential VMs. When enabled, this allows
+deploy VMs in which memory and CPU registers are encrypted and isolated from
+the host.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: workloadEncryptionSEV
+```
+
+**Note**: This feature is in Developer Preview. The host must have AMD SEV or
+SEV-SNP capable hardware and the appropriate kernel parameters configured
+(`kvm_amd.sev_snp=1`, `mem_encrypt=on`).
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
+### workloadEncryptionTDX Feature Gate
+Add the `workloadEncryptionTDX` feature gate in order to enable Intel TDX
+workload encryption for confidential VMs. When enabled, this allows deploy VMs
+in which memory and CPU registers are encrypted and isolated from the host.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: workloadEncryptionTDX
+```
+
+**Note**: This feature is in Developer Preview. The host must have Intel TDX
+capable hardware and the appropriate kernel parameters configured
+(`kvm_intel.tdx=1`, `nohibernate`). Additionally, PCCS and QGS services must
+be deployed for attestation.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### enableMultiArchBootImageImport Feature Gate (Deprecated)
 This feature is GA now, and the feature gate is deprecated. It will be removed in a future version.
 
@@ -727,6 +775,42 @@ spec:
       batchEvictionSize: 10
       batchEvictionInterval: "1m"
 ```
+
+### Confidential Compute Configuration
+
+The `spec.virtualization.confidentialCompute` field configures cluster-level
+confidential computing settings. Currently, it only configures attestation.
+
+When a TDX-enabled VM is started and attestation is configured, user can do
+remote attestation of the confidential VM.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: workloadEncryptionTDX
+  virtualization:
+    confidentialCompute:
+      tdx:
+        attestation:
+          enforced: false
+          qgsSocketPath: /var/run/tdx-qgs/qgs.socket
+```
+
+Fields:
+
+- `tdx.attestation.enforced` (bool, default: `false`): When `true`, TDX VMs will only be scheduled
+  on nodes where the QGS socket is available. When `false`, VMs can be scheduled even if QGS
+  is not present, but attestation will not be available.
+- `tdx.attestation.qgsSocketPath` (string, default: `/var/run/tdx-qgs/qgs.socket`): The path to the
+  Quote Generation Service socket on the host.
+
+**Note**: This configuration requires the `workloadEncryptionTDX` feature gate to be enabled, and the
+host must have Intel TDX capable hardware with the appropriate kernel parameters (`kvm_intel.tdx=1`,
+`nohibernate`).
 
 ### Cluster-level eviction strategy
 
