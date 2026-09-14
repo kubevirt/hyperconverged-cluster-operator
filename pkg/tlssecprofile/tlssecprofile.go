@@ -7,6 +7,7 @@ var (
 	GetCipherSuitesAndMinTLSVersionInGolangFormat = internal.GetCipherSuitesAndMinTLSVersionInGolangFormat
 	GetTLSSecurityProfile                         = internal.GetTLSSecurityProfile
 	GetGroups                                     = internal.GetGroups
+	GetFIPSCompliantGroups                        = internal.GetFIPSCompliantGroups
 	GetGroupsInGolangFormat                       = internal.GetGroupsInGolangFormat
 	Refresh                                       = internal.Refresh
 	SetHyperConvergedTLSSecurityProfile           = internal.SetHyperConvergedTLSSecurityProfile

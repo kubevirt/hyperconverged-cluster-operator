@@ -9,6 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/crypto"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -72,6 +73,24 @@ func GetGroups(fromHC *openshiftconfigv1.TLSSecurityProfile) []openshiftconfigv1
 	}
 
 	return slices.Clone(openshiftconfigv1.TLSProfiles[profile.Type].Groups)
+}
+
+// GetFIPSCompliantGroups returns the TLS groups from the effective profile, only if they are supported in non-FIPS applications.
+// For Custom profiles, returns the custom groups (which may be nil/empty).
+// For named profiles (Old/Intermediate/Modern), returns groups from TLSProfiles.
+func GetFIPSCompliantGroups(fromHC *openshiftconfigv1.TLSSecurityProfile) []openshiftconfigv1.TLSGroup {
+	profile := GetTLSSecurityProfile(fromHC)
+
+	var groups []openshiftconfigv1.TLSGroup
+	if profile.Type == openshiftconfigv1.TLSProfileCustomType {
+		groups = slices.Clone(profile.Custom.Groups)
+	} else {
+		groups = slices.Clone(openshiftconfigv1.TLSProfiles[profile.Type].Groups)
+	}
+
+	groups = slices.DeleteFunc(groups, nonFIPSGroups.Has)
+
+	return groups
 }
 
 // GetGroupsInGolangFormat returns the TLS groups as Go tls.CurveID values.
@@ -206,3 +225,12 @@ func filterAndValidateGroups(groups []openshiftconfigv1.TLSGroup, logger logr.Lo
 
 	return filtered
 }
+
+// nonFIPSGroups is the set of TLS groups that are NOT approved for use
+// under FIPS 140-3 / NIST SP 800-56Ar3. X25519 and X25519MLKEM768 rely
+// on Curve25519 arithmetic which is excluded from the FIPS-approved list
+// (see TRT-2597 and NIST SP 800-56Ar3 Appendix D).
+var nonFIPSGroups = sets.New[openshiftconfigv1.TLSGroup](
+	openshiftconfigv1.TLSGroupX25519,
+	openshiftconfigv1.TLSGroupX25519MLKEM768,
+)
