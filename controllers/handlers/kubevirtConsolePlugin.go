@@ -398,7 +398,7 @@ func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
 		data.SSLCiphers = strings.Join(ciphers, ":")
 	}
 
-	if groups := tlssecprofile.GetGroups(hc.Spec.Security.TLSSecurityProfile); len(groups) > 0 {
+	if groups := tlssecprofile.GetFIPSCompliantGroups(hc.Spec.Security.TLSSecurityProfile); len(groups) > 0 {
 		groupStrs := make([]string, len(groups))
 		for i, g := range groups {
 			groupStrs[i] = string(g)
