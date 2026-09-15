@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -56,6 +57,21 @@ func verifyVMICreation(ctx context.Context, cli client.Client) string {
 		},
 	}
 	vmi.Spec.Networks = []kubevirtcorev1.Network{*kubevirtcorev1.DefaultPodNetwork()}
+
+	// s390x requires an IPL source; guestless VMIs fail without KernelBoot.
+	archs, err := getArchs(ctx)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	if slices.Contains(archs, "s390x") {
+		vmi.Spec.Architecture = "s390x"
+		vmi.Spec.Domain.Firmware = &kubevirtcorev1.Firmware{
+			KernelBoot: &kubevirtcorev1.KernelBoot{
+				Container: &kubevirtcorev1.KernelBootContainer{
+					Image:      "quay.io/kubevirt/s390x-guestless-kernel:v1.9.0",
+					KernelPath: "/boot/kernel",
+				},
+			},
+		}
+	}
 
 	EventuallyWithOffset(1, func() error {
 		return cli.Create(ctx, vmi)
