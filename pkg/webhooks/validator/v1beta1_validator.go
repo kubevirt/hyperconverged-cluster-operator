@@ -359,6 +359,11 @@ func (wh *WebhookV1Beta1Handler) validateDeprecatedFeatureGates(hc *v1beta1.Hype
 	}
 
 	//nolint:staticcheck
+	if hc.Spec.FeatureGates.DeployKubeSecondaryDNS != nil {
+		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "deployKubeSecondaryDNS"))
+	}
+
+	//nolint:staticcheck
 	if hc.Spec.FeatureGates.NonRoot != nil {
 		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "nonRoot"))
 	}
