@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.2-unstable
-    createdAt: "2026-08-25 05:13:33"
+    createdAt: "2026-09-15 17:02:50"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4266,7 +4266,7 @@ spec:
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:9a0183d08db45d34bfe8dfd007ac7c58d57cfb1c386d0fac6d0ea780ab4cb660
                 - name: KV_CONSOLE_PROXY_IMAGE
-                  value: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:147a0a9fbd8169bdf150242d8a7aaf4587634bf30e588639a0f854777aba62d1
+                  value: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:0ab2cab78f64cd146f00dfa5e9d57978b2d17ef94831c2776b9e6fb5471121b5
                 - name: PASST_SIDECAR_IMAGE
                   value: quay.io/kubevirt/network-passt-binding@sha256:47f06f3c1482bc3fa13741ea7d483ba054b24441edbde12469581b48e3c71ca3
                 - name: PASST_CNI_IMAGE
@@ -6279,7 +6279,7 @@ spec:
     name: kubesecondarydns
   - image: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d5aafc2c9ea71fc03c92a5f73d1c612996a20cff59051e029f82774210ff457e
     name: kubevirt-aie-webhook
-  - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:147a0a9fbd8169bdf150242d8a7aaf4587634bf30e588639a0f854777aba62d1
+  - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:0ab2cab78f64cd146f00dfa5e9d57978b2d17ef94831c2776b9e6fb5471121b5
     name: kubevirt-apiserver-proxy
   - image: quay.io/kubevirt/kubevirt-migration-controller@sha256:d235178862451a14826894d9ddf8af96898fc098ae6e7af56987f694cfd57c5b
     name: kubevirt-migration-controller
