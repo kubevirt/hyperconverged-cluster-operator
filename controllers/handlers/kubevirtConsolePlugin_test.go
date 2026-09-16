@@ -992,17 +992,26 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		Context("TLS Security Profile", func() {
 			BeforeEach(func() {
 				originalGetCipherSuitesFunc := tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat
+				originalGetGroupsInGolangFormat := tlssecprofile.GetGroupsInGolangFormat
+
 				DeferCleanup(func() {
 					tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = originalGetCipherSuitesFunc
+					tlssecprofile.GetGroupsInGolangFormat = originalGetGroupsInGolangFormat
 				})
 			})
 
-			It("should add TLS cipher suites and min TLS version args when both are set", func() {
+			It("should add TLS cipher suites, min TLS version and TLS curves args, when they are set", func() {
 				tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]uint16, uint16) {
 					return []uint16{
 						tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 						tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 					}, tls.VersionTLS12
+				}
+				tlssecprofile.GetGroupsInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
+					return []tls.CurveID{
+						tls.CurveP256,
+						tls.CurveP384,
+					}
 				}
 
 				deployment := NewKvUIProxyDeployment(hco)
@@ -1012,6 +1021,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 				Expect(args).To(ContainElement("--tls-cipher-suites=49195,49199"))
 				Expect(args).To(ContainElement("--tls-min-version=771"))
+				Expect(args).To(ContainElement("--tls-curve-ids=23,24"))
 			})
 
 			It("should add only min TLS version arg when no ciphers are returned (TLS 1.3)", func() {
@@ -1019,6 +1029,9 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 					return []uint16{}, tls.VersionTLS13
 				}
 
+				tlssecprofile.GetGroupsInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
+					return nil
+				}
 				deployment := NewKvUIProxyDeployment(hco)
 
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
@@ -1027,13 +1040,21 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				hasCipherArg := slices.ContainsFunc(args, func(arg string) bool {
 					return strings.HasPrefix(arg, "--tls-cipher-suites=")
 				})
+				hasCurveArg := slices.ContainsFunc(args, func(arg string) bool {
+					return strings.HasPrefix(arg, "--tls-curve-ids=")
+				})
 				Expect(hasCipherArg).To(BeFalseBecause("should not have cipher suites arg when no ciphers are returned"))
+				Expect(hasCurveArg).To(BeFalseBecause("should not have curve IDs arg when no curves are returned"))
 				Expect(args).To(ContainElement("--tls-min-version=772"))
 			})
 
 			It("should add only --tls-min-version=0 arg when both ciphers and min version are zero values", func() {
 				tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]uint16, uint16) {
 					return nil, 0
+				}
+
+				tlssecprofile.GetGroupsInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
+					return nil
 				}
 
 				deployment := NewKvUIProxyDeployment(hco)
@@ -1050,11 +1071,17 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]uint16, uint16) {
 					return []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384}, tls.VersionTLS12
 				}
+				tlssecprofile.GetGroupsInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
+					return []tls.CurveID{
+						tls.CurveP256,
+					}
+				}
 
 				deployment := NewKvUIProxyDeployment(hco)
 
 				args := deployment.Spec.Template.Spec.Containers[0].Args
 				Expect(args).To(ContainElement("--tls-cipher-suites=49196"))
+				Expect(args).To(ContainElement("--tls-curve-ids=23"))
 			})
 		})
 	})
