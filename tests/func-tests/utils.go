@@ -28,6 +28,7 @@ import (
 var (
 	KubeVirtStorageClassLocal string
 	InstallNamespace          string
+	S390xGuestlessKernelImage string
 	cdiNS                     string
 )
 
@@ -45,6 +46,7 @@ const (
 func init() {
 	flag.StringVar(&KubeVirtStorageClassLocal, "storage-class-local", "local", "Storage provider to use for tests which want local storage")
 	flag.StringVar(&InstallNamespace, "installed-namespace", "", "Set the namespace KubeVirt is installed in")
+	flag.StringVar(&S390xGuestlessKernelImage, "s390x-guestless-kernel-image", "", "Kernel boot container image for guestless VMIs on s390x")
 	flag.StringVar(&cdiNS, "cdi-namespace", "", "ignored")
 }
 

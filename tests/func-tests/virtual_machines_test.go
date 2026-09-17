@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -44,6 +45,7 @@ var _ = Describe("[rfe_id:273][crit:critical][vendor:cnv-qe@redhat.com][level:sy
 })
 
 func verifyVMICreation(ctx context.Context, cli client.Client) string {
+	GinkgoHelper()
 	By("Creating VMI...")
 	vmi := createVMIObject("testvmi")
 	vmi.Spec.Domain.Resources.Requests = corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("128Mi")}
@@ -57,7 +59,23 @@ func verifyVMICreation(ctx context.Context, cli client.Client) string {
 	}
 	vmi.Spec.Networks = []kubevirtcorev1.Network{*kubevirtcorev1.DefaultPodNetwork()}
 
-	EventuallyWithOffset(1, func() error {
+	// s390x requires an IPL source; guestless VMIs fail without KernelBoot.
+	archs, err := getArchs(ctx)
+	Expect(err).NotTo(HaveOccurred())
+	if slices.Contains(archs, "s390x") {
+		Expect(tests.S390xGuestlessKernelImage).ToNot(BeEmpty(), "the -s390x-guestless-kernel-image flag must be set when running on s390x")
+		vmi.Spec.Architecture = "s390x"
+		vmi.Spec.Domain.Firmware = &kubevirtcorev1.Firmware{
+			KernelBoot: &kubevirtcorev1.KernelBoot{
+				Container: &kubevirtcorev1.KernelBootContainer{
+					Image:      tests.S390xGuestlessKernelImage,
+					KernelPath: "/boot/kernel",
+				},
+			},
+		}
+	}
+
+	Eventually(func() error {
 		return cli.Create(ctx, vmi)
 	}).WithTimeout(timeout).WithPolling(pollingInterval).Should(Succeed(), "failed to create a vmi")
 	return vmi.Name
