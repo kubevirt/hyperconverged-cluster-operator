@@ -144,6 +144,8 @@ const (
 	kvIOMMUFD                    = "IOMMUFD"
 	kvTemplateFG                 = "Template"
 	kvRebootPolicyFG             = "RebootPolicy"
+	kvWorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
+	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
 )
 
 // CPU Plugin default values
@@ -471,6 +473,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 	copyHypervisors(hc.Spec.Virtualization.Hypervisors, config)
 
 	config.RoleAggregationStrategy = hc.Spec.Virtualization.RoleAggregationStrategy
+	config.ConfidentialCompute = hc.Spec.Virtualization.ConfidentialCompute.DeepCopy()
 
 	return config, nil
 }
@@ -991,6 +994,14 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled(kvRebootPolicyFG) {
 		fgs = append(fgs, kvRebootPolicyFG)
+	}
+
+	if featureGates.IsEnabled("workloadEncryptionSEV") {
+		fgs = append(fgs, kvWorkloadEncryptionSEV)
+	}
+
+	if featureGates.IsEnabled("workloadEncryptionTDX") {
+		fgs = append(fgs, kvWorkloadEncryptionTDX)
 	}
 
 	return fgs

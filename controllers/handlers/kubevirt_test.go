@@ -2191,6 +2191,40 @@ Version: 1.2.3`)
 						},
 						Not(ContainElement(kvRebootPolicyFG)),
 					),
+					// WorkloadEncryptionSEV
+					Entry("should add the WorkloadEncryptionSEV feature gate if workloadEncryptionSEV is true in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "workloadEncryptionSEV", State: new(featuregates.Enabled)},
+							}
+						},
+						ContainElement(kvWorkloadEncryptionSEV),
+					),
+					Entry("should not add the WorkloadEncryptionSEV feature gate if workloadEncryptionSEV is false in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "workloadEncryptionSEV", State: new(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvWorkloadEncryptionSEV)),
+					),
+					// WorkloadEncryptionTDX
+					Entry("should add the WorkloadEncryptionTDX feature gate if workloadEncryptionTDX is true in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "workloadEncryptionTDX", State: new(featuregates.Enabled)},
+							}
+						},
+						ContainElement(kvWorkloadEncryptionTDX),
+					),
+					Entry("should not add the WorkloadEncryptionTDX feature gate if workloadEncryptionTDX is false in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "workloadEncryptionTDX", State: new(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvWorkloadEncryptionTDX)),
+					),
 				)
 			})
 
@@ -3818,6 +3852,35 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.ChangedBlockTrackingLabelSelectors.NamespaceLabelSelector.MatchLabels).To(HaveKeyWithValue("cbt", "true"))
 				Expect(kv.Spec.Configuration.ChangedBlockTrackingLabelSelectors.VirtualMachineLabelSelector).NotTo(BeNil())
 				Expect(kv.Spec.Configuration.ChangedBlockTrackingLabelSelectors.VirtualMachineLabelSelector.MatchLabels).To(HaveKeyWithValue("cbt", "true"))
+			})
+		})
+
+		Context("ConfidentialCompute", func() {
+			It("should set confidentialCompute according to HCO CR", func() {
+				hco.Spec.Virtualization.ConfidentialCompute = &kubevirtcorev1.ConfidentialComputeConfiguration{
+					TDX: &kubevirtcorev1.TDXConfiguration{
+						Attestation: &kubevirtcorev1.TDXAttestationConfiguration{
+							Enforced:      new(true),
+							QgsSocketPath: new("/var/run/tdx-qgs/qgs.socket"),
+						},
+					},
+				}
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.ConfidentialCompute).NotTo(BeNil())
+				Expect(kv.Spec.Configuration.ConfidentialCompute.TDX).NotTo(BeNil())
+				Expect(kv.Spec.Configuration.ConfidentialCompute.TDX.Attestation).NotTo(BeNil())
+				Expect(kv.Spec.Configuration.ConfidentialCompute.TDX.Attestation.Enforced).To(HaveValue(BeTrue()))
+				Expect(kv.Spec.Configuration.ConfidentialCompute.TDX.Attestation.QgsSocketPath).To(HaveValue(Equal("/var/run/tdx-qgs/qgs.socket")))
+			})
+
+			It("should not set confidentialCompute when not specified in HCO CR", func() {
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.ConfidentialCompute).To(BeNil())
 			})
 		})
 
