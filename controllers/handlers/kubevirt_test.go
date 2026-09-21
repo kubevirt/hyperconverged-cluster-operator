@@ -37,8 +37,8 @@ import (
 var _ = Describe("KubeVirt Operand", func() {
 
 	const (
-		// Number of conditional featuregates always added by getFeatureGateChecks (one of the volume hotplug FGs, DecentralizedLiveMigration, Template, and RebootPolicy defaults)
-		conditionalFeatureGatesCount = 4
+		// Number of conditional featuregates always added by getFeatureGateChecks (one of the volume hotplug FGs, DecentralizedLiveMigration, Template, RebootPolicy, and VSOCK defaults)
+		conditionalFeatureGatesCount = 5
 	)
 
 	var (
@@ -1992,6 +1992,7 @@ Version: 1.2.3`)
 							Not(ContainElement(kvContainerPathVolumes)),
 							ContainElement(kvTemplateFG),
 							ContainElement(kvRebootPolicyFG),
+							ContainElement(kvVSOCKFG),
 						),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
@@ -2190,6 +2191,25 @@ Version: 1.2.3`)
 							}
 						},
 						Not(ContainElement(kvRebootPolicyFG)),
+					),
+
+					// VSOCK
+					Entry("should add the VSOCK feature gate if vsock is true in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "vsock", State: new(featuregates.Enabled)},
+							}
+						},
+						ContainElement(kvVSOCKFG),
+					),
+
+					Entry("should not add the VSOCK feature gate if vsock is false in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "vsock", State: new(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvVSOCKFG)),
 					),
 				)
 			})
