@@ -313,33 +313,59 @@ func ensureAPIv1(ctx context.Context, cli client.Client, namespace string, logge
 }
 
 func reStoreHCv1(ctx context.Context, cli client.Client, namespace string, logger logr.Logger) error {
-	attempt := 1
-	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		defer func() {
-			attempt++
-		}()
+	const (
+		factor   = 5
+		attempts = 6
+	)
 
-		retryLogger := logger.WithValues("attempt", attempt)
-		retryLogger.Info("reading the HyperConverged CR in API v1 format")
-		hc, err := getHyperConvergedV1(ctx, cli, namespace, retryLogger)
-		if err != nil {
-			return err
-		}
+	duration := time.Millisecond * 10
 
-		if hc == nil {
+	var err error
+
+	for attempt := range attempts {
+		retryLogger := logger.WithValues("attempt", attempt+1)
+		err = reStoreHCv1Imp(ctx, cli, namespace, retryLogger)
+		if err == nil {
 			return nil
 		}
 
-		retryLogger.Info("re-storing the HyperConverged CR in API v1 format")
-		err = cli.Update(ctx, hc, client.FieldValidation("Ignore"))
-		if err != nil {
-			return fmt.Errorf("failed to re-store the HyperConverged CR in API v1 format; %w", err)
+		if attempt+1 >= attempts {
+			break
 		}
 
-		retryLogger.Info("Successfully re-stored the HyperConverged CR in API v1 format")
+		logger.Error(err, fmt.Sprintf("Failed to re-store HyperConverged CR; Retrying after %v", duration))
 
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(duration):
+			duration *= factor
+		}
+	}
+
+	return fmt.Errorf("failed to re-store the HyperConverged CR in API v1 format; %w", err)
+}
+
+func reStoreHCv1Imp(ctx context.Context, cli client.Client, namespace string, logger logr.Logger) error {
+	logger.Info("reading the HyperConverged CR in API v1 format")
+	hc, err := getHyperConvergedV1(ctx, cli, namespace, logger)
+	if err != nil {
+		return err
+	}
+
+	if hc == nil {
 		return nil
-	})
+	}
+
+	logger.Info("re-storing the HyperConverged CR in API v1 format")
+	err = cli.Update(ctx, hc, client.FieldValidation("Ignore"))
+	if err != nil {
+		return fmt.Errorf("failed to re-store the HyperConverged CR in API v1 format; %w", err)
+	}
+
+	logger.Info("Successfully re-stored the HyperConverged CR in API v1 format")
+
+	return nil
 }
 
 func getHyperConvergedV1(ctx context.Context, cli client.Client, namespace string, retryLogger logr.Logger) (*hcov1.HyperConverged, error) {

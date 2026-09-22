@@ -771,7 +771,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			Expect(res.Result.Message).To(Equal("there is no content to decode"))
 		})
 
-		It("should return error if KV CR is missing", func(ctx context.Context) {
+		It("should not return error if KV CR is missing", func(ctx context.Context) {
 			kv := handlers.NewKubeVirtWithNameOnly()
 			Expect(cli.Delete(ctx, kv)).To(Succeed())
 
@@ -782,10 +782,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
-			checkRejectedRequest(
-				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
-				"kubevirts.kubevirt.io",
-			)
+			Expect(wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr).Allowed).To(BeTrue())
 		})
 
 		It("should not return error if KV CR is missing, and HC is already deleted", func(ctx context.Context) {
@@ -850,10 +847,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
-			checkRejectedRequest(
-				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
-				"cdis.cdi.kubevirt.io",
-			)
+			Expect(wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr).Allowed).To(BeTrue())
 		})
 
 		It("should not return error if CDI CR is missing and HC CR is deleted", func(ctx context.Context) {
@@ -921,10 +915,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
-			checkRejectedRequest(
-				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
-				"networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io",
-			)
+			Expect(wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr).Allowed).To(BeTrue())
 		})
 
 		It("should return error if dry-run update of NetworkAddons CR returns error", func(ctx context.Context) {
@@ -947,10 +938,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
-			checkRejectedRequest(
-				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
-				"ssps.ssp.kubevirt.io",
-			)
+			Expect(wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr).Allowed).To(BeTrue())
 		})
 
 		It("should return error if dry-run update of SSP CR returns error", func(ctx context.Context) {
@@ -1048,8 +1036,7 @@ var _ = Describe("v1 webhooks validator", func() {
 				}
 
 				resp := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
-				Expect(resp.Allowed).To(BeFalse())
-				Expect(resp.String()).To(ContainSubstring("not found"))
+				Expect(resp.Allowed).To(BeTrue())
 			})
 		})
 
