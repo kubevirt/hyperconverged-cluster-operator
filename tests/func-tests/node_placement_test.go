@@ -150,16 +150,12 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				"cni-plugins":    false,
 				"ovs-cni-marker": false,
 				"virt-handler":   false,
-				"secondary-dns":  false,
 			}
 
 			By("Getting Network Addons Configs")
 			cnaoCR := getNetworkAddonsConfigs(ctx, cliSet)
 			if cnaoCR.Spec.Ovs == nil {
 				delete(expectedWorkloadsPods, "ovs-cni-marker")
-			}
-			if cnaoCR.Spec.KubeSecondaryDNS == nil {
-				delete(expectedWorkloadsPods, "secondary-dns")
 			}
 
 			Eventually(func(g Gomega, ctx context.Context) {
