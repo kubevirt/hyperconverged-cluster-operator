@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
-    createdAt: "2026-09-16 19:43:27"
+    createdAt: "2026-09-19 05:09:53"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4973,9 +4973,9 @@ spec:
                 - name: VIRT_SYNCHRONIZATIONCONTROLLER_IMAGE
                   value: quay.io/kubevirt/virt-synchronization-controller@sha256:e2f3adcc85bb6f53f4b3090bc8f1982c92adf5f1280306e2019dc314f3a01a52
                 - name: VIRT_TEMPLATE_APISERVER_IMAGE
-                  value: quay.io/kubevirt/virt-template-apiserver@sha256:27defde24b4a4705d6096a86d134df0dc324243b56be8f0c057e1882c6da338b
+                  value: quay.io/kubevirt/virt-template-apiserver@sha256:ed201f0612a95809f1490e4d3acafd779589638428ea784ad94498a0ffb1a133
                 - name: VIRT_TEMPLATE_CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/virt-template-controller@sha256:b45ac55de5fc9dbbee14974b45718c41eaed4d4979f92677dab3500598e33d22
+                  value: quay.io/kubevirt/virt-template-controller@sha256:fd5f2a73043109104ec171bdbe7567815dc0211d7427c0f4ef28b7c3688c0ecb
                 - name: GS_IMAGE
                   value: quay.io/kubevirt/libguestfs-tools@sha256:2f4aafd50fef4265b5269076fe206338aa909b59402813e9533355ba12ee2b59
                 - name: PR_HELPER_IMAGE
@@ -6756,9 +6756,9 @@ spec:
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:e2f3adcc85bb6f53f4b3090bc8f1982c92adf5f1280306e2019dc314f3a01a52
     name: virt-synchronization-controller
-  - image: quay.io/kubevirt/virt-template-apiserver@sha256:27defde24b4a4705d6096a86d134df0dc324243b56be8f0c057e1882c6da338b
+  - image: quay.io/kubevirt/virt-template-apiserver@sha256:ed201f0612a95809f1490e4d3acafd779589638428ea784ad94498a0ffb1a133
     name: virt-template-apiserver
-  - image: quay.io/kubevirt/virt-template-controller@sha256:b45ac55de5fc9dbbee14974b45718c41eaed4d4979f92677dab3500598e33d22
+  - image: quay.io/kubevirt/virt-template-controller@sha256:fd5f2a73043109104ec171bdbe7567815dc0211d7427c0f4ef28b7c3688c0ecb
     name: virt-template-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:5a5ba4aca319c670c803c47475a1350bdea7db7613f0602cf3cfd58fe3e53870
     name: virtio-container-disk
