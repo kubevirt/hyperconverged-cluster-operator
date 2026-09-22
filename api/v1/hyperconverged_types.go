@@ -89,6 +89,12 @@ type HyperConvergedSpec struct {
 	//   Tech Preview.
 	//   Phase: beta
 	//
+	// * vsock:
+	//   VSOCK enables the AF_VSOCK host-guest communication channel for virtual
+	//   machines. When enabled, a VSOCK device can be attached to a VM by setting
+	//   spec.domain.devices.autoattachVSOCK. This feature is in Tech Preview.
+	//   Phase: beta
+	//
 	// * alignCPUs:
 	//   Enable KubeVirt to request up to two additional dedicated CPUs in order to
 	//   complete the total CPU count to an even parity when using emulator thread

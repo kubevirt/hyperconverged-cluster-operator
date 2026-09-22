@@ -281,6 +281,19 @@ triggered.
 
 **Graduation Status**: Beta
 
+### vsock Feature Gate
+
+VM Sockets (vsock) is a fast and efficient guest-host communication mechanism.
+
+When the vsock Feature Gate is enabled, a VSOCK device can be attached to a
+virtual machine by setting `spec.domain.devices.autoattachVSOCK` to `true`.
+
+**Note**: this feature is in Tech Preview.
+
+**Default**: `Enabled`
+
+**Graduation Status**: Beta
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true` so users can bind their VM using the core Passt Network binding.
 

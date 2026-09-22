@@ -144,6 +144,7 @@ const (
 	kvIOMMUFD                    = "IOMMUFD"
 	kvTemplateFG                 = "Template"
 	kvRebootPolicyFG             = "RebootPolicy"
+	kvVSOCKFG                    = "VSOCK"
 )
 
 // CPU Plugin default values
@@ -991,6 +992,10 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled(kvRebootPolicyFG) {
 		fgs = append(fgs, kvRebootPolicyFG)
+	}
+
+	if featureGates.IsEnabled(kvVSOCKFG) {
+		fgs = append(fgs, kvVSOCKFG)
 	}
 
 	return fgs

@@ -20,6 +20,11 @@
     "description": "VirtualMachine Templates provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable VM blueprints with parameterized values that can be processed to create virtual machine. the \"template\" feature gate enables this feature. Note: this feature is in Tech Preview."
   },
   {
+    "name": "vsock",
+    "phase": "beta",
+    "description": "VSOCK enables the AF_VSOCK host-guest communication channel for virtual machines. When enabled, a VSOCK device can be attached to a VM by setting spec.domain.devices.autoattachVSOCK. This feature is in Tech Preview."
+  },
+  {
     "name": "alignCPUs",
     "phase": "alpha",
     "description": "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview."
