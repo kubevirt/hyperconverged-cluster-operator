@@ -6,6 +6,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -1954,24 +1955,32 @@ Version: 1.2.3`)
 				hco.Annotations = make(map[string]string)
 			})
 
-			Context("test feature gates in NewKubeVirt", func() {
-				DescribeTable("featureGates in NewKubeVirt",
-					func(
-						modifyHC func(hc *hcov1.HyperConverged),
-						matcher gomegatypes.GomegaMatcher,
-						additionalKvAssertions ...func(virt *kubevirtcorev1.KubeVirt),
-					) {
-						GinkgoHelper()
-						modifyHC(hco)
-						kv, err := NewKubeVirt(hco)
-						Expect(err).ToNot(HaveOccurred())
-						Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-						Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(matcher)
+			validateFGs := func(
+				modifyHC func(hc *hcov1.HyperConverged),
+				matcher gomegatypes.GomegaMatcher,
+				additionalKvAssertions ...func(virt *kubevirtcorev1.KubeVirt),
+			) {
+				GinkgoHelper()
+				modifyHC(hco)
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(matcher)
 
-						for _, additionalKvAssertion := range additionalKvAssertions {
-							additionalKvAssertion(kv)
-						}
-					},
+				for _, additionalKvAssertion := range additionalKvAssertions {
+					additionalKvAssertion(kv)
+				}
+			}
+
+			Context("test feature gates in NewKubeVirt", func() {
+				var fgDisabledByDefault []gomegatypes.GomegaMatcher
+				optionalFG := append(slices.Clone(kvExposedAlphaFGs), kvIncrementalBackup, kvUtilityVolumes)
+				for _, alphaFG := range optionalFG {
+					fgDisabledByDefault = append(fgDisabledByDefault, Not(ContainElement(alphaFG)))
+				}
+
+				DescribeTable("featureGates in NewKubeVirt",
+					validateFGs,
 					Entry("should not add the feature gates if FeatureGates field is empty",
 						func(hc *hcov1.HyperConverged) {
 							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
@@ -1981,53 +1990,16 @@ Version: 1.2.3`)
 							ContainElements(hardCodeKvFgs),
 							ContainElements(kvExposedBetaFGs),
 							ContainElement(kvHypervStrictCheck),
-							Not(ContainElement(kvDownwardMetrics)),
-							Not(ContainElement(kvAlignCPUs)),
 							And(ContainElement(kvDeclarativeHotplugVolumesGate), Not(ContainElement(kvHotplugVolumesGate))),
-							Not(ContainElement(kvObjectGraph)),
-							And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
-							Not(ContainElement(kvContainerPathVolumes)),
+							And(fgDisabledByDefault...),
 						),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
 						},
 					),
-					// DownwardMetrics
-					Entry("should add the DownwardMetrics feature gate if DownwardMetrics is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "downwardMetrics", State: new(featuregates.Enabled)},
-							}
-						},
-						ContainElement(kvDownwardMetrics),
-					),
-					Entry("should not add the DownwardMetrics feature gate if DownwardMetrics is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "downwardMetrics", State: new(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvDownwardMetrics)),
-					),
-					// DecentralizedLiveMigration
-					Entry("should add the DecentralizedLiveMigration feature gate if DecentralizedLiveMigration is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "decentralizedLiveMigration", State: new(featuregates.Enabled)},
-							}
-						},
-						ContainElement(kvDecentralizedLiveMigration),
-					),
-					Entry("should not add the DecentralizedLiveMigration feature gate if DecentralizedLiveMigration is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "decentralizedLiveMigration", State: new(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvDecentralizedLiveMigration)),
-					),
-					// AlignCPUs
-					Entry("should add the AlignCPUs feature gate if DownwardMetrics is true in HyperConverged CR",
+					// AlignCPUs (this is also auto tested below, because the FG is in the kvExposedAlphaFGs slice,
+					// but we also need to check the annotation in the KubeVirt CR
+					Entry("should add the AlignCPUs feature gate if kvAlignCPUs is true in HyperConverged CR",
 						func(hc *hcov1.HyperConverged) {
 							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
 								{Name: "alignCPUs", State: new(featuregates.Enabled)},
@@ -2087,6 +2059,7 @@ Version: 1.2.3`)
 						},
 						And(Not(ContainElement(kvGraceIOVirtualization)), Not(ContainElement(kvIOMMUFD)), Not(ContainElement(kvPCINUMAAwareTopology))),
 					),
+					// DeclarativeHotplugVolumes / HotplugVolumes
 					Entry("should add the DeclarativeHotplugVolumes feature gate if DeclarativeHotplugVolumes is true in HyperConverged CR",
 						func(hc *hcov1.HyperConverged) {
 							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
@@ -2103,22 +2076,7 @@ Version: 1.2.3`)
 						},
 						And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
 					),
-					Entry("should add the ObjectGraph feature gate if ObjectGraph is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "objectGraph", State: new(featuregates.Enabled)},
-							}
-						},
-						And(ContainElement(kvObjectGraph)),
-					),
-					Entry("should not add the ObjectGraph feature gate if ObjectGraph is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "objectGraph", State: new(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvObjectGraph)),
-					),
+					// IncrementalBackup + UtilityVolume
 					Entry("should add both IncrementalBackup and UtilityVolumes feature gates if IncrementalBackup is true in HyperConverged CR",
 						func(hc *hcov1.HyperConverged) {
 							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
@@ -2135,77 +2093,38 @@ Version: 1.2.3`)
 						},
 						And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 					),
-					// ContainerPathVolumes
-					Entry("should add the ContainerPathVolumes feature gate if ContainerPathVolumes is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "containerPathVolumes", State: new(featuregates.Enabled)},
-							}
-						},
-						ContainElement(kvContainerPathVolumes),
-					),
-					Entry("should not add the ContainerPathVolumes feature gate if ContainerPathVolumes is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "containerPathVolumes", State: new(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvContainerPathVolumes)),
-					),
-					// Template
-					Entry("should add the Template feature gate if template is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "template", State: new(featuregates.Enabled)},
-							}
-						},
-						ContainElement(kvTemplateFG),
-					),
-					Entry("should not add the Template feature gate if template is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "template", State: new(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvTemplateFG)),
-					),
-					// RebootPolicy
-					Entry("should add the RebootPolicy feature gate if rebootPolicy is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "rebootPolicy", State: new(featuregates.Enabled)},
-							}
-						},
-						ContainElement(kvRebootPolicyFG),
-					),
-					Entry("should not add the RebootPolicy feature gate if rebootPolicy is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "rebootPolicy", State: new(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvRebootPolicyFG)),
-					),
-
-					// VSOCK
-					Entry("should add the VSOCK feature gate if vsock is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "vsock", State: new(featuregates.Enabled)},
-							}
-						},
-						ContainElement(kvVSOCKFG),
-					),
-
-					Entry("should not add the VSOCK feature gate if vsock is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "vsock", State: new(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvVSOCKFG)),
-					),
 				)
+
+				var exposedFGsCases []TableEntry
+				exposedFGs := slices.Clone(kvExposedBetaFGs)
+				exposedFGs = append(exposedFGs, kvExposedAlphaFGs...)
+
+				for _, kvFG := range exposedFGs {
+					hcoFG := strings.ToLower(kvFG)
+					description := fmt.Sprintf("should add the %q feature gate if %q is true in HyperConverged CR", kvFG, strings.ToLower(hcoFG))
+					exposedFGsCases = append(exposedFGsCases, Entry(
+						description,
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: hcoFG, State: new(featuregates.Enabled)},
+							}
+						},
+						ContainElement(kvFG),
+					))
+
+					description = fmt.Sprintf("should not add the %q feature gate if %q is false in HyperConverged CR", kvFG, strings.ToLower(hcoFG))
+					exposedFGsCases = append(exposedFGsCases, Entry(
+						description,
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: hcoFG, State: new(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvFG)),
+					))
+				}
+
+				DescribeTable("featureGates in NewKubeVirt, that are exposed in the HyperConverged CR", validateFGs, exposedFGsCases)
 			})
 
 			Context("test feature gates in KV handler", func() {
