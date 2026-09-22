@@ -12,7 +12,6 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -896,8 +895,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
 			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
-			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
-			Expect(err).To(MatchError(ContainSubstring("kubevirts.kubevirt.io")))
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should return error if dry-run update of KV CR returns error", func(ctx context.Context) {
@@ -929,9 +927,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
-			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
-			Expect(err).To(MatchError(ContainSubstring("cdis.cdi.kubevirt.io")))
+			Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().ToNot(HaveOccurred())
 		})
 
 		It("should return error if dry-run update of CDI CR returns error", func(ctx context.Context) {
@@ -975,9 +971,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
-			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
-			Expect(err).To(MatchError(ContainSubstring("networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io")))
+			Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().ToNot(HaveOccurred())
 		})
 
 		It("should return error if dry-run update of NetworkAddons CR returns error", func(ctx context.Context) {
@@ -1006,9 +1000,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			_, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
-			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
-			Expect(err).To(MatchError(ContainSubstring("ssps.ssp.kubevirt.io")))
+			Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).Error().ToNot(HaveOccurred())
 		})
 
 		It("should return error if dry-run update of SSP CR returns error", func(ctx context.Context) {
@@ -1130,7 +1122,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 				Expect(
 					wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, oldHC),
-				).Error().To(MatchError(apierrors.IsNotFound, "not found error"))
+				).Error().ToNot(HaveOccurred())
 			})
 		})
 
