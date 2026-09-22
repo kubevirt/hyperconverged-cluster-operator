@@ -17,12 +17,15 @@ type NetworkAddonsConfigSpec struct {
 	KubeMacPool            *KubeMacPool              `json:"kubeMacPool,omitempty"`
 	ImagePullPolicy        corev1.PullPolicy         `json:"imagePullPolicy,omitempty"`
 	NMState                *NMState                  `json:"nmstate,omitempty"`
-	KubeSecondaryDNS       *KubeSecondaryDNS         `json:"kubeSecondaryDNS,omitempty"`
 	MacvtapCni             *MacvtapCni               `json:"macvtap,omitempty"`
 	KubevirtIpamController *KubevirtIpamController   `json:"kubevirtIpamController,omitempty"`
 	SelfSignConfiguration  *SelfSignConfiguration    `json:"selfSignConfiguration,omitempty"`
 	PlacementConfiguration *PlacementConfiguration   `json:"placementConfiguration,omitempty"`
 	TLSSecurityProfile     *ocpv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
+
+	// Deprecated: KubeSecondaryDNS is no longer deployed by CNAO. The field is
+	// retained for API compatibility and is ignored.
+	KubeSecondaryDNS *KubeSecondaryDNS `json:"kubeSecondaryDNS,omitempty"`
 }
 
 // SelfSignConfiguration defines self sign configuration
@@ -69,7 +72,8 @@ type Ovs struct{}
 // NMState is a declarative node network configuration driven through Kubernetes API
 type NMState struct{}
 
-// KubeSecondaryDNS plugin allows to support FQDN for VMI's secondary networks
+// Deprecated: KubeSecondaryDNS is no longer deployed by CNAO. The type is
+// retained for API compatibility and is ignored.
 type KubeSecondaryDNS struct {
 	// Domain defines the FQDN domain
 	Domain string `json:"domain,omitempty"`
