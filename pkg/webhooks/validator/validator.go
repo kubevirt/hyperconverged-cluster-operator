@@ -477,10 +477,7 @@ func checkOperands(ctx context.Context, cli client.Client, logger logr.Logger, r
 		return nil
 	}
 
-	resources, err := getOperands(ctx, cli, isOpenshift)
-	if err != nil {
-		return err
-	}
+	resources := getOperands(ctx, cli, isOpenshift, logger)
 
 	toCtx, cancel := context.WithTimeout(ctx, updateDryRunTimeOut)
 	defer cancel()
@@ -499,39 +496,44 @@ func checkOperands(ctx context.Context, cli client.Client, logger logr.Logger, r
 	return eg.Wait()
 }
 
-func getOperands(ctx context.Context, cli client.Client, isOpenshift bool) ([]client.Object, error) {
+func getOperands(ctx context.Context, cli client.Client, isOpenshift bool, logger logr.Logger) []client.Object {
+	resources := make([]client.Object, 0, 4)
+
 	kv := handlers.NewKubeVirtWithNameOnly()
 	err := cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)
 	if err != nil {
-		return nil, err
+		logger.Error(err, "Failed to get the KubeVirt CR")
+	} else {
+		resources = append(resources, kv)
 	}
 
 	cdi := handlers.NewCDIWithNameOnly()
 	err = cli.Get(ctx, client.ObjectKeyFromObject(cdi), cdi)
 	if err != nil {
-		return nil, err
+		logger.Error(err, "Failed to get the CDI CR")
+	} else {
+		resources = append(resources, cdi)
 	}
 
 	cna := handlers.NewNetworkAddonsWithNameOnly()
 	err = cli.Get(ctx, client.ObjectKeyFromObject(cna), cna)
 	if err != nil {
-		return nil, err
+		logger.Error(err, "Failed to get the CNA CR")
+	} else {
+		resources = append(resources, cna)
 	}
-
-	resources := make([]client.Object, 0, 4)
-	resources = append(resources, kv, cdi, cna)
 
 	if isOpenshift {
 		ssp := handlers.NewSSPWithNameOnly()
 		err = cli.Get(ctx, client.ObjectKeyFromObject(ssp), ssp)
 		if err != nil {
-			return nil, err
+			logger.Error(err, "Failed to get the SSP CR")
+		} else {
+			resources = append(resources, ssp)
 		}
-
-		resources = append(resources, ssp)
 	}
 
-	return resources, nil
+	return resources
 }
 
 const dryRunMaxRetries = 3
