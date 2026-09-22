@@ -29,6 +29,7 @@ import (
 	"kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcofg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
@@ -145,6 +146,24 @@ const (
 	kvTemplateFG                 = "Template"
 	kvRebootPolicyFG             = "RebootPolicy"
 	kvVSOCKFG                    = "VSOCK"
+)
+
+var (
+	// these FGs are enabled by default, but exposed in the HyperConverged CR and may be switched off
+	kvExposedBetaFGs = []string{
+		kvDecentralizedLiveMigration,
+		kvTemplateFG,
+		kvRebootPolicyFG,
+		kvVSOCKFG,
+	}
+
+	// these FGs are disabled by default, but exposed in the HyperConverged CR and may be switched on
+	kvExposedAlphaFGs = []string{
+		kvDownwardMetrics,
+		kvAlignCPUs,
+		kvObjectGraph,
+		kvContainerPathVolumes,
+	}
 )
 
 // CPU Plugin default values
@@ -930,23 +949,15 @@ func shouldHaveVirtInfraSingleReplica(infraHighlyAvailable, controlPlaneMultiNod
 	return (controlPlaneNodeExists && !controlPlaneMultiNode) || (!controlPlaneNodeExists && !infraHighlyAvailable)
 }
 
-func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
-	featureGates := &hc.Spec.FeatureGates
-	fgs := make([]string, 0, 2)
+// collect KV FG that are exposed in the HyperConverged CR
+func getExposedFGs(featureGates hcofg.HyperConvergedFeatureGates) []string {
+	fgs := make([]string, 0, len(kvExposedBetaFGs)+1) // kvBetaFG + one of DeclarativeHotplugVolumes or HotplugVolumes
 
-	if featureGates.IsEnabled("downwardMetrics") {
-		fgs = append(fgs, kvDownwardMetrics)
-	}
-	if featureGates.IsEnabled("alignCPUs") {
-		fgs = append(fgs, kvAlignCPUs)
-	}
-
-	if featureGates.IsEnabled("objectGraph") {
-		fgs = append(fgs, kvObjectGraph)
-	}
-
-	if featureGates.IsEnabled("decentralizedLiveMigration") {
-		fgs = append(fgs, kvDecentralizedLiveMigration)
+	// Theses FGs are enabled by default
+	for _, betaFG := range kvExposedBetaFGs {
+		if featureGates.IsEnabled(betaFG) {
+			fgs = append(fgs, betaFG)
+		}
 	}
 
 	// Add the appropriate volume hotplug featuregate based on DeclarativeHotplugVolumes setting
@@ -956,6 +967,26 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 		// Fallback behavior: use the original HotplugVolumes featuregate
 		fgs = append(fgs, kvHotplugVolumesGate)
 	}
+
+	// these FG are disabled by default
+	for _, alphaFG := range kvExposedAlphaFGs {
+		if featureGates.IsEnabled(alphaFG) {
+			fgs = append(fgs, alphaFG)
+		}
+	}
+
+	// the incrementalBackup FG exposes two KV FGs, and so it can't be part of the loop above
+	if featureGates.IsEnabled("incrementalBackup") {
+		fgs = append(fgs, kvIncrementalBackup)
+		fgs = append(fgs, kvUtilityVolumes)
+	}
+
+	return fgs
+}
+
+func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
+	featureGates := hc.Spec.FeatureGates
+	fgs := getExposedFGs(featureGates)
 
 	if hc.Annotations[deployPasstNetworkBindingAnn] == "true" {
 		fgs = append(fgs, kvPasstBinding)
@@ -969,33 +1000,12 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 		fgs = append(fgs, kvSecureExecution)
 	}
 
-	if featureGates.IsEnabled("incrementalBackup") {
-		fgs = append(fgs, kvIncrementalBackup)
-		fgs = append(fgs, kvUtilityVolumes)
-	}
-
 	if len(hc.Spec.Virtualization.Hypervisors) > 0 {
 		fgs = append(fgs, kvConfigurableHypervisor)
 	}
 
 	if hc.Spec.Virtualization.RoleAggregationStrategy != nil {
 		fgs = append(fgs, kvOptOutRoleAggregation)
-	}
-
-	if featureGates.IsEnabled("containerPathVolumes") {
-		fgs = append(fgs, kvContainerPathVolumes)
-	}
-
-	if featureGates.IsEnabled(kvTemplateFG) {
-		fgs = append(fgs, kvTemplateFG)
-	}
-
-	if featureGates.IsEnabled(kvRebootPolicyFG) {
-		fgs = append(fgs, kvRebootPolicyFG)
-	}
-
-	if featureGates.IsEnabled(kvVSOCKFG) {
-		fgs = append(fgs, kvVSOCKFG)
 	}
 
 	return fgs

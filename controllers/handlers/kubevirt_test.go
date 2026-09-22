@@ -36,15 +36,12 @@ import (
 
 var _ = Describe("KubeVirt Operand", func() {
 
-	const (
-		// Number of conditional featuregates always added by getFeatureGateChecks (one of the volume hotplug FGs, DecentralizedLiveMigration, Template, RebootPolicy, and VSOCK defaults)
-		conditionalFeatureGatesCount = 5
-	)
-
 	var (
-		basicNumFgOnOpenshift = len(hardCodeKvFgs) + 1 + conditionalFeatureGatesCount
-		// Number of featuregates returned by getMandatoryKvFeatureGates (hardcoded + SSP conditional, excludes volume hotplug)
-		mandatoryFgCount = len(hardCodeKvFgs) + 1
+		mandatoryFgCount             = len(hardCodeKvFgs) + 1    // hard coded + HypervStrictCheck, that only absent when in emulation mode
+		conditionalFeatureGatesCount = len(kvExposedBetaFGs) + 1 // Number of conditional featuregates always added + one of DeclarativeHotplugVolumes or HotplugVolumes
+
+		basicNumFgOnOpenshift = mandatoryFgCount + conditionalFeatureGatesCount
+
 		// Default featuregate count (not Openshift))
 		defaultFeatureGateCount = len(hardCodeKvFgs) + conditionalFeatureGatesCount
 	)
@@ -1982,17 +1979,14 @@ Version: 1.2.3`)
 						And(
 							HaveLen(basicNumFgOnOpenshift),
 							ContainElements(hardCodeKvFgs),
+							ContainElements(kvExposedBetaFGs),
 							ContainElement(kvHypervStrictCheck),
 							Not(ContainElement(kvDownwardMetrics)),
-							ContainElement(kvDecentralizedLiveMigration),
 							Not(ContainElement(kvAlignCPUs)),
 							And(ContainElement(kvDeclarativeHotplugVolumesGate), Not(ContainElement(kvHotplugVolumesGate))),
 							Not(ContainElement(kvObjectGraph)),
 							And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 							Not(ContainElement(kvContainerPathVolumes)),
-							ContainElement(kvTemplateFG),
-							ContainElement(kvRebootPolicyFG),
-							ContainElement(kvVSOCKFG),
 						),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
@@ -2451,13 +2445,13 @@ Version: 1.2.3`)
 						defaultFeatureGateCount,
 						[][]string{hardCodeKvFgs},
 					),
-					Entry("When not using kvm-emulation and all FGs are enabled",
+					Entry("When not using kvm-emulation and an alpha FG is enabled",
 						false,
 						&featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: new(featuregates.Enabled)}},
 						basicNumFgOnOpenshift+1,
 						[][]string{hardCodeKvFgs, {kvHypervStrictCheck}, {kvDownwardMetrics}},
 					),
-					Entry("When using kvm-emulation all FGs are enabled",
+					Entry("When using kvm-emulation and an alpha FG is enabled",
 						true,
 						&featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: new(featuregates.Enabled)}},
 						defaultFeatureGateCount+1, // +1 for DownwardMetrics
