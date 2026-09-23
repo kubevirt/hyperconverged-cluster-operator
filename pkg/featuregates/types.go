@@ -63,6 +63,17 @@ func (p Phase) String() string {
 	}
 }
 
+// IsConfigurable reports whether the phase is alpha or beta and can be
+// configured through spec.featureGates. Deprecated gates use dedicated fields.
+func (p Phase) IsConfigurable() bool {
+	switch p {
+	case PhaseAlpha, PhaseBeta:
+		return true
+	default:
+		return false
+	}
+}
+
 // FeatureGate represents a single feature gate entry.
 type FeatureGate struct {
 	Name        string `json:"name"`
@@ -84,5 +95,4 @@ func (fgs FeatureGates) Sort() {
 
 		return 1
 	})
-
 }

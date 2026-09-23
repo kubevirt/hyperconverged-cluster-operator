@@ -13,8 +13,10 @@ func TestFeatureGateDetails(t *testing.T) {
 	RegisterFailHandler(Fail)
 	BeforeSuite(func() {
 		origFeatureGatesDetails := featureGatesDetails
+		origConfigurableFeatureGates := configurableFeatureGates
 		DeferCleanup(func() {
 			featureGatesDetails = origFeatureGatesDetails
+			configurableFeatureGates = origConfigurableFeatureGates
 		})
 	})
 
@@ -133,6 +135,50 @@ var _ = Describe("Feature Gate Details", func() {
 
 			betaFGs := ListAlphaFeatureGates()
 			Expect(betaFGs).To(BeEmpty())
+		})
+	})
+
+	Context("ListConfigurableFeatureGates", func() {
+		It("should return only alpha and beta gates sorted by name", func() {
+			featureGatesDetails = map[string]featuregates.FeatureGate{
+				"zeta":   {Name: "zeta", Phase: featuregates.PhaseAlpha},
+				"alpha":  {Name: "alpha", Phase: featuregates.PhaseBeta},
+				"ga":     {Name: "ga", Phase: featuregates.PhaseGA},
+				"middle": {Name: "middle", Phase: featuregates.PhaseDeprecated},
+				"gone":   {Name: "gone", Phase: featuregates.PhaseDiscontinued},
+			}
+			configurableFeatureGates = buildConfigurableList()
+
+			configurable := ListConfigurableFeatureGates()
+			Expect(configurable).To(Equal([]featuregates.FeatureGate{
+				{Name: "alpha", Phase: featuregates.PhaseBeta},
+				{Name: "zeta", Phase: featuregates.PhaseAlpha},
+			}))
+		})
+
+		It("should return an empty list if no configurable FG is defined", func() {
+			featureGatesDetails = map[string]featuregates.FeatureGate{
+				"ga":         {Name: "ga", Phase: featuregates.PhaseGA},
+				"deprecated": {Name: "deprecated", Phase: featuregates.PhaseDeprecated},
+				"gone":       {Name: "gone", Phase: featuregates.PhaseDiscontinued},
+			}
+			configurableFeatureGates = buildConfigurableList()
+
+			Expect(ListConfigurableFeatureGates()).To(BeEmpty())
+		})
+
+		It("returns only configurable gates from the catalog", func() {
+			Expect(setup(featureGateJson)).To(Succeed())
+
+			gates := ListConfigurableFeatureGates()
+			Expect(gates).NotTo(BeEmpty())
+			for _, fg := range gates {
+				Expect(fg.Name).NotTo(BeEmpty())
+				Expect(fg.Phase.IsConfigurable()).To(BeTrue(), "feature gate %s has non-configurable phase %s", fg.Name, fg.Phase)
+			}
+
+			gates[0].Name = "mutated"
+			Expect(ListConfigurableFeatureGates()[0].Name).NotTo(Equal("mutated"))
 		})
 	})
 })
