@@ -63,6 +63,17 @@ func (p Phase) String() string {
 	}
 }
 
+// IsConfigurable reports whether the phase can be enabled or disabled by
+// users. GA gates are always on and discontinued gates are always off.
+func (p Phase) IsConfigurable() bool {
+	switch p {
+	case PhaseAlpha, PhaseBeta, PhaseDeprecated:
+		return true
+	default:
+		return false
+	}
+}
+
 // FeatureGate represents a single feature gate entry.
 type FeatureGate struct {
 	Name        string `json:"name"`
@@ -84,5 +95,4 @@ func (fgs FeatureGates) Sort() {
 
 		return 1
 	})
-
 }

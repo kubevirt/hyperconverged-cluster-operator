@@ -6,13 +6,8 @@ import (
 )
 
 func SetupCollectors(cli client.Client, namespace string) error {
-	err := operatormetrics.RegisterCollector(
+	return operatormetrics.RegisterCollector(
 		getMultiArchBootImagesStatusCollector(cli, namespace),
+		getFeatureGateEnabledCollector(cli, namespace),
 	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

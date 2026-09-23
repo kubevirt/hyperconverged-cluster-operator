@@ -4,6 +4,7 @@
 |------|------|------|-------------|
 | kubevirt_hco_dataimportcrontemplate_with_architecture_annotation | Metric | Gauge | Indicates whether the DataImportCronTemplate has the ssp.kubevirt.io/dict.architectures annotation (1) or not (0) |
 | kubevirt_hco_dataimportcrontemplate_with_supported_architectures | Metric | Gauge | Indicates whether the DataImportCronTemplate has supported architectures (1) or not (0) |
+| kubevirt_hco_feature_gate_enabled | Metric | Gauge | Indicates whether a HyperConverged feature gate is enabled (1) or disabled (0). One series is emitted for every known configurable feature gate. |
 | kubevirt_hco_hyperconverged_cr_exists | Metric | Gauge | Indicates whether the HyperConverged custom resource exists (1) or not (0) |
 | kubevirt_hco_memory_overcommit_percentage | Metric | Gauge | Indicates the cluster-wide configured VM memory overcommit percentage |
 | kubevirt_hco_misconfigured_descheduler | Metric | Gauge | Indicates whether the optional descheduler is not properly configured (1) to work with KubeVirt or not (0) |
