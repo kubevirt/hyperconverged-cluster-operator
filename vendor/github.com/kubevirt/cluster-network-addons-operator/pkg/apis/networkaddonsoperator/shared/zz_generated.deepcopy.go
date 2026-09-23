@@ -213,11 +213,6 @@ func (in *NetworkAddonsConfigSpec) DeepCopyInto(out *NetworkAddonsConfigSpec) {
 		*out = new(NMState)
 		**out = **in
 	}
-	if in.KubeSecondaryDNS != nil {
-		in, out := &in.KubeSecondaryDNS, &out.KubeSecondaryDNS
-		*out = new(KubeSecondaryDNS)
-		**out = **in
-	}
 	if in.MacvtapCni != nil {
 		in, out := &in.MacvtapCni, &out.MacvtapCni
 		*out = new(MacvtapCni)
@@ -242,6 +237,11 @@ func (in *NetworkAddonsConfigSpec) DeepCopyInto(out *NetworkAddonsConfigSpec) {
 		in, out := &in.TLSSecurityProfile, &out.TLSSecurityProfile
 		*out = new(v1.TLSSecurityProfile)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.KubeSecondaryDNS != nil {
+		in, out := &in.KubeSecondaryDNS, &out.KubeSecondaryDNS
+		*out = new(KubeSecondaryDNS)
+		**out = **in
 	}
 }
 

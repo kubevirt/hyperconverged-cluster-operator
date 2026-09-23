@@ -49,8 +49,8 @@ spec:
                     type: string
                 type: object
               kubeSecondaryDNS:
-                description: KubeSecondaryDNS plugin allows to support FQDN for VMI's
-                  secondary networks
+                description: 'Deprecated: KubeSecondaryDNS is no longer deployed by
+                  CNAO. The field is retained for API compatibility and is ignored.'
                 properties:
                   domain:
                     description: Domain defines the FQDN domain
@@ -1540,16 +1540,42 @@ spec:
                           - ECDHE-RSA-AES128-SHA256
                           - ECDHE-ECDSA-AES128-SHA
                           - ECDHE-RSA-AES128-SHA
+                          - ECDHE-ECDSA-AES256-SHA384
+                          - ECDHE-RSA-AES256-SHA384
                           - ECDHE-ECDSA-AES256-SHA
                           - ECDHE-RSA-AES256-SHA
                           - AES128-GCM-SHA256
                           - AES256-GCM-SHA384
                           - AES128-SHA256
+                          - AES256-SHA256
                           - AES128-SHA
                           - AES256-SHA
                           - DES-CBC3-SHA
                           type: string
                         type: array
+                      groups:
+                        description: groups is an optional, ordered field used to
+                          specify the supported groups (formerly known as elliptic
+                          curves) that are used during the TLS handshake. The order
+                          of the groups represents a suggested preference, with the
+                          most preferred group first. Operators may remove entries
+                          their operands do not support. When omitted, this means
+                          no opinion and the platform is left to choose reasonable
+                          defaults, which are subject to change over time.
+                        items:
+                          enum:
+                          - X25519
+                          - secp256r1
+                          - secp384r1
+                          - secp521r1
+                          - X25519MLKEM768
+                          - SecP256r1MLKEM768
+                          - SecP384r1MLKEM1024
+                          type: string
+                        maxItems: 7
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-type: set
                       minTLSVersion:
                         description: |-
                           minTLSVersion is used to specify the minimal version of the TLS protocol that is negotiated during the TLS handshake. For example, to use TLS versions 1.1, 1.2 and 1.3 (yaml):
@@ -1691,8 +1717,8 @@ spec:
                     type: string
                 type: object
               kubeSecondaryDNS:
-                description: KubeSecondaryDNS plugin allows to support FQDN for VMI's
-                  secondary networks
+                description: 'Deprecated: KubeSecondaryDNS is no longer deployed by
+                  CNAO. The field is retained for API compatibility and is ignored.'
                 properties:
                   domain:
                     description: Domain defines the FQDN domain
@@ -3182,16 +3208,42 @@ spec:
                           - ECDHE-RSA-AES128-SHA256
                           - ECDHE-ECDSA-AES128-SHA
                           - ECDHE-RSA-AES128-SHA
+                          - ECDHE-ECDSA-AES256-SHA384
+                          - ECDHE-RSA-AES256-SHA384
                           - ECDHE-ECDSA-AES256-SHA
                           - ECDHE-RSA-AES256-SHA
                           - AES128-GCM-SHA256
                           - AES256-GCM-SHA384
                           - AES128-SHA256
+                          - AES256-SHA256
                           - AES128-SHA
                           - AES256-SHA
                           - DES-CBC3-SHA
                           type: string
                         type: array
+                      groups:
+                        description: groups is an optional, ordered field used to
+                          specify the supported groups (formerly known as elliptic
+                          curves) that are used during the TLS handshake. The order
+                          of the groups represents a suggested preference, with the
+                          most preferred group first. Operators may remove entries
+                          their operands do not support. When omitted, this means
+                          no opinion and the platform is left to choose reasonable
+                          defaults, which are subject to change over time.
+                        items:
+                          enum:
+                          - X25519
+                          - secp256r1
+                          - secp384r1
+                          - secp521r1
+                          - X25519MLKEM768
+                          - SecP256r1MLKEM768
+                          - SecP384r1MLKEM1024
+                          type: string
+                        maxItems: 7
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-type: set
                       minTLSVersion:
                         description: |-
                           minTLSVersion is used to specify the minimal version of the TLS protocol that is negotiated during the TLS handshake. For example, to use TLS versions 1.1, 1.2 and 1.3 (yaml):
