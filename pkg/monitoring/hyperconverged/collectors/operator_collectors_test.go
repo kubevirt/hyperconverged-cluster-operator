@@ -1,14 +1,18 @@
 package collectors
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/rhobs/operator-observability-toolkit/pkg/operatormetrics"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 )
 
@@ -203,4 +207,74 @@ func isMultiArchBootImagesFeatureEnabled(cli client.Client) (isSet, isEnabled bo
 	isEnabled = res[0].Value == multiArchBootImagesFeatureEnabled
 
 	return true, isEnabled
+}
+
+var _ = Describe("kubevirt_hco_feature_gate_enabled", func() {
+	var hco *hcov1.HyperConverged
+
+	BeforeEach(func() {
+		hco = commontestutils.NewHco()
+	})
+
+	It("emits a 0 or 1 series for every known configurable feature gate", func() {
+		cli := commontestutils.InitClient([]client.Object{hco})
+		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
+		configurable := featuregatedetails.ListConfigurableFeatureGates()
+
+		Expect(results).To(HaveLen(len(configurable)))
+		for _, fg := range configurable {
+			sample := featureGateSample(results, fg.Name)
+			Expect(sample.Labels).To(Equal([]string{fg.Name, fg.Phase.String()}))
+			expected := featureGateDisabledValue
+			if hco.Spec.FeatureGates.IsEnabled(fg.Name) {
+				expected = featureGateEnabledValue
+			}
+			Expect(sample.Value).To(Equal(expected), "unexpected value for feature gate %s", fg.Name)
+		}
+	})
+
+	It("reports 1 for an explicitly enabled alpha gate and 0 for a disabled beta gate", func() {
+		hco.Spec.FeatureGates.Enable("alignCPUs")
+		hco.Spec.FeatureGates.Disable("decentralizedLiveMigration")
+
+		cli := commontestutils.InitClient([]client.Object{hco})
+		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
+
+		Expect(featureGateSample(results, "alignCPUs").Value).To(Equal(featureGateEnabledValue))
+		Expect(featureGateSample(results, "alignCPUs").Labels).To(Equal([]string{"alignCPUs", "alpha"}))
+		Expect(featureGateSample(results, "decentralizedLiveMigration").Value).To(Equal(featureGateDisabledValue))
+		Expect(featureGateSample(results, "downwardMetrics").Value).To(Equal(featureGateDisabledValue))
+	})
+
+	It("emits 0 for every known configurable gate when the HyperConverged CR is missing", func() {
+		cli := commontestutils.InitClient([]client.Object{})
+		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
+		configurable := featuregatedetails.ListConfigurableFeatureGates()
+
+		Expect(results).To(HaveLen(len(configurable)))
+		for _, result := range results {
+			Expect(result.Value).To(Equal(featureGateDisabledValue))
+		}
+	})
+
+	It("emits no series when reading the HyperConverged CR fails", func() {
+		cli := commontestutils.InitClient([]client.Object{hco})
+		cli.InitiateGetErrors(func(_ client.ObjectKey) error {
+			return fmt.Errorf("get failed")
+		})
+
+		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
+		Expect(results).To(BeEmpty())
+	})
+})
+
+func featureGateSample(results []operatormetrics.CollectorResult, name string) operatormetrics.CollectorResult {
+	for _, result := range results {
+		if len(result.Labels) > 0 && result.Labels[0] == name {
+			return result
+		}
+	}
+
+	Fail(fmt.Sprintf("missing series for feature gate %s", name))
+	return operatormetrics.CollectorResult{}
 }

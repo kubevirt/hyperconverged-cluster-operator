@@ -135,4 +135,43 @@ var _ = Describe("Feature Gate Details", func() {
 			Expect(betaFGs).To(BeEmpty())
 		})
 	})
+
+	Context("ListConfigurableFeatureGates", func() {
+		It("should return alpha, beta, and deprecated gates sorted by name", func() {
+			featureGatesDetails = map[string]featuregates.FeatureGate{
+				"zeta":   {Name: "zeta", Phase: featuregates.PhaseAlpha},
+				"alpha":  {Name: "alpha", Phase: featuregates.PhaseBeta},
+				"ga":     {Name: "ga", Phase: featuregates.PhaseGA},
+				"middle": {Name: "middle", Phase: featuregates.PhaseDeprecated},
+				"gone":   {Name: "gone", Phase: featuregates.PhaseDiscontinued},
+			}
+
+			configurable := ListConfigurableFeatureGates()
+			Expect(configurable).To(Equal([]featuregates.FeatureGate{
+				{Name: "alpha", Phase: featuregates.PhaseBeta},
+				{Name: "middle", Phase: featuregates.PhaseDeprecated},
+				{Name: "zeta", Phase: featuregates.PhaseAlpha},
+			}))
+		})
+
+		It("should return an empty list if no configurable FG is defined", func() {
+			featureGatesDetails = map[string]featuregates.FeatureGate{
+				"ga":   {Name: "ga", Phase: featuregates.PhaseGA},
+				"gone": {Name: "gone", Phase: featuregates.PhaseDiscontinued},
+			}
+
+			Expect(ListConfigurableFeatureGates()).To(BeEmpty())
+		})
+
+		It("returns only configurable gates from the catalog", func() {
+			Expect(setup(featureGateJson)).To(Succeed())
+
+			gates := ListConfigurableFeatureGates()
+			Expect(gates).NotTo(BeEmpty())
+			for _, fg := range gates {
+				Expect(fg.Name).NotTo(BeEmpty())
+				Expect(fg.Phase.IsConfigurable()).To(BeTrue(), "feature gate %s has non-configurable phase %s", fg.Name, fg.Phase)
+			}
+		})
+	})
 })

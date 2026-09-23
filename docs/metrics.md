@@ -4,9 +4,11 @@
 |------|------|------|-------------|
 | kubevirt_hco_dataimportcrontemplate_with_architecture_annotation | Metric | Gauge | Indicates whether the DataImportCronTemplate has the ssp.kubevirt.io/dict.architectures annotation (1) or not (0) |
 | kubevirt_hco_dataimportcrontemplate_with_supported_architectures | Metric | Gauge | Indicates whether the DataImportCronTemplate has supported architectures (1) or not (0) |
+| kubevirt_hco_feature_gate_enabled | Metric | Gauge | Indicates whether a HyperConverged feature gate is enabled (1) or disabled (0). One series is emitted for every known configurable feature gate. |
 | kubevirt_hco_hyperconverged_cr_exists | Metric | Gauge | Indicates whether the HyperConverged custom resource exists (1) or not (0) |
 | kubevirt_hco_memory_overcommit_percentage | Metric | Gauge | Indicates the cluster-wide configured VM memory overcommit percentage |
 | kubevirt_hco_misconfigured_descheduler | Metric | Gauge | Indicates whether the optional descheduler is not properly configured (1) to work with KubeVirt or not (0) |
+| kubevirt_hco_multi_arch_boot_images_enabled | Metric | Gauge | indicates if the Multi-Arch Boot Images feature is enabled (1) or not (0) |
 | kubevirt_hco_out_of_band_modifications_total | Metric | Counter | Count of out-of-band modifications overwritten by HCO |
 | kubevirt_hco_single_stack_ipv6 | Metric | Gauge | Indicates whether the underlying cluster is single stack IPv6 (1) or not (0) |
 | kubevirt_hco_system_health_status | Metric | Gauge | Indicates whether the system health status is healthy (0), warning (1), or error (2), by aggregating the conditions of HCO and its secondary resources |

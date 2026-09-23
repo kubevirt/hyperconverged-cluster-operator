@@ -5,6 +5,7 @@ import (
 
 	"github.com/rhobs/operator-observability-toolkit/pkg/docs"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/collectors"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
 )
@@ -23,6 +24,7 @@ func main() {
 	}
 
 	metricsList := metrics.ListMetrics()
+	metricsList = append(metricsList, collectors.CollectorMetrics()...)
 	rulesList := rules.ListRecordingRules()
 
 	docsString := docs.BuildMetricsDocs(title, metricsList, rulesList)
