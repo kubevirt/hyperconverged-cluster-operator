@@ -146,6 +146,8 @@ const (
 	kvTemplateFG                 = "Template"
 	kvRebootPolicyFG             = "RebootPolicy"
 	kvVSOCKFG                    = "VSOCK"
+	kvWorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
+	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
 )
 
 var (
@@ -163,6 +165,8 @@ var (
 		kvAlignCPUs,
 		kvObjectGraph,
 		kvContainerPathVolumes,
+		kvWorkloadEncryptionSEV,
+		kvWorkloadEncryptionTDX,
 	}
 )
 
@@ -491,6 +495,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 	copyHypervisors(hc.Spec.Virtualization.Hypervisors, config)
 
 	config.RoleAggregationStrategy = hc.Spec.Virtualization.RoleAggregationStrategy
+	config.ConfidentialCompute = hc.Spec.Virtualization.ConfidentialCompute.DeepCopy()
 
 	return config, nil
 }
