@@ -6,13 +6,17 @@ import (
 )
 
 func SetupCollectors(cli client.Client, namespace string) error {
-	err := operatormetrics.RegisterCollector(
+	return operatormetrics.RegisterCollector(
 		getMultiArchBootImagesStatusCollector(cli, namespace),
+		getFeatureGateEnabledCollector(cli, namespace),
 	)
+}
 
-	if err != nil {
-		return err
+// CollectorMetrics returns collector-owned metrics so docs and the metric
+// linter can list them without constructing a Kubernetes client.
+func CollectorMetrics() []operatormetrics.Metric {
+	return []operatormetrics.Metric{
+		multiArchBootImagesStatus,
+		featureGateEnabled,
 	}
-
-	return nil
 }

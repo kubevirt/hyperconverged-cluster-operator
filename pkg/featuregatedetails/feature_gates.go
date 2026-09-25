@@ -34,6 +34,23 @@ func ListAlphaFeatureGates() []string {
 	return slices.Sorted(filterFGByPhase(maps.All(featureGatesDetails), featuregates.PhaseAlpha))
 }
 
+// ListConfigurableFeatureGates returns every catalogued feature gate that can
+// still be enabled or disabled (alpha, beta, and deprecated), sorted by name.
+func ListConfigurableFeatureGates() []featuregates.FeatureGate {
+	configurable := make([]featuregates.FeatureGate, 0, len(featureGatesDetails))
+	for _, fg := range featureGatesDetails {
+		if fg.Phase.IsConfigurable() {
+			configurable = append(configurable, fg)
+		}
+	}
+
+	slices.SortFunc(configurable, func(a, b featuregates.FeatureGate) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return configurable
+}
+
 func init() {
 	if err := setup(featureGateJson); err != nil {
 		panic("unable to setup v1 feature gates;" + err.Error())

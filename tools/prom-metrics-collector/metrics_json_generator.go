@@ -27,6 +27,7 @@ import (
 
 	"github.com/kubevirt/monitoring/pkg/metrics/parser"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/collectors"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
 )
@@ -49,6 +50,7 @@ func main() {
 	}
 
 	metricsList := metrics.ListMetrics()
+	metricsList = append(metricsList, collectors.CollectorMetrics()...)
 
 	err = rules.SetupRules()
 	if err != nil {

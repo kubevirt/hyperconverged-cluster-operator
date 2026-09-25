@@ -142,4 +142,17 @@ var _ = Describe("FeatureGate", func() {
 			Expect(fgs[0].Name).To(Equal("only"))
 		})
 	})
+
+	Context("Phase.IsConfigurable", func() {
+		DescribeTable("reports whether a phase can be toggled", func(phase featuregates.Phase, expected bool) {
+			Expect(phase.IsConfigurable()).To(Equal(expected))
+		},
+			Entry("unknown", featuregates.PhaseUnknown, false),
+			Entry("GA", featuregates.PhaseGA, false),
+			Entry("beta", featuregates.PhaseBeta, true),
+			Entry("alpha", featuregates.PhaseAlpha, true),
+			Entry("deprecated", featuregates.PhaseDeprecated, true),
+			Entry("discontinued", featuregates.PhaseDiscontinued, false),
+		)
+	})
 })

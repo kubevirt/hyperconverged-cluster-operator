@@ -45,9 +45,8 @@ func getMultiArchBootImagesStatusCallback(cli client.Client, operatorNamespace s
 			return []operatormetrics.CollectorResult{}
 		}
 
-		hc := &hcov1.HyperConverged{}
-		key := client.ObjectKey{Name: hcov1.HyperConvergedName, Namespace: operatorNamespace}
-		if err := cli.Get(context.TODO(), key, hc); err != nil {
+		hc, err := getHyperConverged(cli, operatorNamespace)
+		if err != nil {
 			if !errors.IsNotFound(err) {
 				logger.Error(err, "can't read HyperConverged CR")
 			}
@@ -73,4 +72,14 @@ func getMultiArchBootImagesStatusCallback(cli client.Client, operatorNamespace s
 			},
 		}
 	}
+}
+
+func getHyperConverged(cli client.Client, operatorNamespace string) (*hcov1.HyperConverged, error) {
+	hc := &hcov1.HyperConverged{}
+	key := client.ObjectKey{Name: hcov1.HyperConvergedName, Namespace: operatorNamespace}
+	if err := cli.Get(context.TODO(), key, hc); err != nil {
+		return nil, err
+	}
+
+	return hc, nil
 }
