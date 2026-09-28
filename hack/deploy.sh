@@ -201,7 +201,7 @@ for op in "${OPERATORS[@]}"; do
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="540s" || CONTAINER_ERRORED+="${op} "
 done
 
-"${CMD}" apply -f _out/hco.cr.yaml
+hack/retry.sh 5 10 "${CMD} apply -f _out/hco.cr.yaml"
 
 sleep 10
 # Give 30 minutes to available condition become true
