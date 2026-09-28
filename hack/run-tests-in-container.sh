@@ -30,6 +30,7 @@ fi
 function cleanup() {
     rv=$?
     if [ "x$rv" != "x0" ]; then
+        date -u --rfc-3339=seconds
         echo "Error during upgrade: exit status: $rv"
         CMD=${KUBECTL_BINARY} make dump-state
         echo "*** Upgrade test failed ***"
