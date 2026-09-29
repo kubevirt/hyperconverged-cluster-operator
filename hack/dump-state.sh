@@ -71,7 +71,7 @@ echo "${RELATED_OBJECTS}" | while read line; do
     name=${fields[1]} 
     namespace=${fields[2]} 
 
-    if [ "$kind" != "ConfigMap" ]; then
+    if [[ "$kind" != "ConfigMap" && "$kind" != "Secret" ]]; then
         ShowOperatorSummary $kind $name $namespace
     fi
 done
@@ -123,7 +123,9 @@ echo "${RELATED_OBJECTS}" | while read line; do
         RunCmd "$CMD get $kind $name -o json"
     else
         echo "Related object: kind=$kind name=$name namespace=$namespace"
-        RunCmd "$CMD get $kind $name -n $namespace -o json"
+        if [[ "$kind" != "ConfigMap" && "$kind" != "Secret" ]]; then
+          RunCmd "$CMD get $kind $name -n $namespace -o json"
+        fi
     fi
 done
 
