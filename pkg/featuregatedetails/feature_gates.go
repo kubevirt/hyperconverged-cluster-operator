@@ -14,7 +14,10 @@ import (
 //go:embed feature-gates.json
 var featureGateJson []byte
 
-var featureGatesDetails map[string]featuregates.FeatureGate
+var (
+	featureGatesDetails      map[string]featuregates.FeatureGate
+	configurableFeatureGates []featuregates.FeatureGate
+)
 
 func GetFeatureGatePhase(fgName string) (enabled featuregates.Phase, fgExists bool) {
 	fgName = strings.ToLower(fgName)
@@ -34,6 +37,27 @@ func ListAlphaFeatureGates() []string {
 	return slices.Sorted(filterFGByPhase(maps.All(featureGatesDetails), featuregates.PhaseAlpha))
 }
 
+// ListConfigurableFeatureGates returns every catalogued feature gate that can
+// still be enabled or disabled (alpha, beta, and deprecated), sorted by name.
+func ListConfigurableFeatureGates() []featuregates.FeatureGate {
+	return slices.Clone(configurableFeatureGates)
+}
+
+func buildConfigurableList() []featuregates.FeatureGate {
+	configurable := make([]featuregates.FeatureGate, 0, len(featureGatesDetails))
+	for _, fg := range featureGatesDetails {
+		if fg.Phase.IsConfigurable() {
+			configurable = append(configurable, fg)
+		}
+	}
+
+	slices.SortFunc(configurable, func(a, b featuregates.FeatureGate) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return configurable
+}
+
 func init() {
 	if err := setup(featureGateJson); err != nil {
 		panic("unable to setup v1 feature gates;" + err.Error())
@@ -48,6 +72,7 @@ func setup(fgJson []byte) error {
 	}
 
 	featureGatesDetails = maps.Collect(fgsToMap(slices.Values(fgs)))
+	configurableFeatureGates = buildConfigurableList()
 
 	return nil
 }
