@@ -113,8 +113,7 @@ func (c *cacheIsOpenShift) IsOpenShift(ctx context.Context, cli client.Client) (
 		return c.isOpenShift, nil
 	}
 
-	discoveryErr := &discovery.ErrGroupDiscoveryFailed{}
-	if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || errors.As(err, &discoveryErr) {
+	if _, ok := errors.AsType[*discovery.ErrGroupDiscoveryFailed](err); meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || ok {
 		c.isOpenShift = false
 		c.hasSet = true
 		return c.isOpenShift, nil
