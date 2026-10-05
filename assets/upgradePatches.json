@@ -160,6 +160,17 @@
         "name": "wasp-cluster",
         "namespace": ""
       }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "version": "v1",
+        "kind": "Service"
+      },
+      "objectKey": {
+        "name": "kubevirt-hyperconverged-operator-metrics",
+        "namespace": "kubevirt-hyperconverged"
+      }
     }
   ]
 }
