@@ -2,13 +2,10 @@ package alerts
 
 import (
 	"context"
-	"os"
 	"reflect"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -18,8 +15,7 @@ const (
 	OperatorPortName = "http-metrics"
 	OperatorNameEnv  = "OPERATOR_NAME"
 
-	metricsSuffix = "-operator-metrics"
-	serviceName   = hcoutil.HyperConvergedName + metricsSuffix
+	serviceName = hcoutil.OperatorMetricServiceName
 )
 
 type MetricServiceReconciler struct {
@@ -30,9 +26,8 @@ func CreateMetricServiceReconciler(theService *corev1.Service) *MetricServiceRec
 	return &MetricServiceReconciler{theService: theService}
 }
 
-func newMetricServiceReconciler(namespace string, owner metav1.OwnerReference) *MetricServiceReconciler {
-	return CreateMetricServiceReconciler(NewMetricsService(namespace, owner))
-}
+// NOTE: the service for the operator is no longer created here. We are using static yaml files for it, so the
+// operator's certificates will be injected.
 
 func (r MetricServiceReconciler) Kind() string {
 	return "Service"
@@ -74,43 +69,4 @@ func (r MetricServiceReconciler) UpdateExistingResource(ctx context.Context, cl 
 		logger.Info("successfully updated the Service", "serviceName", r.theService.Name)
 	}
 	return found, modified, nil
-}
-
-func NewMetricsService(namespace string, owner metav1.OwnerReference) *corev1.Service {
-	servicePorts := []corev1.ServicePort{
-		{
-			Port:     hcoutil.MetricsPort,
-			Name:     OperatorPortName,
-			Protocol: corev1.ProtocolTCP,
-			TargetPort: intstr.IntOrString{
-				Type: intstr.Int, IntVal: hcoutil.MetricsPort,
-			},
-		},
-	}
-
-	operatorName := hcoutil.HCOOperatorName
-	val, ok := os.LookupEnv(OperatorNameEnv)
-	if ok && val != "" {
-		operatorName = val
-	}
-	labelSelect := map[string]string{"name": operatorName}
-
-	spec := corev1.ServiceSpec{
-		Ports:    servicePorts,
-		Selector: labelSelect,
-	}
-
-	return &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            serviceName,
-			Labels:          hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring),
-			Namespace:       namespace,
-			OwnerReferences: []metav1.OwnerReference{owner},
-		},
-		Spec: spec,
-	}
 }
