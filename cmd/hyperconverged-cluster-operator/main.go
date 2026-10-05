@@ -1,11 +1,13 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"crypto/tls"
 	"fmt"
 	"maps"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -129,6 +131,16 @@ func main() {
 	cmdHelper.InitiateCommand()
 
 	operatorNamespace := hcoutil.GetOperatorNamespaceFromEnv()
+
+	// Make sure the certificates are mounted, this should be handled by the OLM
+	certDir := getCertDir()
+	certs := []string{filepath.Join(certDir, hcoutil.OperatorCertName), filepath.Join(certDir, hcoutil.OperatorKeyName)}
+	for _, fname := range certs {
+		if _, err := os.Stat(fname); err != nil {
+			logger.Error(err, "Operator metrics TLS certificates were not found, skipping operator initialization")
+			cmdHelper.ExitOnError(err, "Operator metrics TLS certificates were not found, skipping operator initialization")
+		}
+	}
 
 	// Get a config to talk to the apiserver
 	cfg, err := config.GetConfig()
@@ -484,6 +496,9 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 	return manager.Options{
 		Metrics: server.Options{
 			SecureServing:  true,
+			CertDir:        getCertDir(),
+			CertName:       hcoutil.OperatorCertName,
+			KeyName:        hcoutil.OperatorKeyName,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
 			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
@@ -526,4 +541,8 @@ func checkAIEWebhookImageEnvExists() error {
 	}
 
 	return nil
+}
+
+func getCertDir() string {
+	return cmp.Or(os.Getenv(operatorCertDirEnv), hcoutil.DefaultOperatorCertDir)
 }
