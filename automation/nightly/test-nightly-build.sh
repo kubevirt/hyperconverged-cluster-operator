@@ -159,6 +159,32 @@ trap "dump" INT TERM EXIT
 
 # install HCO on the cluster
 $KUBECTL create ns kubevirt-hyperconverged
+
+cat <<EOF | ${KUBECTL} apply -f -
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned
+  namespace: kubevirt-hyperconverged
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hyperconverged-cluster-operator-service-cert
+  namespace: kubevirt-hyperconverged
+  labels:
+    name: hyperconverged-cluster-operator
+spec:
+  secretName: hyperconverged-cluster-operator-service-cert
+  dnsNames:
+  - hyperconverged-cluster-operator-service.kubevirt-hyperconverged.svc
+  - hyperconverged-cluster-operator-metrics-service.kubevirt-hyperconverged.svc
+  issuerRef:
+    name: selfsigned
+EOF
+
 ./operator-sdk run bundle -n kubevirt-hyperconverged --timeout=10m ${BUNDLE_IMAGE_NAME}
 
 # deploy the HyperConverged CR
