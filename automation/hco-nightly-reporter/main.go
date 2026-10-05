@@ -25,7 +25,7 @@ var jobs = []jobConfig{
 	},
 	{
 		name:    "Nightly deploy on OCP",
-		baseURL: "https://storage.googleapis.com/test-platform-results/logs/periodic-ci-kubevirt-hyperconverged-cluster-operator-main-hco-e2e-deploy-nightly-main-aws",
+		baseURL: "https://gcs.ci.openshift.org/gcs/test-platform-results-public/logs/periodic-ci-kubevirt-hyperconverged-cluster-operator-main-hco-e2e-deploy-nightly-main-aws",
 	},
 }
 
