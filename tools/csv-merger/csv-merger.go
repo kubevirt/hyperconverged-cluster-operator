@@ -150,6 +150,7 @@ var (
 	mgImage             = flag.String("mg-image", "quay.io/kubevirt/must-gather", "Operator suggested must-gather image")
 	testImagesNVRs      = flag.String("test-images-nvrs", "", "Test Images NVRs")
 	dumpNetworkPolicies = flag.Bool("dump-network-policies", false, "Dump network policy yamls to stdout")
+	dumpServices        = flag.Bool("dump-services", false, "Dump service yamls to stdout")
 	_                   = flag.String("network-passt-binding-image-name", "", "deprecated. this flag is ignored")
 	_                   = flag.String("network-passt-binding-cni-image-name", "", "deprecated. this flag is ignored")
 
@@ -174,6 +175,7 @@ func main() {
 	case CRDMode:
 		_, err := os.Stdout.Write(crdBytes)
 		panicOnError(err)
+		*dumpServices = true
 	case CSVMode:
 		getHcoCsv()
 	case NPMode:
@@ -184,6 +186,10 @@ func main() {
 
 	if *dumpNetworkPolicies {
 		panicOnError(generateNetworkPolicies())
+	}
+
+	if *dumpServices {
+		getOperatorMetricsService()
 	}
 }
 
@@ -263,6 +269,17 @@ func getHcoCsv() {
 
 	csvBase.Spec.RelatedImages = sortRelatedImages(csvBase.Spec.RelatedImages)
 	panicOnError(util.MarshallObject(csvBase, os.Stdout))
+}
+
+func getOperatorMetricsService() {
+	svc := manifests.GetOperatorMetricsService()
+
+	if svc.Annotations == nil {
+		svc.Annotations = make(map[string]string)
+	}
+	svc.Annotations["service.beta.openshift.io/serving-cert-secret-name"] = hcoutil.OperatorMetricsSecretName
+
+	panicOnError(util.MarshallObject(svc, os.Stdout))
 }
 
 // getInstallStrategyBase returns the basics of an HCO InstallStrategy

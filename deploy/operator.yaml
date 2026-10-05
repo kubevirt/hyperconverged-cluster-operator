@@ -120,12 +120,25 @@ spec:
             - ALL
           readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /metrics.local.config/certificates
+          name: metrics-cert
       priorityClassName: system-cluster-critical
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: hyperconverged-cluster-operator
+      volumes:
+      - name: metrics-cert
+        secret:
+          defaultMode: 420
+          items:
+          - key: tls.crt
+            path: metrics.crt
+          - key: tls.key
+            path: metrics.key
+          secretName: hyperconverged-cluster-operator-service-cert
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1324,6 +1337,23 @@ spec:
   selector:
     name: hyperconverged-cluster-webhook
   type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: hyperconverged-cluster-operator
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: hyperconverged-cluster
+  name: hyperconverged-cluster-operator-metrics-service
+spec:
+  ports:
+  - name: http-metrics
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    name: hyperconverged-cluster-operator
 ---
 apiVersion: v1
 kind: Service

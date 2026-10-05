@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
-    createdAt: "2026-09-28 05:12:01"
+    createdAt: "2026-10-05 15:26:45"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4610,12 +4610,25 @@ spec:
                     - ALL
                   readOnlyRootFilesystem: true
                 terminationMessagePolicy: FallbackToLogsOnError
+                volumeMounts:
+                - mountPath: /metrics.local.config/certificates
+                  name: metrics-cert
               priorityClassName: system-cluster-critical
               securityContext:
                 runAsNonRoot: true
                 seccompProfile:
                   type: RuntimeDefault
               serviceAccountName: hyperconverged-cluster-operator
+              volumes:
+              - name: metrics-cert
+                secret:
+                  defaultMode: 420
+                  items:
+                  - key: tls.crt
+                    path: metrics.crt
+                  - key: tls.key
+                    path: metrics.key
+                  secretName: hyperconverged-cluster-operator-service-cert
       - label:
           app.kubernetes.io/component: deployment
           app.kubernetes.io/managed-by: olm

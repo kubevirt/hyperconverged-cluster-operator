@@ -96,6 +96,13 @@ const (
 	WebhookKeyName        = "apiserver.key"
 	DefaultWebhookCertDir = "/apiserver.local.config/certificates"
 
+	OperatorMetricServiceName = HCOOperatorName + "-metrics-service"
+	OperatorMetricsSecretName = HCOOperatorName + "-service-cert"
+
+	OperatorCertName       = "metrics.crt"
+	OperatorKeyName        = "metrics.key"
+	DefaultOperatorCertDir = "/metrics.local.config/certificates"
+
 	CliDownloadsServerPort int32 = 8080
 	UIPluginServerPort     int32 = 9443
 	UIProxyServerPort      int32 = 8080
