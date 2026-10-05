@@ -1,14 +1,21 @@
 package collectors
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
+	"github.com/rhobs/operator-observability-toolkit/pkg/operatormetrics"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
+	featuregatetypes "github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 )
 
@@ -203,4 +210,174 @@ func isMultiArchBootImagesFeatureEnabled(cli client.Client) (isSet, isEnabled bo
 	isEnabled = res[0].Value == multiArchBootImagesFeatureEnabled
 
 	return true, isEnabled
+}
+
+var _ = Describe("kubevirt_hco_feature_gate_enabled", func() {
+	var hco *hcov1.HyperConverged
+
+	BeforeEach(func() {
+		hco = commontestutils.NewHco()
+	})
+
+	It("emits a 0 or 1 series for every known configurable feature gate", func() {
+		cli := commontestutils.InitClient([]client.Object{hco})
+		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
+		configurable := featuregatedetails.ListConfigurableFeatureGates()
+
+		Expect(results).To(HaveLen(len(configurable)))
+		for _, fg := range configurable {
+			sample := featureGateSample(results, fg.Name)
+			Expect(sample.Labels).To(Equal([]string{fg.Name, fg.Phase.String()}))
+			expected := featureGateDisabledValue
+			if hco.Spec.FeatureGates.IsEnabled(fg.Name) {
+				expected = featureGateEnabledValue
+			}
+			Expect(sample.Value).To(Equal(expected), "unexpected value for feature gate %s", fg.Name)
+		}
+	})
+
+	It("emits values and phase labels for the supplied feature gates", func() {
+		gates := []featuregatetypes.FeatureGate{
+			{Name: "enabled-alpha", Phase: featuregatetypes.PhaseAlpha},
+			{Name: "disabled-beta", Phase: featuregatetypes.PhaseBeta},
+			{Name: "disabled-alpha", Phase: featuregatetypes.PhaseAlpha},
+		}
+		results := featureGateEnabledSamples(gates, func(name string) bool {
+			return name == "enabled-alpha"
+		})
+
+		Expect(results).To(Equal([]operatormetrics.CollectorResult{
+			{Metric: featureGateEnabled, Labels: []string{"enabled-alpha", "alpha"}, Value: featureGateEnabledValue},
+			{Metric: featureGateEnabled, Labels: []string{"disabled-beta", "beta"}, Value: featureGateDisabledValue},
+			{Metric: featureGateEnabled, Labels: []string{"disabled-alpha", "alpha"}, Value: featureGateDisabledValue},
+		}))
+	})
+
+	DescribeTable("excludes deprecated gates even when their dedicated field is enabled", func(name string, enableField func()) {
+		hco.Spec.FeatureGates.Enable(name)
+		enableField()
+		cli := commontestutils.InitClient([]client.Object{hco})
+		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
+
+		Expect(results).NotTo(BeEmpty())
+		for _, result := range results {
+			Expect(result.Labels[0]).NotTo(Equal(name))
+			Expect(result.Labels[1]).NotTo(Equal("deprecated"))
+		}
+	},
+		Entry("multi-arch boot image import", "enableMultiArchBootImageImport", func() {
+			hco.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(true)
+		}),
+		Entry("mediated device configuration", "disableMDevConfiguration", func() {
+			hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{Enabled: new(true)}
+		}),
+		Entry("persistent reservation", "persistentReservation", func() {
+			hco.Spec.Storage = &hcov1.StorageConfig{
+				PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{Enabled: new(true)},
+			}
+		}),
+	)
+
+	It("emits no series when the HyperConverged CR is missing", func() {
+		cli := commontestutils.InitClient([]client.Object{})
+		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
+		Expect(results).To(BeEmpty())
+	})
+
+	It("emits no series when reading the HyperConverged CR fails", func() {
+		cli := commontestutils.InitClient([]client.Object{hco})
+		cli.InitiateGetErrors(func(_ client.ObjectKey) error {
+			return fmt.Errorf("get failed")
+		})
+
+		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
+		Expect(results).To(BeEmpty())
+	})
+
+	It("registers the collector so scrapes include every configurable gate", func() {
+		configurable := featuregatedetails.ListConfigurableFeatureGates()
+		Expect(configurable).NotTo(BeEmpty())
+		for _, fg := range configurable {
+			hco.Spec.FeatureGates.Disable(fg.Name)
+		}
+		hco.Spec.FeatureGates.Enable(configurable[0].Name)
+		cli := commontestutils.InitClient([]client.Object{hco})
+
+		Expect(operatormetrics.CleanRegistry()).To(Succeed())
+		DeferCleanup(func() {
+			Expect(operatormetrics.CleanRegistry()).To(Succeed())
+		})
+		Expect(SetupCollectors(cli, commontestutils.Namespace)).To(Succeed())
+
+		Expect(collectorMetricNames(operatormetrics.ListMetrics())).To(
+			ContainElement("kubevirt_hco_feature_gate_enabled"),
+		)
+
+		family := gatheredFeatureGateFamily()
+		Expect(family.GetHelp()).To(Equal(featureGateEnabled.GetOpts().Help))
+		Expect(family.GetType()).To(Equal(dto.MetricType_GAUGE))
+
+		samples := family.GetMetric()
+		Expect(samples).To(HaveLen(len(configurable)))
+
+		byName := map[string]*dto.Metric{}
+		for _, sample := range samples {
+			name := prometheusLabel(sample, featureGateLabelName)
+			Expect(name).NotTo(BeEmpty())
+			Expect(prometheusLabel(sample, featureGateLabelPhase)).NotTo(Equal("deprecated"))
+			byName[name] = sample
+		}
+
+		for _, fg := range configurable {
+			sample, ok := byName[fg.Name]
+			Expect(ok).To(BeTrue(), "missing gathered series for feature gate %s", fg.Name)
+			Expect(prometheusLabel(sample, featureGateLabelPhase)).To(Equal(fg.Phase.String()))
+			expected := featureGateDisabledValue
+			if hco.Spec.FeatureGates.IsEnabled(fg.Name) {
+				expected = featureGateEnabledValue
+			}
+			Expect(sample.GetGauge().GetValue()).To(Equal(expected), "unexpected value for feature gate %s", fg.Name)
+		}
+	})
+})
+
+func featureGateSample(results []operatormetrics.CollectorResult, name string) operatormetrics.CollectorResult {
+	for _, result := range results {
+		if len(result.Labels) > 0 && result.Labels[0] == name {
+			return result
+		}
+	}
+
+	Fail(fmt.Sprintf("missing series for feature gate %s", name))
+	return operatormetrics.CollectorResult{}
+}
+
+func collectorMetricNames(metrics []operatormetrics.Metric) []string {
+	names := make([]string, 0, len(metrics))
+	for _, metric := range metrics {
+		names = append(names, metric.GetOpts().Name)
+	}
+	return names
+}
+
+func gatheredFeatureGateFamily() *dto.MetricFamily {
+	families, err := prometheus.DefaultGatherer.Gather()
+	Expect(err).ToNot(HaveOccurred())
+	for _, family := range families {
+		if family.GetName() == "kubevirt_hco_feature_gate_enabled" {
+			return family
+		}
+	}
+
+	Fail("kubevirt_hco_feature_gate_enabled was not gathered after registration")
+	return nil
+}
+
+func prometheusLabel(sample *dto.Metric, name string) string {
+	for _, label := range sample.GetLabel() {
+		if label.GetName() == name {
+			return label.GetValue()
+		}
+	}
+	return ""
 }
