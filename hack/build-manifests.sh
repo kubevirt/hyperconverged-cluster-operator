@@ -440,6 +440,7 @@ ${TOOLS}/csv-merger \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
+  --dump-services \
   ${NETWORK_POLICIES_PARAMS} \
   > temp_manifests.yaml
 

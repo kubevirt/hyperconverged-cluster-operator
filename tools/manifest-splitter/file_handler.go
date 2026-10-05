@@ -66,16 +66,7 @@ func (fh *fileHandler) writeToFile() error {
 	}
 
 	fh.fileName = path.Join(outputDir, fileName)
-
-	file, err := os.OpenFile(fh.getFileName(), os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_EXCL, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.Write(fh.buff.Bytes())
-
-	return err
+	return os.WriteFile(fh.getFileName(), fh.buff.Bytes(), 0644)
 }
 
 func (fh *fileHandler) setFileType(ft string) {

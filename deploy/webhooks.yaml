@@ -15,6 +15,7 @@ spec:
   secretName: hyperconverged-cluster-operator-service-cert
   dnsNames:
   - hyperconverged-cluster-operator-service.kubevirt-hyperconverged.svc
+  - hyperconverged-cluster-operator-metrics-service.kubevirt-hyperconverged.svc
   issuerRef:
     name: selfsigned
 ---
