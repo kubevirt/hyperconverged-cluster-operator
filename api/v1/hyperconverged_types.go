@@ -124,6 +124,18 @@ type HyperConvergedSpec struct {
 	//   feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * mDevVGPULiveMigration:
+	//   MDevVGPULiveMigration enables live migration of virtual machines that use
+	//   a single mediated device (mdev) vGPU. The vGPU must be declared in
+	//   spec.virtualization.permittedHostDevices.mediatedDevices, and virtual
+	//   machines with more than one GPU, or with a GPU that is not an mdev device,
+	//   remain non-migratable. The source and target nodes must run a compatible
+	//   NVIDIA Virtual GPU Manager and have a matching ECC configuration. This
+	//   feature gate does not cover live migration of VFIO PCI passthrough or
+	//   SR-IOV virtual function devices. Note: This feature is in Developer
+	//   Preview.
+	//   Phase: alpha
+	//
 	// * objectGraph:
 	//   ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.
 	//   This subresource returns a structured list of k8s objects that are related

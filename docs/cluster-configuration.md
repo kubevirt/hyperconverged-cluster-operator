@@ -285,6 +285,49 @@ be deployed for attestation.
 
 **Graduation Status**: Alpha
 
+### mDevVGPULiveMigration Feature Gate
+Add the `mDevVGPULiveMigration` feature gate in order to allow live migration of
+virtual machines that use a single mediated device (mdev) vGPU. Without this
+feature gate, any virtual machine with a GPU attached is marked as
+non-migratable.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: mDevVGPULiveMigration
+```
+
+The vGPU must be declared in
+`spec.virtualization.permittedHostDevices.mediatedDevices`, otherwise the
+virtual machine stays non-migratable even with the feature gate enabled. See
+[Automatic Configuration of Mediated Devices (including vGPUs)](#automatic-configuration-of-mediated-devices-including-vgpus)
+for how to configure them.
+
+The following are currently not supported:
+
+- Virtual machines with more than one GPU.
+- GPUs that are not mediated devices, for example VFIO PCI host devices or
+  SR-IOV virtual functions.
+
+**Note**: This feature is in Developer Preview. The source and target nodes must
+run a compatible NVIDIA Virtual GPU Manager and have a matching ECC
+configuration, and the guest driver must be compatible with both. NVIDIA does
+not support migration for every GPU model.
+
+Since a vGPU keeps dirtying guest memory even when the guest is idle, such a
+migration may not converge on pre-copy alone, and post-copy is not available for
+devices assigned through VFIO. Setting
+`spec.virtualization.liveMigrationConfig.allowWorkloadDisruption` to `true`
+lets the migration complete by pausing the guest for the final transfer.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### enableMultiArchBootImageImport Feature Gate (Deprecated)
 This feature is GA now, and the feature gate is deprecated. It will be removed in a future version.
 
