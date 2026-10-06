@@ -17,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const (
@@ -151,7 +153,7 @@ func (hcoCli HCOPrometheusClient) GetHCOMetric(ctx context.Context, query string
 
 // CreateTempOperatorRoute creates a route to the HCO prometheus endpoint, to allow reading the metrics.
 func CreateTempOperatorRoute(ctx context.Context, cli client.Client) error {
-	return createTempRoute(ctx, cli, hcoTempRouteName, "kubevirt-hyperconverged-operator-metrics")
+	return createTempRoute(ctx, cli, hcoTempRouteName, hcoutil.OperatorMetricServiceName)
 }
 
 // CreateTempWebhookRoute creates a route to the HCO prometheus endpoint, to allow reading the metrics.
