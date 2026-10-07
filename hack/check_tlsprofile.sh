@@ -51,7 +51,7 @@ if [[ $(${KUBECTL_BINARY} get ssp -n "${INSTALLED_NAMESPACE}") ]]; then
   SSP_DEPLOYED=true
 fi
 
-SERVICE=kubevirt-hyperconverged-operator-metrics
+SERVICE=service/kubevirt-hyperconverged-operator-metrics
 
 if ! which nmap ; then
     echo "Try to install nmap"
