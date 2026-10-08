@@ -4610,12 +4610,25 @@ spec:
                     - ALL
                   readOnlyRootFilesystem: true
                 terminationMessagePolicy: FallbackToLogsOnError
+                volumeMounts:
+                - mountPath: /metrics.local.config/certificates
+                  name: metrics-cert
               priorityClassName: system-cluster-critical
               securityContext:
                 runAsNonRoot: true
                 seccompProfile:
                   type: RuntimeDefault
               serviceAccountName: hyperconverged-cluster-operator
+              volumes:
+              - name: metrics-cert
+                secret:
+                  defaultMode: 420
+                  items:
+                  - key: tls.crt
+                    path: metrics.crt
+                  - key: tls.key
+                    path: metrics.key
+                  secretName: hyperconverged-cluster-operator-service-cert
       - label:
           app.kubernetes.io/component: deployment
           app.kubernetes.io/managed-by: olm

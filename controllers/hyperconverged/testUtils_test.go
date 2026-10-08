@@ -125,7 +125,6 @@ type BasicExpected struct {
 	ssp                  *sspv1beta3.SSP
 	migController        *migrationv1alpha1.MigController
 	vmFileRestore        *vmfrv1.FileRestoreOperator
-	mService             *corev1.Service
 	serviceMonitor       *monitoringv1.ServiceMonitor
 	cliDownload          *consolev1.ConsoleCLIDownload
 	cliDownloadsRoute    *routev1.Route
@@ -154,7 +153,6 @@ func (be BasicExpected) toArray() []client.Object {
 		be.ssp,
 		be.migController,
 		be.vmFileRestore,
-		be.mService,
 		be.serviceMonitor,
 		be.cliDownload,
 		be.cliDownloadsRoute,
@@ -228,7 +226,6 @@ func getBasicDeployment() *BasicExpected {
 		BlockOwnerDeletion: new(false),
 		Controller:         new(false),
 	}
-	res.mService = alerts.NewMetricsService(namespace, deploymentRef)
 	res.serviceMonitor = alerts.NewServiceMonitor(namespace, deploymentRef)
 
 	expectedKV, err := handlers.NewKubeVirt(hco, namespace)

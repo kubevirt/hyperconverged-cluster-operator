@@ -77,11 +77,19 @@ func (r ServiceMonitorReconciler) deleteServiceMonitor(ctx context.Context, cl c
 	return cl.Delete(ctx, found)
 }
 
+// the operator metrics service is now created by the deployer from a static manifest.
+// But the ServiceMonitor uses the same name. We want to edit the existing one
+// instead of creating new one. So we'll name it with the old service name.
+const serviceMonitorName = "kubevirt-hyperconverged-operator-metrics"
+
 func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
-	labels := hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)
 	spec := monitoringv1.ServiceMonitorSpec{
 		Selector: metav1.LabelSelector{
-			MatchLabels: labels,
+			MatchLabels: map[string]string{
+				hcoutil.AppLabel:          hcoutil.HCOOperatorName,
+				hcoutil.AppLabelPartOf:    hcoutil.HyperConvergedCluster,
+				hcoutil.AppLabelComponent: string(hcoutil.AppComponentMonitoring),
+			},
 		},
 		Endpoints: []monitoringv1.Endpoint{
 			CreateEndpoint(secretName),
@@ -94,8 +102,8 @@ func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitorin
 			Kind:       monitoringv1.ServiceMonitorsKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            serviceName,
-			Labels:          labels,
+			Name:            serviceMonitorName,
+			Labels:          hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring),
 			Namespace:       namespace,
 			OwnerReferences: []metav1.OwnerReference{owner},
 		},

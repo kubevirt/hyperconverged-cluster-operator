@@ -26,6 +26,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -135,6 +136,7 @@ func main() {
 
 	services := []corev1.Service{
 		getServiceWebhook(),
+		manifests.GetOperatorMetricsService(),
 	}
 
 	serviceAccounts := map[string]corev1.ServiceAccount{
@@ -636,10 +638,10 @@ func injectVolumesForWebHookCerts(deploy *appsv1.Deployment) {
 	const certVolume = "apiservice-cert"
 
 	// check if there is already a volume for api certificates
-	for _, vol := range deploy.Spec.Template.Spec.Volumes {
-		if vol.Name == certVolume {
-			return
-		}
+	if slices.ContainsFunc(deploy.Spec.Template.Spec.Volumes, func(volume corev1.Volume) bool {
+		return volume.Name == certVolume
+	}) {
+		return
 	}
 
 	volume := corev1.Volume{

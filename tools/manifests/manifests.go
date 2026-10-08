@@ -68,6 +68,8 @@ type DeploymentOperatorParams struct {
 }
 
 func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
+	const certVolume = "metrics-cert"
+
 	return appsv1.DeploymentSpec{
 		Replicas: new(int32(1)),
 		Selector: &metav1.LabelSelector{
@@ -105,12 +107,73 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 						Ports: []corev1.ContainerPort{
 							getMetricsPort(),
 						},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      certVolume,
+								MountPath: util.DefaultOperatorCertDir,
+							},
+						},
 					},
 				},
 				PriorityClassName: "system-cluster-critical",
+				Volumes: []corev1.Volume{
+					{
+						Name: certVolume,
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName:  util.OperatorMetricsSecretName,
+								DefaultMode: new(int32(420)),
+								Items: []corev1.KeyToPath{
+									{
+										Key:  "tls.crt",
+										Path: util.OperatorCertName,
+									},
+									{
+										Key:  "tls.key",
+										Path: util.OperatorKeyName,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
+}
+
+func GetOperatorMetricsService() corev1.Service {
+	spec := corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{
+			{
+				Port:     util.MetricsPort,
+				Name:     "http-metrics",
+				Protocol: corev1.ProtocolTCP,
+				TargetPort: intstr.IntOrString{
+					Type: intstr.Int, IntVal: util.MetricsPort,
+				},
+			},
+		},
+		Selector: map[string]string{"name": util.HCOOperatorName},
+	}
+
+	svc := corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: util.OperatorMetricServiceName,
+			Labels: map[string]string{
+				util.AppLabel:          util.HCOOperatorName,
+				util.AppLabelPartOf:    util.HyperConvergedCluster,
+				util.AppLabelComponent: string(util.AppComponentMonitoring),
+			},
+		},
+		Spec: spec,
+	}
+
+	return svc
 }
 
 func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
