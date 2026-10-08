@@ -83,7 +83,10 @@ function create_file_based_catalog() {
   rm -rf fbc-catalog
   mkdir fbc-catalog
   ${OPM} alpha render-template semver --migrate-level=bundle-object-to-csv-metadata index-template.yaml > catalog.tmp.json
-  jq 'if .schema == "olm.package" then . + '"${DESC_ICON}"' else . end' catalog.tmp.json > fbc-catalog/catalog.json
+  jq 'if .schema == "olm.package" then . + '"${DESC_ICON}"' else . end' catalog.tmp.json > catalog.tmp2.json
+  csv_ver=$(jq -r -s '.[] | select(.schema == "olm.channel") | .entries[0].name' catalog.tmp2.json | sed -E 's|^kubevirt-hyperconverged-operator.v(.+)$|\1|')
+  jq 'if .schema == "olm.channel" then . | .entries[0] += {"skipRange": "<'"${csv_ver}"'"} else . end' catalog.tmp2.json > fbc-catalog/catalog.json
+
   ${OPM} validate fbc-catalog
   rm -f fbc-catalog.Dockerfile
   ${OPM} generate dockerfile fbc-catalog
