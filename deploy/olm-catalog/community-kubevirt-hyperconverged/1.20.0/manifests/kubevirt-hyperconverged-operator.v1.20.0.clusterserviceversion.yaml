@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
-    createdAt: "2026-10-05 15:26:45"
+    createdAt: "2026-10-10 05:11:31"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4563,7 +4563,7 @@ spec:
                 - name: AUTOPILOT_VERSION
                   value: v0.1.2
                 - name: VM_FILE_RESTORE_OPERATOR_VERSION
-                  value: v0.0.8
+                  value: v0.0.9
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5727,10 +5727,10 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
                 - name: OPERATOR_VERSION
-                  value: v0.0.8
+                  value: v0.0.9
                 - name: VERBOSITY
                   value: "1"
-                image: quay.io/kubevirt/vm-file-restore-operator@sha256:1df565524e2c5fbf16664b63c422e605bd34276c0cf9124a40f5e894d4eea6f6
+                image: quay.io/kubevirt/vm-file-restore-operator@sha256:4abf260c7aa93554498060486f5b9e5c7deaaaf8a6806004d992958133303bee
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6767,7 +6767,7 @@ spec:
     name: virt-template-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:5a5ba4aca319c670c803c47475a1350bdea7db7613f0602cf3cfd58fe3e53870
     name: virtio-container-disk
-  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:1df565524e2c5fbf16664b63c422e605bd34276c0cf9124a40f5e894d4eea6f6
+  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:4abf260c7aa93554498060486f5b9e5c7deaaaf8a6806004d992958133303bee
     name: vm-file-restore-operator
   replaces: kubevirt-hyperconverged-operator.v1.19.0
   selector:
