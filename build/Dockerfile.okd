@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream9
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 ENV KUBEVIRT_CLIENT_GO_SCHEME_REGISTRATION_VERSION=v1
 
