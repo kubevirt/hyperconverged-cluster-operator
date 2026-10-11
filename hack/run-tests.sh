@@ -29,6 +29,15 @@ source ./hack/check_operator_condition.sh
 printOperatorCondition
 
 GINKGO_LABELS="${GINKGO_LABELS:-}"
+if ! echo "${GINKGO_LABELS}" | grep -q "tls-monitoring"; then
+  if [[ ! -v KUBERNETES_SERVICE_HOST ]] && ! ${KUBECTL_BINARY} get crd "prometheusrules.monitoring.coreos.com" "servicemonitors.monitoring.coreos.com" > /dev/null 2>&1; then
+    if [[ -n "${GINKGO_LABELS}" ]]; then
+      GINKGO_LABELS="${GINKGO_LABELS} && "
+    fi
+    GINKGO_LABELS="${GINKGO_LABELS}"'!tls-monitoring'
+  fi
+fi
+
 echo "GINKGO_LABELS=${GINKGO_LABELS}"
 S390X_GUESTLESS_KERNEL_IMAGE="${S390X_GUESTLESS_KERNEL_IMAGE:-quay.io/kubevirt/s390x-guestless-kernel:${KUBEVIRT_VERSION}}"
 echo "S390X_GUESTLESS_KERNEL_IMAGE=${S390X_GUESTLESS_KERNEL_IMAGE}"
@@ -46,9 +55,6 @@ ${KUBECTL_BINARY} get hco -n "${INSTALLED_NAMESPACE}" kubevirt-hyperconverged -o
 
 # wait a bit to make sure the VMs are deleted
 sleep 60
-
-# Check TLS profile on the webhook
-KUBECTL_BINARY=${KUBECTL_BINARY} ./hack/check_tlsprofile.sh
 
 # check if HCO is able to correctly add back a label used as a label selector
 ${KUBECTL_BINARY} label priorityclass kubevirt-cluster-critical app-
