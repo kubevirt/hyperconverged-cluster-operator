@@ -5,6 +5,8 @@ import (
 	"context"
 	"crypto/tls"
 	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -106,6 +108,18 @@ func GetGroupsInGolangFormat(fromHC *openshiftconfigv1.TLSSecurityProfile) []tls
 	}
 
 	return curveIDs
+}
+
+// GetGroupsInStringFormat returns the TLS groups as a comma delimited list of numeric
+// Go tls.CurveID values, e.g. "4588,29,23,24". Operands expecting group names rather than
+// numeric values should use GetGroups instead.
+func GetGroupsInStringFormat(fromHC *openshiftconfigv1.TLSSecurityProfile) string {
+	groups := GetGroupsInGolangFormat(fromHC)
+	s := make([]string, len(groups))
+	for i, value := range groups {
+		s[i] = strconv.Itoa(int(value))
+	}
+	return strings.Join(s, ",")
 }
 
 func SetHyperConvergedTLSSecurityProfile(fromHC *openshiftconfigv1.TLSSecurityProfile) {

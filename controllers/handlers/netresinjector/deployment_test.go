@@ -114,6 +114,7 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 				"-alsologtostderr=true",
 				"-tls-min-version=VersionTLS12",
 				"-tls-cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384",
+				"-tls-curve-preferences=4588,29,23,24",
 			))
 
 			Expect(container.SecurityContext).ToNot(BeNil())
@@ -173,6 +174,52 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 			Expect(container.Args).To(ContainElement("-tls-min-version=VersionTLS12"))
 			Expect(container.Args).ToNot(ContainElement(ContainSubstring("-tls-cipher-suites")))
 		})
+
+		It("should not add curve preferences when the profile has no groups", func() {
+			hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						MinTLSVersion: openshiftconfigv1.VersionTLS13,
+					},
+				},
+			}
+
+			dep := newDeployment(hco)
+			container := dep.Spec.Template.Spec.Containers[0]
+			Expect(container.Args).ToNot(ContainElement(ContainSubstring("-tls-curve-preferences")))
+		})
+
+		// the operand only accepts numeric crypto/tls CurveID values in a single '-flag=value' argument
+		DescribeTable("should add the TLS groups of the security profile as numeric curve IDs",
+			func(profile *openshiftconfigv1.TLSSecurityProfile, expectedArg string) {
+				hco.Spec.Security.TLSSecurityProfile = profile
+
+				dep := newDeployment(hco)
+				container := dep.Spec.Template.Spec.Containers[0]
+				Expect(container.Args).To(ContainElement(expectedArg))
+			},
+			Entry("no profile; defaults to the Intermediate groups",
+				nil,
+				"-tls-curve-preferences=4588,29,23,24",
+			),
+			Entry("Modern profile",
+				&openshiftconfigv1.TLSSecurityProfile{Type: openshiftconfigv1.TLSProfileModernType},
+				"-tls-curve-preferences=4588,29,23,24",
+			),
+			Entry("custom profile with explicit groups",
+				&openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS13,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupSecP521r1},
+						},
+					},
+				},
+				"-tls-curve-preferences=25",
+			),
+		)
 	})
 
 	Context("Deployment handler", func() {
