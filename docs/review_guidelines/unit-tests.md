@@ -7,3 +7,4 @@ Applies to: `**/*_test.go`
 - Check for proper test setup and teardown
 - Verify test scenarios cover error cases and edge conditions
 - Ensure tests are deterministic and not flaky
+- Do not add tests whose sole purpose is verifying logger output
