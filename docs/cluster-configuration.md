@@ -209,16 +209,18 @@ the backup operation, depending on the backup mode.
 **Graduation Status**: Alpha
 
 ### containerPathVolumes Feature Gate
-Add the `containerPathVolumes` feature true in order to enable the use of
-container paths as volumes in KubeVirt. This allows VMs to access files and
+The `containerPathVolumes` feature gate enables the use of container paths
+as volumes in KubeVirt and is enabled by default. This allows VMs to access files and
 directories from the virt-launcher pod's filesystem via virtiofs. This is
 useful for exposing data dynamically injected into pods by Kubernetes or
 platform-specific mechanisms, such as projected service account tokens for
 workload identity.
 
-**Default**: `Disabled`
+Set its state to `Disabled` to disable this feature.
 
-**Graduation Status**: Alpha
+**Default**: `Enabled`
+
+**Graduation Status**: Beta
 
 ### workloadEncryptionSEV Feature Gate
 Add the `workloadEncryptionSEV` feature gate in order to enable AMD SEV and
