@@ -270,11 +270,23 @@ When enabled, this also enables the `UtilityVolumes` feature gate in the KubeVir
 **Graduation Status**: Alpha
 
 ### containerPathVolumes Feature Gate
-Set the `containerPathVolumes` feature gate to true in order to enable the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs. This is useful for exposing data dynamically injected into pods by Kubernetes or platform-specific mechanisms, such as projected service account tokens for workload identity.
+The `containerPathVolumes` feature gate enables the use of container paths as volumes in KubeVirt and is enabled by default. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs. This is useful for exposing data dynamically injected into pods by Kubernetes or platform-specific mechanisms, such as projected service account tokens for workload identity.
 
-**Default**: `false`
+A VM with access to a projected service account token receives a bearer credential
+and can exercise the permissions granted to that token. Expose tokens only to
+trusted VMs and use a service account with the minimum required permissions.
 
-**Graduation Status**: Alpha
+Set the feature gate to `false` to disable this feature.
+
+**Default**: `true`
+
+On v1-to-v1 upgrades, an omitted gate picks up the new enabled default.
+Explicitly disabled gates remain disabled. Older v1beta1 objects with a stored
+`false` value can convert to an explicit disabled entry and remain disabled;
+this change does not migrate those values.
+
+**Graduation Status**: Beta in HCO. The bundled KubeVirt version still classifies
+`ContainerPathVolumes` as Alpha; its upstream behavior and availability may change.
 
 ### The hco.kubevirt.io/deployAIE annotation
 Set the `hco.kubevirt.io/deployAIE` HyperConverged CR annotation to `true` to deploy the AIE
