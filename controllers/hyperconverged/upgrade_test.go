@@ -30,6 +30,7 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
@@ -567,6 +568,45 @@ var _ = Describe("Upgrade Mode", func() {
 	)
 
 	Context("apply upgrade patches", func() {
+		DescribeTable("containerPathVolumes defaults and opt-outs on v1 upgrades", func(gates featuregates.HyperConvergedFeatureGates, enabled bool) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.19.0")
+			expected.hco.Spec.FeatureGates = gates
+			originalGates := expected.hco.DeepCopy().Spec.FeatureGates
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(name string) bool { return name == "ContainerPathVolumes" },
+			)
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.FeatureGates).To(Equal(originalGates))
+			Expect(foundResource.Spec.FeatureGates.IsEnabled("containerPathVolumes")).To(Equal(enabled))
+
+			kv := &kubevirtv1.KubeVirt{}
+			Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+			Expect(slices.Contains(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates, "ContainerPathVolumes")).To(Equal(enabled))
+		},
+			Entry("omitted gates use the new enabled default", nil, true),
+			Entry("omitted gate with unrelated settings", featuregates.HyperConvergedFeatureGates{
+				{Name: "downwardMetrics", State: new(featuregates.Enabled)},
+				{Name: "declarativeHotplugVolumes", State: new(featuregates.Disabled)},
+			}, true),
+			Entry("explicit opt-out is preserved", featuregates.HyperConvergedFeatureGates{
+				{Name: "containerPathVolumes", State: new(featuregates.Disabled)},
+			}, false),
+			Entry("mixed-case opt-out and unrelated settings are preserved", featuregates.HyperConvergedFeatureGates{
+				{Name: "downwardMetrics", State: new(featuregates.Enabled)},
+				{Name: "ContainerPathVolumes", State: new(featuregates.Disabled)},
+				{Name: "declarativeHotplugVolumes", State: new(featuregates.Disabled)},
+			}, false),
+			Entry("explicit enablement is preserved", featuregates.HyperConvergedFeatureGates{
+				{Name: "containerPathVolumes", State: new(featuregates.Enabled)},
+			}, true),
+		)
+
 		It("should apply spec patch when upgrading from an affected version", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.16.5")
 			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = new(false)

@@ -154,6 +154,7 @@ const (
 var (
 	// these FGs are enabled by default, but exposed in the HyperConverged CR and may be switched off
 	kvExposedBetaFGs = []string{
+		kvContainerPathVolumes,
 		kvDecentralizedLiveMigration,
 		kvTemplateFG,
 		kvRebootPolicyFG,
@@ -165,7 +166,6 @@ var (
 		kvDownwardMetrics,
 		kvAlignCPUs,
 		kvObjectGraph,
-		kvContainerPathVolumes,
 		kvWorkloadEncryptionSEV,
 		kvWorkloadEncryptionTDX,
 		kvNetworkDevicesWithDRA,
