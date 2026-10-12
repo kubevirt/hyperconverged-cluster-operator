@@ -9,6 +9,7 @@ var (
 	GetGroups                                     = internal.GetGroups
 	GetFIPSCompliantGroups                        = internal.GetFIPSCompliantGroups
 	GetGroupsInGolangFormat                       = internal.GetGroupsInGolangFormat
+	GetGroupsInStringFormat                       = internal.GetGroupsInStringFormat
 	Refresh                                       = internal.Refresh
 	SetHyperConvergedTLSSecurityProfile           = internal.SetHyperConvergedTLSSecurityProfile
 	MutateTLSConfig                               = internal.MutateTLSConfig

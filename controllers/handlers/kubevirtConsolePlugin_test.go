@@ -992,11 +992,11 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		Context("TLS Security Profile", func() {
 			BeforeEach(func() {
 				originalGetCipherSuitesFunc := tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat
-				originalGetGroupsInGolangFormat := tlssecprofile.GetGroupsInGolangFormat
+				originalGetGroupsInStringFormat := tlssecprofile.GetGroupsInStringFormat
 
 				DeferCleanup(func() {
 					tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = originalGetCipherSuitesFunc
-					tlssecprofile.GetGroupsInGolangFormat = originalGetGroupsInGolangFormat
+					tlssecprofile.GetGroupsInStringFormat = originalGetGroupsInStringFormat
 				})
 			})
 
@@ -1007,11 +1007,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 						tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 					}, tls.VersionTLS12
 				}
-				tlssecprofile.GetGroupsInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
-					return []tls.CurveID{
-						tls.CurveP256,
-						tls.CurveP384,
-					}
+				tlssecprofile.GetGroupsInStringFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) string {
+					return "23,24"
 				}
 
 				deployment := NewKvUIProxyDeployment(hco)
@@ -1029,8 +1026,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 					return []uint16{}, tls.VersionTLS13
 				}
 
-				tlssecprofile.GetGroupsInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
-					return nil
+				tlssecprofile.GetGroupsInStringFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) string {
+					return ""
 				}
 				deployment := NewKvUIProxyDeployment(hco)
 
@@ -1053,8 +1050,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 					return nil, 0
 				}
 
-				tlssecprofile.GetGroupsInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
-					return nil
+				tlssecprofile.GetGroupsInStringFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) string {
+					return ""
 				}
 
 				deployment := NewKvUIProxyDeployment(hco)
@@ -1071,10 +1068,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]uint16, uint16) {
 					return []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384}, tls.VersionTLS12
 				}
-				tlssecprofile.GetGroupsInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) []tls.CurveID {
-					return []tls.CurveID{
-						tls.CurveP256,
-					}
+				tlssecprofile.GetGroupsInStringFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) string {
+					return "23"
 				}
 
 				deployment := NewKvUIProxyDeployment(hco)

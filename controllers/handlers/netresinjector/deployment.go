@@ -129,6 +129,7 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 
 	cipherNames, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.Security.TLSSecurityProfile)
 	ianaCiphers := crypto.OpenSSLToIANACipherSuites(cipherNames)
+	groupPreferences := tlssecprofile.GetGroupsInStringFormat(hc.Spec.Security.TLSSecurityProfile)
 
 	var replicas int32
 	if nodeinfo.IsInfrastructureHighlyAvailable() {
@@ -247,7 +248,7 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 						Name:    "webhook-server",
 						Image:   image,
 						Command: []string{"webhook"},
-						Args:    cmdArgs(minTLSVersion, ianaCiphers),
+						Args:    cmdArgs(minTLSVersion, ianaCiphers, groupPreferences),
 						Env: []corev1.EnvVar{
 							{
 								Name: "NAMESPACE",
@@ -331,7 +332,7 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	return dep
 }
 
-func cmdArgs(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ianaCiphers []string) []string {
+func cmdArgs(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ianaCiphers []string, groupPreferences string) []string {
 	args := []string{
 		"-bind-address=0.0.0.0",
 		"-port=" + strconv.Itoa(serverPort),
@@ -347,6 +348,10 @@ func cmdArgs(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ianaCiphers []s
 	}
 	if minTLSVersion < openshiftconfigv1.VersionTLS13 && len(ianaCiphers) > 0 {
 		args = append(args, "-tls-cipher-suites="+strings.Join(ianaCiphers, ","))
+	}
+
+	if groupPreferences != "" {
+		args = append(args, "-tls-curve-preferences="+groupPreferences)
 	}
 
 	return args

@@ -192,7 +192,7 @@ func NewKvUIProxyDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	arg := fmt.Sprintf("--tls-min-version=%d", minTLSVersion)
 	args = append(args, arg)
 
-	if tlsCurves := numericListToCommaString(tlssecprofile.GetGroupsInGolangFormat(hc.Spec.Security.TLSSecurityProfile)); tlsCurves != "" {
+	if tlsCurves := tlssecprofile.GetGroupsInStringFormat(hc.Spec.Security.TLSSecurityProfile); tlsCurves != "" {
 		arg = fmt.Sprintf("--tls-curve-ids=%s", tlsCurves)
 		args = append(args, arg)
 	}

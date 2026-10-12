@@ -607,6 +607,49 @@ var _ = Describe("TLS Security Profile", func() {
 		})
 	})
 
+	Describe("GetGroupsInStringFormat", func() {
+		BeforeEach(func() {
+			setAPIServerProfile(nil)
+		})
+
+		It("should format the Intermediate groups as numeric CurveIDs", func() {
+			Expect(GetGroupsInStringFormat(nil)).To(Equal("4588,29,23,24"))
+		})
+
+		It("should return an empty string for custom profile with no groups", func() {
+			profile := &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+
+			Expect(GetGroupsInStringFormat(profile)).To(BeEmpty())
+		})
+
+		It("should skip invalid groups", func() {
+			profile := &openshiftconfigv1.TLSSecurityProfile{
+				Type: openshiftconfigv1.TLSProfileCustomType,
+				Custom: &openshiftconfigv1.CustomTLSProfile{
+					TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+						Ciphers: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+						Groups: []openshiftconfigv1.TLSGroup{
+							openshiftconfigv1.TLSGroupX25519,
+							"InvalidGroup",
+							openshiftconfigv1.TLSGroupSecP256r1,
+						},
+						MinTLSVersion: openshiftconfigv1.VersionTLS12,
+					},
+				},
+			}
+
+			Expect(GetGroupsInStringFormat(profile)).To(Equal("29,23"))
+		})
+	})
+
 	Describe("MutateTLSConfig", func() {
 		expectedCurvePreferences := []tls.CurveID{
 			tls.X25519MLKEM768,
