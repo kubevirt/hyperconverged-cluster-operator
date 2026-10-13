@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"maps"
 	"reflect"
 	"slices"
@@ -16,6 +17,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -266,6 +268,56 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(foundResource.Labels).To(HaveKeyWithValue(k, v))
 			}
 			Expect(foundResource.Labels).To(HaveKeyWithValue(userLabelKey, userLabelValue))
+		})
+	})
+
+	Context("Console Plugin readiness condition", func() {
+		It("should set condition to True when deployment is ready", func() {
+			dep := NewKvUIPluginDeployment(hco)
+			replicas := *dep.Spec.Replicas
+			dep.Status.ReadyReplicas = replicas
+			dep.Status.Replicas = replicas
+			cl := commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(meta.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1.VirtConditionConsolePluginReady)).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.VirtConditionConsolePluginReady)
+			Expect(cond.Reason).To(Equal("DeploymentReady"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should set condition to False when deployment is not ready", func() {
+			dep := NewKvUIPluginDeployment(hco)
+			dep.Status.ReadyReplicas = 0
+			dep.Status.Replicas = *dep.Spec.Replicas
+			cl := commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.VirtConditionConsolePluginReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+			Expect(cond.Message).To(Equal(fmt.Sprintf("0/%d replicas ready", *dep.Spec.Replicas)))
+		})
+
+		It("should set condition to False when deployment is just created", func() {
+			cl := commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.VirtConditionConsolePluginReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
 		})
 	})
 
