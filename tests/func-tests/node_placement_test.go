@@ -148,14 +148,14 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 			expectedWorkloadsPods := map[string]bool{
 				"bridge-marker":  false,
 				"cni-plugins":    false,
-				"ovs-cni-marker": false,
+				"ovs-cni": false,
 				"virt-handler":   false,
 			}
 
 			By("Getting Network Addons Configs")
 			cnaoCR := getNetworkAddonsConfigs(ctx, cliSet)
 			if cnaoCR.Spec.Ovs == nil {
-				delete(expectedWorkloadsPods, "ovs-cni-marker")
+				delete(expectedWorkloadsPods, "ovs-cni")
 			}
 
 			Eventually(func(g Gomega, ctx context.Context) {
