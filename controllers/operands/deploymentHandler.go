@@ -2,10 +2,14 @@ package operands
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -16,20 +20,90 @@ import (
 
 type newDeploymentFunc func(hc *hcov1.HyperConverged) *appsv1.Deployment
 
-func NewDeploymentHandler(cli client.Client, Scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc) *GenericOperand {
-	return NewGenericOperand(cli, Scheme, "Deployment", newDeploymentHooks(deploymentGenerator), false)
+func NewDeploymentHandler(cli client.Client, scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc, conditionType string) *GenericOperand {
+	return NewGenericOperand(cli, scheme, "Deployment", newDeploymentHooks(deploymentGenerator, conditionType), false)
+}
+
+func SetDeploymentCondition(req *common.HcoRequest, conditionType string, status metav1.ConditionStatus, reason, message string) {
+	cond := metav1.Condition{
+		Type:               conditionType,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: req.Instance.Generation,
+	}
+	changed := meta.SetStatusCondition(&req.Instance.Status.Conditions, cond)
+	if changed {
+		req.StatusDirty = true
+	}
+}
+
+func RemoveDeploymentCondition(req *common.HcoRequest, conditionType string) {
+	changed := meta.RemoveStatusCondition(&req.Instance.Status.Conditions, conditionType)
+	if changed {
+		req.StatusDirty = true
+	}
 }
 
 type deploymentHooks struct {
 	sync.Mutex
 	deploymentGenerator newDeploymentFunc
+	conditionType       string
 	cache               *appsv1.Deployment
 }
 
-func newDeploymentHooks(deploymentGenerator newDeploymentFunc) *deploymentHooks {
+func newDeploymentHooks(deploymentGenerator newDeploymentFunc, conditionType string) *deploymentHooks {
 	return &deploymentHooks{
 		deploymentGenerator: deploymentGenerator,
+		conditionType:       conditionType,
 	}
+}
+
+func (h *deploymentHooks) Cleanup(req *common.HcoRequest) error {
+	if h.conditionType == "" {
+		return nil
+	}
+	RemoveDeploymentCondition(req, h.conditionType)
+	return nil
+}
+
+func (h *deploymentHooks) PostEnsure(req *common.HcoRequest, cli client.Client) error {
+	if h.conditionType == "" {
+		return nil
+	}
+
+	fullCr, err := h.GetFullCr(req.Instance)
+	if err != nil {
+		return err
+	}
+
+	dep := &appsv1.Deployment{}
+	key := client.ObjectKeyFromObject(fullCr)
+	if err := cli.Get(req.Ctx, key, dep); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+		SetDeploymentCondition(req, h.conditionType, metav1.ConditionFalse, "DeploymentNotFound",
+			fmt.Sprintf("%s deployment not found", key.Name))
+		return nil
+	}
+
+	desired := int32(0)
+	if dep.Spec.Replicas != nil {
+		desired = *dep.Spec.Replicas
+	}
+	if desired > 0 &&
+		dep.Status.ObservedGeneration >= dep.Generation &&
+		dep.Status.UpdatedReplicas == desired &&
+		dep.Status.Replicas == desired &&
+		dep.Status.ReadyReplicas == desired {
+		SetDeploymentCondition(req, h.conditionType, metav1.ConditionTrue, "DeploymentReady", "All replicas are ready")
+	} else {
+		SetDeploymentCondition(req, h.conditionType, metav1.ConditionFalse, "DeploymentNotReady",
+			fmt.Sprintf("%d/%d replicas ready", dep.Status.ReadyReplicas, desired))
+	}
+
+	return nil
 }
 
 func (h *deploymentHooks) Reset() {

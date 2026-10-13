@@ -64,12 +64,12 @@ const ( // managed data fields
 
 // **** Kubevirt UI Plugin Deployment Handler ****
 func NewKvUIPluginDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
-	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIPluginDeployment)
+	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIPluginDeployment, hcov1.VirtConditionConsolePluginReady)
 }
 
 // **** Kubevirt UI apiserver proxy Deployment Handler ****
 func NewKvUIProxyDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
-	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIProxyDeployment)
+	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIProxyDeployment, "")
 }
 
 // **** Kubevirt UI Plugin ServiceAccount Handler ****

@@ -49,6 +49,11 @@ type HCOOperandHooks interface {
 	CheckComponentVersion(runtime.Object) bool
 }
 
+// PostEnsureHook is optionally implemented by hooks that need work after a successful Ensure.
+type PostEnsureHook interface {
+	PostEnsure(req *common.HcoRequest, cli client.Client) error
+}
+
 type Reseter interface {
 	// Reset handler cached, if exists
 	Reset()
