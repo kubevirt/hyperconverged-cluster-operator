@@ -1351,6 +1351,8 @@ rules:
 - apiGroups:
   - admissionregistration.k8s.io
   resources:
+  - mutatingadmissionpolicies
+  - mutatingadmissionpolicybindings
   - validatingadmissionpolicies
   - validatingadmissionpolicybindings
   verbs:
