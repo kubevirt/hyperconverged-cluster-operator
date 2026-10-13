@@ -243,6 +243,9 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 		It("should set condition to True when deployment is ready", func() {
 			dep := newDeployment(hco)
 			replicas := *dep.Spec.Replicas
+			dep.Generation = 1
+			dep.Status.ObservedGeneration = 1
+			dep.Status.UpdatedReplicas = replicas
 			dep.Status.ReadyReplicas = replicas
 			dep.Status.Replicas = replicas
 			cl = commontestutils.InitClient([]client.Object{hco, dep})

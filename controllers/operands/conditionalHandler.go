@@ -14,6 +14,12 @@ import (
 type ConditionFunc func(hc *hcov1.HyperConverged) bool
 type GetCRWithNameFunc func(hc *hcov1.HyperConverged) client.Object
 
+// ConditionalCleaner is implemented by hooks that need extra cleanup when a
+// conditional operand is disabled (for example removing a status condition).
+type ConditionalCleaner interface {
+	Cleanup(req *common.HcoRequest) error
+}
+
 // ConditionalHandler is an operand handler that only deploy the operand CR if a given shouldDeploy function returns true.
 // If not, it makes sure the CR is deleted.
 type ConditionalHandler struct {
@@ -34,7 +40,16 @@ func (ch *ConditionalHandler) Ensure(req *common.HcoRequest) *EnsureResult {
 	if ch.shouldDeploy(req.Instance) {
 		return ch.operand.Ensure(req)
 	}
-	return ch.ensureDeleted(req)
+
+	res := ch.ensureDeleted(req)
+	if res.Err != nil {
+		return res
+	}
+
+	if err := ch.operand.Cleanup(req); err != nil {
+		return res.Error(err)
+	}
+	return res
 }
 
 func (ch *ConditionalHandler) Reset() {
