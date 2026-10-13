@@ -71,6 +71,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 
 	if ci.IsOpenshift() {
 		operandList = append(operandList, []operands.Operand{
+			handlers.NewVMExportOpenDefaultPortsPolicyHandler(client, scheme),
+			handlers.NewVMExportOpenDefaultPortsBindingHandler(client, scheme),
 			handlers.NewSspHandler(client, scheme),
 			handlers.NewCliDownloadHandler(client, scheme),
 			handlers.NewCliDownloadsRouteHandler(client, scheme),
