@@ -401,6 +401,12 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 			&admissionregistrationv1.ValidatingAdmissionPolicyBinding{}: {
 				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
 			},
+			&admissionregistrationv1.MutatingAdmissionPolicy{}: {
+				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+			},
+			&admissionregistrationv1.MutatingAdmissionPolicyBinding{}: {
+				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+			},
 			&admissionregistrationv1.MutatingWebhookConfiguration{}: {
 				Label: labelSelector,
 			},
