@@ -20,6 +20,10 @@
     "state": "Alpha"
   },
   {
+    "name": "CrossClusterMigrationProxy",
+    "state": "Alpha"
+  },
+  {
     "name": "DownwardMetrics",
     "state": "Alpha"
   },
@@ -116,10 +120,6 @@
     "state": "Alpha"
   },
   {
-    "name": "VSOCK",
-    "state": "Alpha"
-  },
-  {
     "name": "WorkloadEncryptionTDX",
     "state": "Alpha"
   },
@@ -165,6 +165,10 @@
   },
   {
     "name": "Template",
+    "state": "Beta"
+  },
+  {
+    "name": "VSOCK",
     "state": "Beta"
   },
   {
