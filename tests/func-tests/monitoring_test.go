@@ -164,9 +164,10 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		By("Updating HCO object with a new label")
 		hco := tests.GetHCO(ctx, cli)
 
-		hco.Annotations = map[string]string{
-			"kubevirt.kubevirt.io/jsonpatch": `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`,
+		if hco.Annotations == nil {
+			hco.Annotations = make(map[string]string)
 		}
+		hco.Annotations[common.JSONPatchKVAnnotationName] = `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`
 
 		DeferCleanup(func(ctx context.Context) {
 			By("Cleaning up: removing the jsonpatch annotation from HCO")
