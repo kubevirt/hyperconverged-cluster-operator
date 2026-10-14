@@ -172,9 +172,10 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		hco, err := tests.GetHCO(ctx, cli)
 		Expect(err).ToNot(HaveOccurred())
 
-		hco.Annotations = map[string]string{
-			common.JSONPatchKVAnnotationName: `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`,
+		if hco.Annotations == nil {
+			hco.Annotations = make(map[string]string)
 		}
+		hco.Annotations[common.JSONPatchKVAnnotationName] = `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`
 
 		DeferCleanup(func(ctx context.Context) {
 			By("Cleaning up: removing the jsonpatch annotation from HCO")
