@@ -1804,7 +1804,6 @@ rules:
   - serviceaccounts
   - services
   - endpoints
-  - pods/exec
   verbs:
   - get
   - list
@@ -1813,6 +1812,14 @@ rules:
   - update
   - delete
   - patch
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -1993,6 +2000,13 @@ rules:
   - template.kubevirt.io
   resources:
   - virtualmachinetemplaterequests/source
+  verbs:
+  - create
+- apiGroups:
+  - subresources.template.kubevirt.io
+  resources:
+  - virtualmachinetemplates/process
+  - virtualmachinetemplates/create
   verbs:
   - create
 - nonResourceURLs:
@@ -2569,6 +2583,14 @@ rules:
   resources:
   - kubevirts
   verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
   - list
   - watch
 - apiGroups:
