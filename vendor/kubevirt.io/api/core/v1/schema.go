@@ -782,6 +782,7 @@ type Disk struct {
 	// none: Guest I/O not cached on the host, but may be kept in a disk cache.
 	// writethrough: Guest I/O cached on the host but written through to the physical medium. Slowest but with most guarantees.
 	// writeback: Guest I/O cached on the host.
+	// directsync: Guest I/O bypasses the host page cache and is written to the physical medium synchronously.
 	// Defaults to none if the storage supports O_DIRECT, otherwise writethrough.
 	// +optional
 	Cache DriverCache `json:"cache,omitempty"`
@@ -963,14 +964,14 @@ type VolumeSource struct {
 	// +optional
 	Sysprep *SysprepSource `json:"sysprep,omitempty"`
 	// ContainerDisk references a docker image, embedding a qcow or raw disk.
-	// More info: https://kubevirt.gitbooks.io/user-guide/registry-disk.html
+	// More info: https://kubevirt.io/user-guide/storage/disks_and_volumes/#containerdisk
 	// +optional
 	ContainerDisk *ContainerDiskSource `json:"containerDisk,omitempty"`
 	// Ephemeral is a special volume source that "wraps" specified source and provides copy-on-write image on top of it.
 	// +optional
 	Ephemeral *EphemeralVolumeSource `json:"ephemeral,omitempty"`
 	// EmptyDisk represents a temporary disk which shares the vmis lifecycle.
-	// More info: https://kubevirt.gitbooks.io/user-guide/disks-and-volumes.html
+	// More info: https://kubevirt.io/user-guide/storage/disks_and_volumes/#emptydisk
 	// +optional
 	EmptyDisk *EmptyDiskSource `json:"emptyDisk,omitempty"`
 	// DataVolume represents the dynamic creation a PVC for this volume as well as
