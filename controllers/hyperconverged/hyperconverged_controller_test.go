@@ -205,6 +205,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				expectedFeatureGates := []string{
 					"CPUManager",
+					"ContainerPathVolumes",
 					"Snapshot",
 					"DeclarativeHotplugVolumes",
 					"HostDevices",

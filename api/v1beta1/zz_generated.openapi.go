@@ -287,7 +287,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					"containerPathVolumes": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs.",
-							Default:     false,
+							Default:     true,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

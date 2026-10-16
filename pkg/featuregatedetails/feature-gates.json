@@ -1,5 +1,10 @@
 [
   {
+    "name": "containerPathVolumes",
+    "phase": "beta",
+    "description": "ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs."
+  },
+  {
     "name": "decentralizedLiveMigration",
     "phase": "beta",
     "description": "DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Tech Preview."
@@ -28,11 +33,6 @@
     "name": "alignCPUs",
     "phase": "alpha",
     "description": "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview."
-  },
-  {
-    "name": "containerPathVolumes",
-    "phase": "alpha",
-    "description": "ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs."
   },
   {
     "name": "deployObservabilityController",
