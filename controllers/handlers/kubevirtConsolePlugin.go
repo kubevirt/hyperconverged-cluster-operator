@@ -22,6 +22,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -77,7 +79,74 @@ const ( // managed data fields
 
 // **** Kubevirt UI Plugin Deployment Handler ****
 func NewKvUIPluginDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
-	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIPluginDeployment)
+	return &kvUIPluginDeploymentHandler{
+		inner:  operands.NewDeploymentHandler(cli, Scheme, NewKvUIPluginDeployment),
+		client: cli,
+	}
+}
+
+type kvUIPluginDeploymentHandler struct {
+	inner  operands.Operand
+	client client.Client
+}
+
+func (h *kvUIPluginDeploymentHandler) Ensure(req *common.HcoRequest) *operands.EnsureResult {
+	result := h.inner.Ensure(req)
+	if result.Err != nil {
+		return result
+	}
+
+	dep := &appsv1.Deployment{}
+	key := client.ObjectKey{
+		Name:      kvUIPluginDeploymentName,
+		Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+	}
+	if err := h.client.Get(req.Ctx, key, dep); err != nil {
+		if !apierrors.IsNotFound(err) {
+			result.Err = err
+			return result
+		}
+		setConsolePluginCondition(req, metav1.ConditionFalse, "DeploymentNotFound", "Console plugin deployment not found")
+		return result
+	}
+
+	if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 && dep.Status.ReadyReplicas == *dep.Spec.Replicas {
+		setConsolePluginCondition(req, metav1.ConditionTrue, "DeploymentReady", "All replicas are ready")
+	} else {
+		desired := int32(0)
+		if dep.Spec.Replicas != nil {
+			desired = *dep.Spec.Replicas
+		}
+		setConsolePluginCondition(req, metav1.ConditionFalse, "DeploymentNotReady",
+			fmt.Sprintf("%d/%d replicas ready", dep.Status.ReadyReplicas, desired))
+	}
+
+	return result
+}
+
+func (h *kvUIPluginDeploymentHandler) Reset() {
+	h.inner.Reset()
+}
+
+func (h *kvUIPluginDeploymentHandler) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
+	if getter, ok := h.inner.(operands.CRGetter); ok {
+		return getter.GetFullCr(hc)
+	}
+	return nil, nil
+}
+
+func setConsolePluginCondition(req *common.HcoRequest, status metav1.ConditionStatus, reason, message string) {
+	cond := metav1.Condition{
+		Type:               hcov1.VirtConditionConsolePluginReady,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: req.Instance.Generation,
+	}
+	changed := meta.SetStatusCondition(&req.Instance.Status.Conditions, cond)
+	if changed {
+		req.StatusDirty = true
+	}
 }
 
 // **** Kubevirt UI apiserver proxy Deployment Handler ****
