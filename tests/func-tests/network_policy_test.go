@@ -67,7 +67,7 @@ var _ = Describe("Network Policy Tests", Serial, Label(tests.OpenshiftLabel, "ne
 
 			Context("with allow-all network policy", func() {
 				BeforeEach(func(ctx context.Context) {
-					np := createAllowAllIngressNetworkPolicy()
+					np := createAllowAllIngressNetworkPolicy(hcoutil.AppComponentUIPlugin)
 					By(fmt.Sprintf("Creating NetworkPolicy %s/%s", tests.InstallNamespace, np.Name))
 					Expect(cli.Create(ctx, np)).To(Succeed())
 
@@ -324,19 +324,18 @@ func sendReqToTestServer(ctx context.Context, k8sClientSet *kubernetes.Clientset
 	return tests.ExecuteCommandOnPod(toCtx, k8sClientSet, fromPod, command)
 }
 
-func createAllowAllIngressNetworkPolicy() *networkingv1.NetworkPolicy {
+func createAllowAllIngressNetworkPolicy(component hcoutil.AppComponent) *networkingv1.NetworkPolicy {
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      allowAllNPPluginName,
 			Namespace: tests.InstallNamespace,
-			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					hcoutil.AppLabel:          hcoutil.HyperConvergedName,
-					hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIPlugin),
+					hcoutil.AppLabelComponent: string(component),
 				},
 			},
 			Ingress: []networkingv1.NetworkPolicyIngressRule{{}},

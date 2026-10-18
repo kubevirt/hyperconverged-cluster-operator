@@ -11,18 +11,19 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	routev1 "github.com/openshift/api/route/v1"
-
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/alertmanager"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -89,7 +90,7 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 			}).WithTimeout(30 * time.Second).WithPolling(time.Second).Should(Succeed())
 
 			By("Restarting the HCO operator pods to force reconciliation")
-			var hcoPods v1.PodList
+			var hcoPods corev1.PodList
 			err = cli.List(ctx, &hcoPods, &client.MatchingLabels{
 				"name": "hyperconverged-cluster-operator",
 			})
@@ -139,7 +140,7 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 
 			By("checking the ServiceAccount is created")
 			Eventually(func(ctx context.Context) error {
-				sa := &v1.ServiceAccount{
+				sa := &corev1.ServiceAccount{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      observabilityControllerName,
 						Namespace: tests.InstallNamespace,
@@ -217,10 +218,14 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 var _ = Describe("Observability Controller Allowlist Configuration", Label(tests.OpenshiftLabel, "observability-controller"), Serial, Ordered, func() {
 	tests.FlagParse()
 
-	var cli client.Client
+	var (
+		cli          client.Client
+		k8sClientSet *kubernetes.Clientset
+	)
 
 	BeforeAll(func(ctx context.Context) {
 		cli = tests.GetControllerRuntimeClient()
+		k8sClientSet = tests.GetK8sClientSet()
 
 		By("checking the observability controller image is configured")
 		configured, err := isObservabilityImageConfigured(ctx, cli)
@@ -292,6 +297,89 @@ var _ = Describe("Observability Controller Allowlist Configuration", Label(tests
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("cannot be combined"))
 	})
+
+	Context("check network policy", func() {
+		It("should find the virt-observability-controller-np network policy", func(ctx context.Context) {
+			Eventually(func(g Gomega, ctx context.Context) {
+				np, err := k8sClientSet.NetworkingV1().NetworkPolicies(tests.InstallNamespace).Get(ctx, observabilityControllerName+"-np", metav1.GetOptions{})
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(np).ToNot(BeNil())
+			}).WithContext(ctx).
+				WithPolling(time.Second).
+				WithTimeout(10 * time.Second).
+				Should(Succeed())
+		})
+
+		Context("check network policy blockage", func() {
+			var clientPod *corev1.Pod
+
+			BeforeEach(func(ctx context.Context) {
+				clientPod = createClientPod()
+				Expect(createPod(ctx, cli, clientPod)).To(Succeed())
+
+				DeferCleanup(func(ctx context.Context) {
+					Expect(deleteResource(ctx, cli, clientPod)).To(Succeed())
+				})
+			})
+
+			It("should allow ingress traffic to the metrics endpoint", func(ctx context.Context) {
+				Eventually(func(g Gomega, ctx context.Context) {
+					pods := getObservabilityControllerPods()
+					g.Expect(pods).ToNot(BeEmpty())
+
+					for _, pod := range pods {
+						g.Expect(pod.Status.PodIP).ToNot(BeEmpty())
+
+						_, stderr, err := sendReqToObservabilityMetrics(ctx, k8sClientSet, clientPod, pod.Status.PodIP)
+						g.Expect(err).ToNot(HaveOccurred(), "stderr: %s", stderr)
+					}
+				}).WithContext(ctx).
+					WithTimeout(2 * time.Minute).
+					WithPolling(10 * time.Second).
+					Should(Succeed())
+			})
+
+			It("prove that the endpoint is responsive by adding allow all np", func(ctx context.Context) {
+				np := createAllowAllIngressNetworkPolicy(hcoutil.AppComponentObservability)
+				By(fmt.Sprintf("Creating NetworkPolicy %s/%s", tests.InstallNamespace, np.Name))
+				Expect(cli.Create(ctx, np)).To(Succeed())
+
+				DeferCleanup(func(ctx context.Context) {
+					By(fmt.Sprintf("removing the NetworkPolicy %s/%s", tests.InstallNamespace, np.Name))
+					Expect(deleteResource(ctx, cli, np)).To(Succeed())
+				})
+
+				By("should succeed to call the pod")
+				pods := getObservabilityControllerPods()
+				Expect(pods).ToNot(BeEmpty())
+
+				pod := pods[0]
+				Expect(pod.Status.PodIP).ToNot(BeEmpty())
+
+				Eventually(func(g Gomega, ctx context.Context) {
+					stdout, stderr, err := sendReqToObservabilityHealth(ctx, k8sClientSet, clientPod, pod.Status.PodIP)
+					g.Expect(err).ToNot(HaveOccurred(), "stderr: %s", stderr)
+					GinkgoLogr.Info("expected good response", "stdout", stdout, "stderr", stderr)
+				}).WithContext(ctx).
+					WithPolling(5 * time.Second).
+					WithTimeout(2 * time.Minute).
+					Should(Succeed())
+			})
+
+			It("should block ingress traffic to the healthz endpoint", func(ctx context.Context) {
+				pods := getObservabilityControllerPods()
+				Expect(pods).ToNot(BeEmpty())
+
+				pod := pods[0]
+				Expect(pod.Status.PodIP).ToNot(BeEmpty())
+
+				stdout, stderr, err := sendReqToObservabilityHealth(ctx, k8sClientSet, clientPod, pod.Status.PodIP)
+				Expect(err).To(HaveOccurred())
+				GinkgoLogr.Error(err, "EXPECTED: should be blocked by the network policy", "stdout", stdout, "stderr", stderr)
+			})
+
+		})
+	})
 })
 
 func getAlertmanagerRouteHost(ctx context.Context, cli client.Client) (string, error) {
@@ -354,7 +442,49 @@ func isObservabilityImageConfigured(ctx context.Context, cli client.Client) (boo
 	}
 
 	container := depList.Items[0].Spec.Template.Spec.Containers[0]
-	return slices.ContainsFunc(container.Env, func(e v1.EnvVar) bool {
+	return slices.ContainsFunc(container.Env, func(e corev1.EnvVar) bool {
 		return e.Name == "OBSERVABILITY_CONTROLLER_IMAGE" && e.Value != ""
 	}), nil
+}
+
+func getObservabilityControllerPods() []corev1.Pod {
+	GinkgoHelper()
+
+	var pods = &corev1.PodList{}
+
+	nsOpt := client.InNamespace(tests.InstallNamespace)
+	matchLblOpt := client.MatchingLabels{
+		hcoutil.AppLabelComponent: string(hcoutil.AppComponentObservability),
+	}
+
+	Expect(
+		tests.GetControllerRuntimeClient().List(context.Background(), pods, nsOpt, matchLblOpt),
+	).To(Succeed())
+
+	return pods.Items
+}
+
+// sendReqToObservabilityMetrics sends an HTTP request to the observability controller pod's
+// metrics endpoint and returns the response status code. A 401 means the request reached the
+// pod and was rejected for lacking credentials; a NetworkPolicy block would instead fail to connect.
+func sendReqToObservabilityMetrics(ctx context.Context, k8sClientSet *kubernetes.Clientset, fromPod *corev1.Pod, targetPodIP string) (string, string, error) {
+	command := fmt.Sprintf(`curl -k -s -o /dev/null -w '%%{http_code}' https://%s:8443/metrics`, targetPodIP)
+
+	toCtx, toCancel := context.WithTimeout(ctx, 3*time.Second)
+	defer toCancel()
+
+	By("Sending an HTTP request from the client pod to the observability controller pod's metrics endpoint")
+	return tests.ExecuteCommandOnPod(toCtx, k8sClientSet, fromPod, command)
+}
+
+// sendReqToObservabilityHealth sends an HTTP request to the observability controller pod's
+// healthz endpoint and returns the response status code.
+func sendReqToObservabilityHealth(ctx context.Context, k8sClientSet *kubernetes.Clientset, fromPod *corev1.Pod, targetPodIP string) (string, string, error) {
+	command := fmt.Sprintf(`curl -k -s -o /dev/null -w '%%{http_code}' http://%s:8081/healthz`, targetPodIP)
+
+	toCtx, toCancel := context.WithTimeout(ctx, 3*time.Second)
+	defer toCancel()
+
+	By("Sending an HTTP request from the client pod to the observability controller pod's healthz endpoint")
+	return tests.ExecuteCommandOnPod(toCtx, k8sClientSet, fromPod, command)
 }
