@@ -744,8 +744,13 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		},
 		{
 			APIGroups: stringListToSlice(admissionregistrationv1.GroupName),
-			Resources: stringListToSlice("validatingadmissionpolicies", "validatingadmissionpolicybindings"),
-			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+			Resources: stringListToSlice(
+				"mutatingadmissionpolicies",
+				"mutatingadmissionpolicybindings",
+				"validatingadmissionpolicies",
+				"validatingadmissionpolicybindings",
+			),
+			Verbs: stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 		{
 			APIGroups: stringListToSlice(persesv1alpha1.GroupVersion.Group),
