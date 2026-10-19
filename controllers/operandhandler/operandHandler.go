@@ -79,9 +79,21 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			observabilitycontroller.NewServiceAccountHandler(client, scheme),
 			observabilitycontroller.NewClusterRoleHandler(client, scheme),
 			observabilitycontroller.NewClusterRoleBindingHandler(client, scheme),
+			observabilitycontroller.NewGuestDeviceDriversRoleHandler(client, scheme),
+			observabilitycontroller.NewGuestDeviceDriversRoleBindingHandler(client, scheme),
 			observabilitycontroller.NewDeploymentHandler(client, scheme),
 			observabilitycontroller.NewNetworkPolicyHandler(client, scheme),
 		}...)
+
+		if observabilitycontroller.GuestDeviceDriverExists() {
+			logger.Info("guest device drivers config found; deploying the reference ConfigMap")
+			operandList = append(
+				operandList,
+				observabilitycontroller.NewGuestDeviceDriversConfigMapHandler(client, scheme),
+			)
+		} else {
+			logger.Info("guest device drivers config not found; the reference ConfigMap will not be deployed")
+		}
 	}
 
 	if ci.IsOpenshift() {

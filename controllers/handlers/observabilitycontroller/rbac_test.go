@@ -19,7 +19,7 @@ var _ = Describe("Observability Controller ClusterRole", func() {
 			Expect(cr.Name).To(Equal(clusterRoleName))
 			Expect(cr.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(cr.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentObservability)))
-			Expect(cr.Rules).To(HaveLen(9))
+			Expect(cr.Rules).To(HaveLen(8))
 
 			Expect(cr.Rules[0].APIGroups).To(ConsistOf("kubevirt.io"))
 			Expect(cr.Rules[0].Resources).To(ConsistOf("virtualmachines", "virtualmachineinstances", "virtualmachineinstancemigrations", "kubevirts"))
@@ -34,28 +34,24 @@ var _ = Describe("Observability Controller ClusterRole", func() {
 			Expect(cr.Rules[2].Verbs).To(ConsistOf("get", "list", "watch"))
 
 			Expect(cr.Rules[3].APIGroups).To(ConsistOf(""))
-			Expect(cr.Rules[3].Resources).To(ConsistOf("configmaps"))
-			Expect(cr.Rules[3].Verbs).To(ConsistOf("get"))
+			Expect(cr.Rules[3].Resources).To(ConsistOf("services", "secrets"))
+			Expect(cr.Rules[3].Verbs).To(ConsistOf("get", "list", "watch", "create", "update", "delete"))
 
-			Expect(cr.Rules[4].APIGroups).To(ConsistOf(""))
-			Expect(cr.Rules[4].Resources).To(ConsistOf("services", "secrets"))
-			Expect(cr.Rules[4].Verbs).To(ConsistOf("get", "list", "watch", "create", "update", "delete"))
+			Expect(cr.Rules[4].APIGroups).To(ConsistOf("apps"))
+			Expect(cr.Rules[4].Resources).To(ConsistOf("controllerrevisions"))
+			Expect(cr.Rules[4].Verbs).To(ConsistOf("get", "list", "watch"))
 
-			Expect(cr.Rules[5].APIGroups).To(ConsistOf("apps"))
-			Expect(cr.Rules[5].Resources).To(ConsistOf("controllerrevisions"))
-			Expect(cr.Rules[5].Verbs).To(ConsistOf("get", "list", "watch"))
+			Expect(cr.Rules[5].APIGroups).To(ConsistOf("monitoring.coreos.com"))
+			Expect(cr.Rules[5].Resources).To(ConsistOf("prometheusrules", "servicemonitors"))
+			Expect(cr.Rules[5].Verbs).To(ConsistOf("get", "list", "watch", "create", "update", "delete"))
 
-			Expect(cr.Rules[6].APIGroups).To(ConsistOf("monitoring.coreos.com"))
-			Expect(cr.Rules[6].Resources).To(ConsistOf("prometheusrules", "servicemonitors"))
-			Expect(cr.Rules[6].Verbs).To(ConsistOf("get", "list", "watch", "create", "update", "delete"))
+			Expect(cr.Rules[6].APIGroups).To(ConsistOf("authentication.k8s.io"))
+			Expect(cr.Rules[6].Resources).To(ConsistOf("tokenreviews"))
+			Expect(cr.Rules[6].Verbs).To(ConsistOf("create"))
 
-			Expect(cr.Rules[7].APIGroups).To(ConsistOf("authentication.k8s.io"))
-			Expect(cr.Rules[7].Resources).To(ConsistOf("tokenreviews"))
+			Expect(cr.Rules[7].APIGroups).To(ConsistOf("authorization.k8s.io"))
+			Expect(cr.Rules[7].Resources).To(ConsistOf("subjectaccessreviews"))
 			Expect(cr.Rules[7].Verbs).To(ConsistOf("create"))
-
-			Expect(cr.Rules[8].APIGroups).To(ConsistOf("authorization.k8s.io"))
-			Expect(cr.Rules[8].Resources).To(ConsistOf("subjectaccessreviews"))
-			Expect(cr.Rules[8].Verbs).To(ConsistOf("create"))
 		})
 	})
 
@@ -128,6 +124,86 @@ var _ = Describe("Observability Controller ClusterRoleBinding", func() {
 			Expect(cl.Get(context.Background(), client.ObjectKey{Name: clusterRoleBindingName}, foundCRB)).To(Succeed())
 			Expect(foundCRB.RoleRef).To(Equal(expected.RoleRef))
 			Expect(foundCRB.Subjects).To(Equal(expected.Subjects))
+		})
+	})
+})
+
+var _ = Describe("Guest Device Drivers Role", func() {
+	Context("newGuestDeviceDriversRole", func() {
+		It("should have all default values", func() {
+			role := newGuestDeviceDriversRole()
+			Expect(role.Name).To(Equal(guestDeviceDriversRoleName))
+			Expect(role.Namespace).To(Equal(hcoutil.GetOperatorNamespaceFromEnv()))
+			Expect(role.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
+			Expect(role.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentObservability)))
+			Expect(role.Rules).To(HaveLen(1))
+			Expect(role.Rules[0].APIGroups).To(ConsistOf(""))
+			Expect(role.Rules[0].Resources).To(ConsistOf("configmaps"))
+			Expect(role.Rules[0].ResourceNames).To(ConsistOf(guestDeviceDriversConfigMapName))
+			Expect(role.Rules[0].Verbs).To(ConsistOf("get", "list", "watch"))
+		})
+	})
+
+	Context("Role spec drift", func() {
+		It("should restore RBAC rules if they are modified", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(featureGateName)
+			req := commontestutils.NewReq(hco)
+
+			expected := newGuestDeviceDriversRole()
+			role := newGuestDeviceDriversRole()
+			role.Rules[0].Verbs = []string{"get"}
+			cl := commontestutils.InitClient([]client.Object{hco, role})
+
+			handler := NewGuestDeviceDriversRoleHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Updated).To(BeTrue())
+
+			foundRole := &rbacv1.Role{}
+			Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(expected), foundRole)).To(Succeed())
+			Expect(foundRole.Rules).To(Equal(expected.Rules))
+		})
+	})
+})
+
+var _ = Describe("Guest Device Drivers RoleBinding", func() {
+	Context("newGuestDeviceDriversRoleBinding", func() {
+		It("should have all default values", func() {
+			rb := newGuestDeviceDriversRoleBinding()
+			Expect(rb.Name).To(Equal(guestDeviceDriversRoleBindingName))
+			Expect(rb.Namespace).To(Equal(hcoutil.GetOperatorNamespaceFromEnv()))
+			Expect(rb.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
+			Expect(rb.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentObservability)))
+			Expect(rb.RoleRef.Name).To(Equal(guestDeviceDriversRoleName))
+			Expect(rb.RoleRef.Kind).To(Equal("Role"))
+			Expect(rb.Subjects).To(HaveLen(1))
+			Expect(rb.Subjects[0].Name).To(Equal(serviceAccountName))
+		})
+	})
+
+	Context("RoleBinding spec drift", func() {
+		It("should restore subjects and role ref if they are modified", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(featureGateName)
+			req := commontestutils.NewReq(hco)
+
+			expected := newGuestDeviceDriversRoleBinding()
+			rb := newGuestDeviceDriversRoleBinding()
+			rb.Subjects[0].Name = "wrong-sa"
+			cl := commontestutils.InitClient([]client.Object{hco, rb})
+
+			handler := NewGuestDeviceDriversRoleBindingHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Updated).To(BeTrue())
+
+			foundRB := &rbacv1.RoleBinding{}
+			Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(expected), foundRB)).To(Succeed())
+			Expect(foundRB.RoleRef).To(Equal(expected.RoleRef))
+			Expect(foundRB.Subjects).To(Equal(expected.Subjects))
 		})
 	})
 })

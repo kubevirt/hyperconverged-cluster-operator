@@ -64,11 +64,6 @@ func newClusterRole() *rbacv1.ClusterRole {
 		},
 		{
 			APIGroups: []string{""},
-			Resources: []string{"configmaps"},
-			Verbs:     []string{"get"},
-		},
-		{
-			APIGroups: []string{""},
 			Resources: []string{"services", "secrets"},
 			Verbs:     []string{"get", "list", "watch", "create", "update", "delete"},
 		},
@@ -94,6 +89,76 @@ func newClusterRole() *rbacv1.ClusterRole {
 		},
 	}
 	return cr
+}
+
+func NewGuestDeviceDriversRoleHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
+	return operands.NewConditionalHandler(
+		operands.NewRoleHandler(cli, scheme, newGuestDeviceDriversRole()),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return newGuestDeviceDriversRoleWithNameOnly()
+		},
+	)
+}
+
+func NewGuestDeviceDriversRoleBindingHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
+	return operands.NewConditionalHandler(
+		operands.NewRoleBindingHandler(cli, scheme, newGuestDeviceDriversRoleBinding()),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return newGuestDeviceDriversRoleBindingWithNameOnly()
+		},
+	)
+}
+
+func newGuestDeviceDriversRoleWithNameOnly() *rbacv1.Role {
+	return &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      guestDeviceDriversRoleName,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentObservability),
+		},
+	}
+}
+
+func newGuestDeviceDriversRole() *rbacv1.Role {
+	role := newGuestDeviceDriversRoleWithNameOnly()
+	role.Rules = []rbacv1.PolicyRule{
+		{
+			APIGroups:     []string{""},
+			Resources:     []string{"configmaps"},
+			ResourceNames: []string{guestDeviceDriversConfigMapName},
+			Verbs:         []string{"get", "list", "watch"},
+		},
+	}
+	return role
+}
+
+func newGuestDeviceDriversRoleBindingWithNameOnly() *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      guestDeviceDriversRoleBindingName,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentObservability),
+		},
+	}
+}
+
+func newGuestDeviceDriversRoleBinding() *rbacv1.RoleBinding {
+	rb := newGuestDeviceDriversRoleBindingWithNameOnly()
+	rb.RoleRef = rbacv1.RoleRef{
+		Kind:     "Role",
+		Name:     guestDeviceDriversRoleName,
+		APIGroup: "rbac.authorization.k8s.io",
+	}
+	rb.Subjects = []rbacv1.Subject{
+		{
+			Kind:      "ServiceAccount",
+			Name:      serviceAccountName,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+		},
+	}
+	return rb
 }
 
 func newClusterRoleBindingWithNameOnly() *rbacv1.ClusterRoleBinding {
