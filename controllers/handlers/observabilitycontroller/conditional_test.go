@@ -111,6 +111,10 @@ var _ = Describe("Observability Controller Handlers", func() {
 			newHandler: func(cl client.Client, s *runtime.Scheme) operands.Operand { return NewDeploymentHandler(cl, s) },
 			existing:   func() client.Object { return newDeployment(commontestutils.NewHco()) },
 		}),
+		Entry("NetworkPolicy", handlerTestEntry{
+			newHandler: func(cl client.Client, s *runtime.Scheme) operands.Operand { return NewNetworkPolicyHandler(cl, s) },
+			existing:   func() client.Object { return newNetworkPolicy() },
+		}),
 	)
 })
 
@@ -156,5 +160,15 @@ var _ = Describe("Handler resource verification", func() {
 
 		foundSA := newServiceAccount()
 		Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(foundSA), foundSA)).To(Succeed())
+	})
+
+	It("should create NetworkPolicy with correct spec", func() {
+		handler := NewNetworkPolicyHandler(cl, commontestutils.GetScheme())
+		res := handler.Ensure(req)
+		Expect(res.Err).ToNot(HaveOccurred())
+
+		foundNP := newNetworkPolicy()
+		Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(foundNP), foundNP)).To(Succeed())
+		Expect(foundNP.Spec).To(Equal(newNetworkPolicy().Spec))
 	})
 })

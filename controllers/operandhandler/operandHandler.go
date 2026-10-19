@@ -80,6 +80,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			observabilitycontroller.NewClusterRoleHandler(client, scheme),
 			observabilitycontroller.NewClusterRoleBindingHandler(client, scheme),
 			observabilitycontroller.NewDeploymentHandler(client, scheme),
+			observabilitycontroller.NewNetworkPolicyHandler(client, scheme),
 		}...)
 	}
 
