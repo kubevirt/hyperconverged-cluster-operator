@@ -13,6 +13,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -20,9 +22,19 @@ import (
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
+var vmExportGVK = schema.GroupVersionKind{
+	Group:   "export.kubevirt.io",
+	Version: "v1beta1",
+	Kind:    "VirtualMachineExport",
+}
+
 const (
 	timeout         = 10 * time.Minute
 	pollingInterval = 10 * time.Second
+
+	primaryUserDefinedNetworkLabel  = "k8s.ovn.org/primary-user-defined-network"
+	openDefaultPortsAnnotation      = "k8s.ovn.org/open-default-ports"
+	openDefaultPortsAnnotationValue = `[{"protocol":"tcp","port":8443}]`
 )
 
 var _ = Describe("[rfe_id:273][crit:critical][vendor:cnv-qe@redhat.com][level:system]Virtual Machine", Serial, Label("vm"), func() {
@@ -41,6 +53,46 @@ var _ = Describe("[rfe_id:273][crit:critical][vendor:cnv-qe@redhat.com][level:sy
 		vmiName := verifyVMICreation(ctx, cli)
 		verifyVMIRunning(ctx, cli, vmiName)
 		verifyVMIDeletion(ctx, cli, vmiName)
+	})
+
+	It("should add open-default-ports to VMExports in a primary UDN namespace", Label(tests.OpenshiftLabel, "vmexport"), func(ctx context.Context) {
+		namespace := &corev1.Namespace{
+			ObjectMeta: k8smetav1.ObjectMeta{
+				GenerateName: "hco-test-vmexport-",
+				Labels: map[string]string{
+					primaryUserDefinedNetworkLabel: "true",
+				},
+			},
+		}
+		Expect(cli.Create(ctx, namespace)).To(Succeed())
+		DeferCleanup(func(ctx context.Context) {
+			Expect(client.IgnoreNotFound(cli.Delete(ctx, namespace))).To(Succeed())
+		})
+
+		vmExport := &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": vmExportGVK.GroupVersion().String(),
+			"kind":       vmExportGVK.Kind,
+			"metadata": map[string]any{
+				"name":      "vmexport",
+				"namespace": namespace.Name,
+			},
+			"spec": map[string]any{
+				"source": map[string]any{
+					"apiGroup": "kubevirt.io",
+					"kind":     "VirtualMachine",
+					"name":     "source-vm",
+				},
+			},
+		}}
+		Expect(cli.Create(ctx, vmExport)).To(Succeed())
+		DeferCleanup(func(ctx context.Context) {
+			Expect(client.IgnoreNotFound(cli.Delete(ctx, vmExport))).To(Succeed())
+		})
+
+		found := &unstructured.Unstructured{}
+		found.SetGroupVersionKind(vmExportGVK)
+		Expect(cli.Get(ctx, client.ObjectKeyFromObject(vmExport), found)).To(Succeed())
+		Expect(found.GetAnnotations()).To(HaveKeyWithValue(openDefaultPortsAnnotation, openDefaultPortsAnnotationValue))
 	})
 })
 
