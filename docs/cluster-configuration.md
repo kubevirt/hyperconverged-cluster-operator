@@ -220,6 +220,29 @@ workload identity.
 
 **Graduation Status**: Alpha
 
+### networkDevicesWithDRA Feature Gate
+Add the `networkDevicesWithDRA` feature gate in order to enable DRA (Dynamic
+Resource Allocation) provisioning of network devices for virtual machines.
+When enabled, VMIs can specify DRA-managed network resources in
+`spec.networks` using the `resourceClaim` type, so network resources
+provisioned by DRA can be attached to VMs through the natural networks API.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: networkDevicesWithDRA
+```
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### workloadEncryptionSEV Feature Gate
 Add the `workloadEncryptionSEV` feature gate in order to enable AMD SEV and
 SEV-SNP workload encryption for confidential virtual machines (VMs). When
