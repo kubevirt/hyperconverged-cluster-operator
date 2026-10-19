@@ -8,3 +8,5 @@ dashboard:
     namespace: openshift-config-managed
     keys:
     - kubevirt-top-consumers.json
+guestDeviceDrivers:
+  expectedConfigMap: kubevirt-guest-device-drivers-config

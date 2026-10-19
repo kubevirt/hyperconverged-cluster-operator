@@ -47,6 +47,8 @@ type OperandHandler struct {
 	// save for deletions
 	objects      []client.Object
 	eventEmitter hcoutil.EventEmitter
+
+	observabilityDeployed bool
 }
 
 func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.ClusterInfo, eventEmitter hcoutil.EventEmitter) *OperandHandler {
@@ -74,11 +76,15 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		netresinjector.NewMutatingWebhookConfigurationHandler(client, scheme),
 	}
 
+	observabilityDeployed := false
 	if ci.IsMonitoringAvailable() && os.Getenv(hcoutil.ObservabilityControllerImageEnvV) != "" {
+		observabilityDeployed = true
 		operandList = append(operandList, []operands.Operand{
 			observabilitycontroller.NewServiceAccountHandler(client, scheme),
 			observabilitycontroller.NewClusterRoleHandler(client, scheme),
 			observabilitycontroller.NewClusterRoleBindingHandler(client, scheme),
+			observabilitycontroller.NewGuestDeviceDriversRoleHandler(client, scheme),
+			observabilitycontroller.NewGuestDeviceDriversRoleBindingHandler(client, scheme),
 			observabilitycontroller.NewDeploymentHandler(client, scheme),
 			observabilitycontroller.NewNetworkPolicyHandler(client, scheme),
 		}...)
@@ -134,9 +140,10 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 	}
 
 	return &OperandHandler{
-		client:       client,
-		operands:     operandList,
-		eventEmitter: eventEmitter,
+		client:                client,
+		operands:              operandList,
+		eventEmitter:          eventEmitter,
+		observabilityDeployed: observabilityDeployed,
 	}
 }
 
@@ -146,6 +153,10 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1.HyperConverged, pwdFS fs.FS) {
 	for _, operand := range h.operands {
 		h.addOperandObject(operand, hc)
+	}
+
+	if h.observabilityDeployed {
+		h.addOperands(scheme, hc, observabilitycontroller.GetGuestDeviceDriversHandlers, pwdFS)
 	}
 
 	if !ci.IsOpenshift() {

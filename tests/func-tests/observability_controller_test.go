@@ -32,6 +32,10 @@ const (
 	observabilityControllerName    = "virt-observability-controller"
 	observabilityControllerCRBName = "virt-observability-controller-rolebinding"
 	observabilityControllerFGName  = "deployObservabilityController"
+
+	guestDeviceDriversRoleName        = "guest-device-drivers-role"
+	guestDeviceDriversRoleBindingName = "guest-device-drivers-rolebinding"
+	guestDeviceDriversConfigMapKey    = "drivers.yaml"
 )
 
 var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testName), func() {
@@ -169,6 +173,50 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 				return cli.Get(ctx, client.ObjectKeyFromObject(crb), crb)
 			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
 
+			By("checking the guest device drivers Role is created")
+			Eventually(func(ctx context.Context) error {
+				role := &rbacv1.Role{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      guestDeviceDriversRoleName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(role), role)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+
+			By("checking the guest device drivers RoleBinding is created")
+			Eventually(func(ctx context.Context) error {
+				rb := &rbacv1.RoleBinding{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      guestDeviceDriversRoleBindingName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(rb), rb)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+
+			By("checking the guest device drivers reference ConfigMap is created")
+			expectedCMName := tests.GetConfig().GuestDeviceDrivers.ExpectedConfigMap
+			if expectedCMName == "" {
+				Skip("the operator image does not ship the guest device drivers reference file")
+			}
+
+			Eventually(func(ctx context.Context) error {
+				cm := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      expectedCMName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				if err := cli.Get(ctx, client.ObjectKeyFromObject(cm), cm); err != nil {
+					return err
+				}
+				if cm.Data[guestDeviceDriversConfigMapKey] == "" {
+					return fmt.Errorf("the %s ConfigMap exists but has no %s data", expectedCMName, guestDeviceDriversConfigMapKey)
+				}
+				return nil
+			}).WithTimeout(2 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+
 			By("checking the Deployment is created")
 			Eventually(func(ctx context.Context) error {
 				dep := &appsv1.Deployment{
@@ -208,6 +256,32 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 					},
 				}
 				return cli.Get(ctx, client.ObjectKeyFromObject(cr), cr)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
+				MatchError(ContainSubstring("not found")),
+			)
+
+			By("checking the guest device drivers Role is removed")
+			Eventually(func(ctx context.Context) error {
+				role := &rbacv1.Role{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      guestDeviceDriversRoleName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(role), role)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
+				MatchError(ContainSubstring("not found")),
+			)
+
+			By("checking the guest device drivers RoleBinding is removed")
+			Eventually(func(ctx context.Context) error {
+				rb := &rbacv1.RoleBinding{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      guestDeviceDriversRoleBindingName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(rb), rb)
 			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
 				MatchError(ContainSubstring("not found")),
 			)

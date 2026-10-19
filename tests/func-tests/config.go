@@ -49,10 +49,19 @@ type ImageStreamConfig struct {
 	UsageImages  []string `yaml:"usageImages,omitempty"`
 }
 
+type GuestDeviceDriversTestConfig struct {
+	// ExpectedConfigMap is the name of the guest device drivers reference ConfigMap the
+	// operator is expected to deploy. Leave it empty when the operator image does not ship
+	// the build-time injected drivers.yaml reference file, and the ConfigMap is not
+	// expected to exist.
+	ExpectedConfigMap string `yaml:"expectedConfigMap,omitempty"`
+}
+
 type TestConfig struct {
-	QuickStart     QuickStartTestConfig `yaml:"quickStart,omitempty"`
-	Dashboard      DashboardTestConfig  `yaml:"dashboard,omitempty"`
-	DataImportCron DataImportCronConfig `yaml:"dataImportCron,omitempty"`
+	QuickStart         QuickStartTestConfig         `yaml:"quickStart,omitempty"`
+	Dashboard          DashboardTestConfig          `yaml:"dashboard,omitempty"`
+	DataImportCron     DataImportCronConfig         `yaml:"dataImportCron,omitempty"`
+	GuestDeviceDrivers GuestDeviceDriversTestConfig `yaml:"guestDeviceDrivers,omitempty"`
 }
 
 func init() {
