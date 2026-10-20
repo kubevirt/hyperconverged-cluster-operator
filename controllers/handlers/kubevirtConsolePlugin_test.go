@@ -746,8 +746,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cm).ToNot(BeNil())
-				Expect(cm.Data).To(HaveKey("nginx.conf"))
-				nginxConf := cm.Data["nginx.conf"]
+				Expect(cm.Data).To(HaveKey(HavePrefix("nginx.conf")))
+				nginxConf := getNginxConfigFromCM(cm)
 				Expect(nginxConf).To(ContainSubstring("listen"))
 				Expect(nginxConf).To(ContainSubstring("ssl_protocols"))
 				Expect(nginxConf).To(ContainSubstring("ssl_ciphers"))
@@ -763,8 +763,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cm).ToNot(BeNil())
-				Expect(cm.Data).To(HaveKey("nginx.conf"))
-				nginxConf := cm.Data["nginx.conf"]
+				Expect(cm.Data).To(HaveKey(HavePrefix("nginx.conf")))
+				nginxConf := getNginxConfigFromCM(cm)
 				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
 				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve      secp256r1:secp384r1;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
@@ -777,8 +777,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cm).ToNot(BeNil())
-				Expect(cm.Data).To(HaveKey("nginx.conf"))
-				nginxConf := cm.Data["nginx.conf"]
+				Expect(cm.Data).To(HaveKey(HavePrefix("nginx.conf")))
+				nginxConf := getNginxConfigFromCM(cm)
 				Expect(nginxConf).To(ContainSubstring("ssl_protocols"))
 				Expect(nginxConf).To(ContainSubstring("ssl_ciphers"))
 				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve      secp256r1:secp384r1;"))
@@ -799,8 +799,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cm).ToNot(BeNil())
-				Expect(cm.Data).To(HaveKey("nginx.conf"))
-				nginxConf := cm.Data["nginx.conf"]
+				Expect(cm.Data).To(HaveKey(HavePrefix("nginx.conf")))
+				nginxConf := getNginxConfigFromCM(cm)
 				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ecdh_curve"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers"))
@@ -823,8 +823,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cm).ToNot(BeNil())
-				Expect(cm.Data).To(HaveKey("nginx.conf"))
-				nginxConf := cm.Data["nginx.conf"]
+				Expect(cm.Data).To(HaveKey(HavePrefix("nginx.conf")))
+				nginxConf := getNginxConfigFromCM(cm)
 				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve      secp384r1:secp256r1;"))
 			})
 
@@ -846,18 +846,161 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cm).ToNot(BeNil())
-				Expect(cm.Data).To(HaveKey("nginx.conf"))
-				nginxConf := cm.Data["nginx.conf"]
+				Expect(cm.Data).To(HaveKey(HavePrefix("nginx.conf")))
+				nginxConf := getNginxConfigFromCM(cm)
 				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve      secp256r1;"))
 			})
 
 			It("should not emit empty ssl_protocols or ssl_ciphers directives", func() {
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
-				nginxConf := cm.Data["nginx.conf"]
+				Expect(cm.Data).To(HaveKey(HavePrefix("nginx.conf")))
+				nginxConf := getNginxConfigFromCM(cm)
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
 				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve"))
+			})
+		})
+
+		Context("KubeVirt UI Plugin nginx config hashed CM key", func() {
+
+			It("should change the hash when the TLS profile curves change", func() {
+				DeferCleanup(func() {
+					ngHash.reset()
+				})
+
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS12,
+							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupSecP256r1},
+						},
+					},
+				}
+
+				ngHash.reset()
+				cm, err := NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm.Data).To(HaveLen(1))
+				firstCMKey := getNginxConfigKeyFromCM(cm)
+				deployment := NewKvUIPluginDeployment(hco)
+				firstVolKey, err := getNginxVolumeKey(deployment)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(firstVolKey).ToNot(BeEmpty())
+				Expect(firstVolKey).To(Equal(firstCMKey))
+
+				ngHash.reset()
+				hco.Spec.Security.TLSSecurityProfile.Custom.Groups = []openshiftconfigv1.TLSGroup{
+					openshiftconfigv1.TLSGroupSecP256r1,
+					openshiftconfigv1.TLSGroupSecP384r1,
+				}
+				cm, err = NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm.Data).To(HaveLen(1))
+				secondCMKey := getNginxConfigKeyFromCM(cm)
+				deployment = NewKvUIPluginDeployment(hco)
+				secondVolKey, err := getNginxVolumeKey(deployment)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(secondVolKey).ToNot(BeEmpty())
+				Expect(secondVolKey).To(Equal(secondCMKey))
+
+				Expect(secondCMKey).ToNot(Equal(firstCMKey))
+			})
+
+			It("should keep the hash stable for an unchanged TLS profile", func() {
+				DeferCleanup(func() {
+					ngHash.reset()
+				})
+
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS12,
+							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupSecP256r1},
+						},
+					},
+				}
+				ngHash.reset()
+				cm, err := NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm.Data).To(HaveLen(1))
+				firstCMKey := getNginxConfigKeyFromCM(cm)
+				deployment := NewKvUIPluginDeployment(hco)
+				firstVolKey, err := getNginxVolumeKey(deployment)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(firstVolKey).ToNot(BeEmpty())
+				Expect(firstVolKey).To(Equal(firstCMKey))
+
+				ngHash.reset()
+				cm, err = NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm.Data).To(HaveLen(1))
+				secondCMKey := getNginxConfigKeyFromCM(cm)
+				deployment = NewKvUIPluginDeployment(hco)
+				secondVolKey, err := getNginxVolumeKey(deployment)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(secondVolKey).ToNot(BeEmpty())
+				Expect(secondVolKey).To(Equal(secondCMKey))
+
+				Expect(secondCMKey).To(Equal(firstCMKey))
+			})
+
+			It("should roll the plugin deployment when the TLS profile changes", func(ctx context.Context) {
+				DeferCleanup(func() {
+					ngHash.reset()
+				})
+
+				ngHash.reset()
+				existingResource := NewKvUIPluginDeployment(hco)
+
+				ngHash.reset()
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS12,
+							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupSecP256r1},
+						},
+					},
+				}
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+
+				res := handler.Ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+				Expect(res.Updated).To(BeTrue())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(cl.Get(ctx,
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+				).To(Succeed())
+
+				beforeKey, err := getNginxVolumeKey(existingResource)
+				Expect(err).ToNot(HaveOccurred())
+				afterKey, err := getNginxVolumeKey(foundResource)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(beforeKey).ToNot(BeEmpty())
+				Expect(afterKey).ToNot(Equal(beforeKey))
+			})
+
+			It("should not roll the deployment for an unmanaged pod-template annotation", func() {
+				existingResource := NewKvUIPluginDeployment(hco)
+				existingResource.Spec.Template.Annotations["example.com/injected"] = "keep-me"
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+
+				res := handler.Ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+				Expect(res.Updated).To(BeFalse())
 			})
 		})
 
@@ -1628,4 +1771,49 @@ func newExpectedDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func getNginxConfigFromCM(cm *v1.ConfigMap) string {
+	for k, v := range cm.Data {
+		if strings.HasPrefix(k, nginxConfigFileName+".") {
+			return v
+		}
+	}
+
+	return ""
+}
+
+func getNginxConfigKeyFromCM(cm *v1.ConfigMap) string {
+	for k := range cm.Data {
+		if strings.HasPrefix(k, nginxConfigFileName+".") {
+			return k
+		}
+	}
+
+	return ""
+}
+
+func getNginxVolumeKey(dep *appsv1.Deployment) (string, error) {
+	if dep == nil {
+		return "", fmt.Errorf("deployment is nil")
+	}
+
+	idx := slices.IndexFunc(dep.Spec.Template.Spec.Volumes, func(volume v1.Volume) bool {
+		return volume.Name == nginxConfigMapName
+	})
+
+	if idx == -1 {
+		return "", fmt.Errorf("volume not found")
+	}
+
+	volume := dep.Spec.Template.Spec.Volumes[idx]
+	if volume.ConfigMap == nil {
+		return "", fmt.Errorf("should be a ConfigMap volume")
+	}
+
+	if len(volume.ConfigMap.Items) != 1 {
+		return "", fmt.Errorf("expected 1 ConfigMap item")
+	}
+
+	return volume.ConfigMap.Items[0].Key, nil
 }
