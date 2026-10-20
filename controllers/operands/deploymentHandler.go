@@ -101,7 +101,8 @@ func hasCorrectDeploymentFields(found *appsv1.Deployment, required *appsv1.Deplo
 		reflect.DeepEqual(found.Spec.Template.Spec.PriorityClassName, required.Spec.Template.Spec.PriorityClassName) &&
 		reflect.DeepEqual(found.Spec.Template.Spec.Affinity, required.Spec.Template.Spec.Affinity) &&
 		reflect.DeepEqual(found.Spec.Template.Spec.NodeSelector, required.Spec.Template.Spec.NodeSelector) &&
-		reflect.DeepEqual(found.Spec.Template.Spec.Tolerations, required.Spec.Template.Spec.Tolerations)
+		reflect.DeepEqual(found.Spec.Template.Spec.Tolerations, required.Spec.Template.Spec.Tolerations) &&
+		reflect.DeepEqual(found.Spec.Template.Annotations, required.Spec.Template.Annotations)
 }
 
 func shouldRecreate(found, required *appsv1.Deployment) bool {

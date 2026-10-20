@@ -677,6 +677,40 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 					Equal(NewKvUIPluginDeployment(hco).Spec.Template.Annotations[nginxConfigHashAnnotation]),
 				)
 			})
+
+			It("should roll the plugin deployment when the TLS profile changes", func() {
+				existingResource := NewKvUIPluginDeployment(hco)
+
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS12,
+							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupSecP256r1},
+						},
+					},
+				}
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+
+				res := handler.Ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+				Expect(res.Updated).To(BeTrue())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+				).To(Succeed())
+				Expect(foundResource.Spec.Template.Annotations[nginxConfigHashAnnotation]).To(
+					Equal(NewKvUIPluginDeployment(hco).Spec.Template.Annotations[nginxConfigHashAnnotation]),
+				)
+				Expect(foundResource.Spec.Template.Annotations[nginxConfigHashAnnotation]).ToNot(
+					Equal(existingResource.Spec.Template.Annotations[nginxConfigHashAnnotation]),
+				)
+			})
 		})
 
 		Context("Node Placement", func() {

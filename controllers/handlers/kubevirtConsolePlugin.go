@@ -423,11 +423,16 @@ func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
 	return out.String(), nil
 }
 
-// nginxConfigHash returns a stable hash of the nginx config inputs, used to roll the
-// console-plugin deployment whenever the rendered nginx config would change.
+// nginxConfigHash returns a stable hash of the rendered nginx config, used to roll the
+// console-plugin deployment whenever the config would change (including template changes
+// delivered by an operator upgrade, not only TLS-profile inputs). On the unlikely render
+// error - which the ConfigMap handler surfaces as well - it falls back to the inputs.
 func nginxConfigHash(hc *hcov1.HyperConverged) string {
-	data := getNginxConfTemplateData(hc)
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%+v", data))))
+	nginxConf, err := getNginxConfig(hc)
+	if err != nil {
+		nginxConf = fmt.Sprintf("%+v", getNginxConfTemplateData(hc))
+	}
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(nginxConf)))
 }
 
 func NewKVUINginxCM(hc *hcov1.HyperConverged) (*corev1.ConfigMap, error) {
