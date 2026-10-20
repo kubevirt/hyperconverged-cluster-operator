@@ -19,6 +19,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilversion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,6 +33,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	fakeclusterinfo "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util/fake/clusterinfo"
 )
 
 func TestOperandHandler(t *testing.T) {
@@ -85,6 +87,21 @@ var _ = Describe("Test operandHandler", func() {
 			Expect(handler.Ensure(req)).To(Succeed())
 			Expect(handler.EnsureDeleted(req)).To(Succeed())
 
+			Expect(cli.Get(context.Background(), client.ObjectKey{Name: "kubevirt-vmexport-open-default-ports"}, &admissionregistrationv1.MutatingAdmissionPolicy{})).To(MatchError(apierrors.IsNotFound, "not found error"))
+			Expect(cli.Get(context.Background(), client.ObjectKey{Name: "kubevirt-vmexport-open-default-ports-binding"}, &admissionregistrationv1.MutatingAdmissionPolicyBinding{})).To(MatchError(apierrors.IsNotFound, "not found error"))
+		})
+
+		It("does not create VMExport admission operands when the API is unsupported", func() {
+			hco := commontestutils.NewHco()
+			ci := fakeclusterinfo.New(
+				fakeclusterinfo.WithIsOpenshift(true),
+				fakeclusterinfo.WithKubernetesVersion(utilversion.MustParseSemantic("v1.35.0")),
+			)
+			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
+			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, commontestutils.NewEventEmitterMock())
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, dirtest.New())
+
+			Expect(handler.Ensure(commontestutils.NewReq(hco))).To(Succeed())
 			Expect(cli.Get(context.Background(), client.ObjectKey{Name: "kubevirt-vmexport-open-default-ports"}, &admissionregistrationv1.MutatingAdmissionPolicy{})).To(MatchError(apierrors.IsNotFound, "not found error"))
 			Expect(cli.Get(context.Background(), client.ObjectKey{Name: "kubevirt-vmexport-open-default-ports-binding"}, &admissionregistrationv1.MutatingAdmissionPolicyBinding{})).To(MatchError(apierrors.IsNotFound, "not found error"))
 		})

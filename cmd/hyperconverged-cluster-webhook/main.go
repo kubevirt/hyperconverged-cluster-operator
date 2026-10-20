@@ -115,7 +115,7 @@ func main() {
 
 	ci := hcoutil.GetClusterInfo()
 	ctx := context.Background()
-	err = cmdcommon.ClusterInitializations(ctx, apiClient, scheme, logger)
+	err = cmdcommon.ClusterInitializations(ctx, apiClient, cfg, scheme, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
 	// Create a new Cmd to provide shared dependencies and start components

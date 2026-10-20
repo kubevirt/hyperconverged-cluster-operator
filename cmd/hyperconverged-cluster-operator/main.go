@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	utilversion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -152,7 +153,7 @@ func main() {
 	ctx := context.Background()
 	ctx = logr.NewContext(ctx, logger)
 
-	err = cmdcommon.ClusterInitializations(ctx, apiClient, scheme, logger)
+	err = cmdcommon.ClusterInitializations(ctx, apiClient, cfg, scheme, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
 	err = cmdcommon.SetHyperConvergedTLSProfile(ctx, operatorNamespace, apiClient)
@@ -401,16 +402,19 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 			&admissionregistrationv1.ValidatingAdmissionPolicyBinding{}: {
 				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
 			},
-			&admissionregistrationv1.MutatingAdmissionPolicy{}: {
-				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
-			},
-			&admissionregistrationv1.MutatingAdmissionPolicyBinding{}: {
-				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
-			},
 			&admissionregistrationv1.MutatingWebhookConfiguration{}: {
 				Label: labelSelector,
 			},
 		},
+	}
+
+	if isMutatingAdmissionPolicySupported(ci.GetKubernetesVersion()) {
+		cacheOptions.ByObject[&admissionregistrationv1.MutatingAdmissionPolicy{}] = cache.ByObject{
+			Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+		}
+		cacheOptions.ByObject[&admissionregistrationv1.MutatingAdmissionPolicyBinding{}] = cache.ByObject{
+			Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+		}
 	}
 
 	cacheOptionsByObjectForMonitoring := map[client.Object]cache.ByObject{
@@ -507,6 +511,11 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 		Cache:                      getCacheOption(operatorNamespace, ci, persesAvailable),
 		Scheme:                     scheme,
 	}
+}
+
+func isMutatingAdmissionPolicySupported(kubernetesVersion *utilversion.Version) bool {
+	minimumKubernetesVersion := utilversion.MustParseSemantic("v1.36.0")
+	return kubernetesVersion != nil && kubernetesVersion.AtLeast(minimumKubernetesVersion)
 }
 
 // KubeVirtPriorityClass is needed by virt-operator but OLM is not able to

@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/go-logr/logr"
@@ -11,7 +12,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilversion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -20,7 +23,8 @@ import (
 )
 
 type ClusterInfo interface {
-	Init(ctx context.Context, cl client.Client, logger logr.Logger) error
+	Init(ctx context.Context, cl client.Client, logger logr.Logger, cfg ...*rest.Config) error
+	GetKubernetesVersion() *utilversion.Version
 	IsOpenshift() bool
 	IsRunningLocally() bool
 	GetBaseDomain() string
@@ -42,6 +46,7 @@ type ClusterInfoImp struct {
 	deschedulerAvailable       bool
 	singlestackipv6            bool
 	isHyperShiftManaged        bool
+	kubernetesVersion          *utilversion.Version
 	baseDomain                 string
 	logger                     logr.Logger
 }
@@ -55,12 +60,41 @@ var GetClusterInfo = func() ClusterInfo {
 	return clusterInfo
 }
 
+func getKubernetesVersion(cfg ...*rest.Config) (*utilversion.Version, error) {
+	if len(cfg) == 0 || cfg[0] == nil {
+		return nil, nil
+	}
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg[0])
+	if err != nil {
+		return nil, fmt.Errorf("create discovery client: %w", err)
+	}
+
+	serverVersion, err := discoveryClient.ServerVersion()
+	if err != nil {
+		return nil, fmt.Errorf("get Kubernetes server version: %w", err)
+	}
+
+	kubernetesVersion, err := utilversion.ParseSemantic(serverVersion.String())
+	if err != nil {
+		return nil, fmt.Errorf("parse Kubernetes server version %q: %w", serverVersion.String(), err)
+	}
+
+	return kubernetesVersion, nil
+}
+
 // OperatorConditionNameEnvVar - this Env var is set by OLM, so the Operator can discover it's OperatorCondition.
 const OperatorConditionNameEnvVar = "OPERATOR_CONDITION_NAME"
 
-func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr.Logger) error {
+func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr.Logger, cfg ...*rest.Config) error {
 	c.logger = logger
-	err := c.queryCluster(ctx, cl)
+	var err error
+	c.kubernetesVersion, err = getKubernetesVersion(cfg...)
+	if err != nil {
+		return err
+	}
+
+	err = c.queryCluster(ctx, cl)
 	if err != nil {
 		return err
 	}
@@ -180,6 +214,10 @@ func (c *ClusterInfoImp) IsSingleStackIPv6() bool {
 
 func (c *ClusterInfoImp) IsHyperShiftManaged() bool {
 	return c.isHyperShiftManaged
+}
+
+func (c *ClusterInfoImp) GetKubernetesVersion() *utilversion.Version {
+	return c.kubernetesVersion
 }
 
 func (c *ClusterInfoImp) GetBaseDomain() string {

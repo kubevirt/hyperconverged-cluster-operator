@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilversion "k8s.io/apimachinery/pkg/util/version"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -84,9 +85,14 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 	}
 
 	if ci.IsOpenshift() {
+		if isVMExportOpenDefaultPortsSupported(ci.GetKubernetesVersion()) {
+			operandList = append(operandList,
+				handlers.NewVMExportOpenDefaultPortsPolicyHandler(client, scheme),
+				handlers.NewVMExportOpenDefaultPortsBindingHandler(client, scheme),
+			)
+		}
+
 		operandList = append(operandList, []operands.Operand{
-			handlers.NewVMExportOpenDefaultPortsPolicyHandler(client, scheme),
-			handlers.NewVMExportOpenDefaultPortsBindingHandler(client, scheme),
 			handlers.NewSspHandler(client, scheme),
 			handlers.NewCliDownloadHandler(client, scheme),
 			handlers.NewCliDownloadsRouteHandler(client, scheme),
@@ -137,6 +143,11 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		operands:     operandList,
 		eventEmitter: eventEmitter,
 	}
+}
+
+func isVMExportOpenDefaultPortsSupported(kubernetesVersion *utilversion.Version) bool {
+	minimumKubernetesVersion := utilversion.MustParseSemantic("v1.36.0")
+	return kubernetesVersion != nil && kubernetesVersion.AtLeast(minimumKubernetesVersion)
 }
 
 // FirstUseInitiation is a lazy init function
