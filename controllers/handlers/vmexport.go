@@ -4,12 +4,13 @@ import (
 	"errors"
 	"reflect"
 
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -63,7 +64,7 @@ func newVMExportOpenDefaultPortsPolicy() *admissionregistrationv1.MutatingAdmiss
 		},
 		Spec: admissionregistrationv1.MutatingAdmissionPolicySpec{
 			MatchConstraints: &admissionregistrationv1.MatchResources{
-				MatchPolicy:       new(admissionregistrationv1.Equivalent),
+				MatchPolicy:       ptr.To(admissionregistrationv1.Equivalent),
 				NamespaceSelector: &metav1.LabelSelector{},
 				ObjectSelector:    &metav1.LabelSelector{},
 				ResourceRules: []admissionregistrationv1.NamedRuleWithOperations{
@@ -74,7 +75,7 @@ func newVMExportOpenDefaultPortsPolicy() *admissionregistrationv1.MutatingAdmiss
 								APIGroups:   []string{"export.kubevirt.io"},
 								APIVersions: []string{"v1", "v1beta1"},
 								Resources:   []string{"virtualmachineexports"},
-								Scope:       new(admissionregistrationv1.NamespacedScope),
+								Scope:       ptr.To(admissionregistrationv1.NamespacedScope),
 							},
 						},
 					},
@@ -94,7 +95,7 @@ func newVMExportOpenDefaultPortsPolicy() *admissionregistrationv1.MutatingAdmiss
 					},
 				},
 			},
-			FailurePolicy:      new(admissionregistrationv1.Fail),
+			FailurePolicy:      ptr.To(admissionregistrationv1.Fail),
 			ReinvocationPolicy: admissionregistrationv1.NeverReinvocationPolicy,
 		},
 	}
@@ -113,7 +114,7 @@ func newVMExportOpenDefaultPortsBinding() *admissionregistrationv1.MutatingAdmis
 		Spec: admissionregistrationv1.MutatingAdmissionPolicyBindingSpec{
 			PolicyName: vmExportOpenDefaultPortsPolicyName,
 			MatchResources: &admissionregistrationv1.MatchResources{
-				MatchPolicy:    new(admissionregistrationv1.Equivalent),
+				MatchPolicy:    ptr.To(admissionregistrationv1.Equivalent),
 				ObjectSelector: &metav1.LabelSelector{},
 				NamespaceSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{

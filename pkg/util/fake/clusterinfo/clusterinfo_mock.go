@@ -10,9 +10,10 @@ import (
 )
 
 type ClusterInfoMock struct {
-	isOpenshift    bool
-	runningLocally bool
-	isManagedByOLM bool
+	isOpenshift                      bool
+	runningLocally                   bool
+	isManagedByOLM                   bool
+	mutatingAdmissionPolicySupported bool
 }
 
 // make sure ClusterInfoMock implements hcoutil.ClusterInfo
@@ -82,4 +83,12 @@ func (ClusterInfoMock) IsDeschedulerCRDDeployed(ctx context.Context, cl client.C
 
 func (ClusterInfoMock) IsSingleStackIPv6() bool {
 	return true
+}
+
+func (c *ClusterInfoMock) SetMutatingAdmissionPolicySupported(supported bool) {
+	c.mutatingAdmissionPolicySupported = supported
+}
+
+func (c ClusterInfoMock) IsMutatingAdmissionPolicySupported() bool {
+	return c.mutatingAdmissionPolicySupported
 }

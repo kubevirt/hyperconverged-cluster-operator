@@ -23,6 +23,7 @@ import (
 	"github.com/rhobs/operator-observability-toolkit/pkg/operatormetrics"
 	persesv1alpha1 "github.com/rhobs/perses-operator/api/v1alpha1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,8 +36,11 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	utilversion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/discovery"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
@@ -87,6 +91,8 @@ const (
 	operatorCertDirEnv           = "OPERATOR_CERT_DIR"
 )
 
+var minimumMutatingAdmissionPolicyKubernetesVersion = utilversion.MustParseSemantic("v1.36.0")
+
 // Change below variables to serve metrics on different host or port.
 var (
 	logger               = logf.Log.WithName("hyperconverged-operator-cmd")
@@ -102,6 +108,7 @@ var (
 		sspv1beta3.AddToScheme,
 		csvv1alpha1.AddToScheme,
 		admissionregistrationv1.AddToScheme,
+		admissionregistrationv1beta1.AddToScheme,
 		consolev1.Install,
 		consolev1.Install,
 		operatorv1.Install,
@@ -132,11 +139,16 @@ func main() {
 	cfg, err := config.GetConfig()
 	cmdHelper.ExitOnError(err, "can't load configuration")
 
+	mutatingAdmissionPolicySupported, err := isMutatingAdmissionPolicySupported(cfg)
+	cmdHelper.ExitOnError(err, "can't detect Kubernetes version")
+	logger.Info("MutatingAdmissionPolicy availability at startup", "available", mutatingAdmissionPolicySupported)
+
 	// Setup Scheme for all resources
 	scheme := apiruntime.NewScheme()
 	cmdHelper.AddToScheme(scheme, resourcesSchemeFuncs)
 
 	ci := hcoutil.GetClusterInfo()
+	ci.SetMutatingAdmissionPolicySupported(mutatingAdmissionPolicySupported)
 
 	// apiclient.New() returns a client without cache.
 	// cache is not initialized before mgr.Start()
@@ -405,16 +417,19 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 			&admissionregistrationv1.ValidatingAdmissionPolicyBinding{}: {
 				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
 			},
-			&admissionregistrationv1.MutatingAdmissionPolicy{}: {
-				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
-			},
-			&admissionregistrationv1.MutatingAdmissionPolicyBinding{}: {
-				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
-			},
 			&admissionregistrationv1.MutatingWebhookConfiguration{}: {
 				Label: labelSelector,
 			},
 		},
+	}
+
+	if ci.IsMutatingAdmissionPolicySupported() {
+		cacheOptions.ByObject[&admissionregistrationv1beta1.MutatingAdmissionPolicy{}] = cache.ByObject{
+			Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+		}
+		cacheOptions.ByObject[&admissionregistrationv1beta1.MutatingAdmissionPolicyBinding{}] = cache.ByObject{
+			Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+		}
 	}
 
 	cacheOptionsByObjectForMonitoring := map[client.Object]cache.ByObject{
@@ -521,6 +536,25 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 		Cache:                      getCacheOption(operatorNamespace, ci, persesAvailable),
 		Scheme:                     scheme,
 	}
+}
+
+func isMutatingAdmissionPolicySupported(cfg *rest.Config) (bool, error) {
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return false, fmt.Errorf("create discovery client: %w", err)
+	}
+
+	serverVersion, err := discoveryClient.ServerVersion()
+	if err != nil {
+		return false, fmt.Errorf("get Kubernetes server version: %w", err)
+	}
+
+	parsedVersion, err := utilversion.ParseSemantic(serverVersion.GitVersion)
+	if err != nil {
+		return false, fmt.Errorf("parse Kubernetes server version %q: %w", serverVersion.GitVersion, err)
+	}
+
+	return parsedVersion.AtLeast(minimumMutatingAdmissionPolicyKubernetesVersion), nil
 }
 
 // KubeVirtPriorityClass is needed by virt-operator but OLM is not able to

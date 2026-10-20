@@ -20,6 +20,7 @@ import (
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -181,6 +182,7 @@ func GetScheme() *runtime.Scheme {
 			corev1.AddToScheme,
 			schedulingv1.AddToScheme,
 			admissionregistrationv1.AddToScheme,
+			admissionregistrationv1beta1.AddToScheme,
 		} {
 			if err := f(testScheme); err != nil {
 				panic(fmt.Sprintf("failed to add scheme: %T, %v", f, err))
@@ -279,6 +281,12 @@ func (c ClusterInfoMock) IsSingleStackIPv6() bool {
 
 func (c ClusterInfoMock) IsHyperShiftManaged() bool {
 	return false
+}
+
+func (ClusterInfoMock) SetMutatingAdmissionPolicySupported(bool) {}
+
+func (ClusterInfoMock) IsMutatingAdmissionPolicySupported() bool {
+	return true
 }
 
 func KeysFromSSMap(ssmap map[string]string) gstruct.Keys {

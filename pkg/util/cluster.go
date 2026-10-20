@@ -32,20 +32,23 @@ type ClusterInfo interface {
 	IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool
 	IsSingleStackIPv6() bool
 	IsHyperShiftManaged() bool
+	SetMutatingAdmissionPolicySupported(bool)
+	IsMutatingAdmissionPolicySupported() bool
 }
 
 type ClusterInfoImp struct {
-	runningInOpenshift         bool
-	managedByOLM               bool
-	runningLocally             bool
-	consolePluginImageProvided bool
-	monitoringAvailable        bool
-	deschedulerAvailable       bool
-	nadAvailable               bool
-	singlestackipv6            bool
-	isHyperShiftManaged        bool
-	baseDomain                 string
-	logger                     logr.Logger
+	runningInOpenshift               bool
+	managedByOLM                     bool
+	runningLocally                   bool
+	consolePluginImageProvided       bool
+	monitoringAvailable              bool
+	deschedulerAvailable             bool
+	nadAvailable                     bool
+	singlestackipv6                  bool
+	isHyperShiftManaged              bool
+	mutatingAdmissionPolicySupported bool
+	baseDomain                       string
+	logger                           logr.Logger
 }
 
 // make sure ClusterInfoImp implements ClusterInfo
@@ -188,6 +191,14 @@ func (c *ClusterInfoImp) IsSingleStackIPv6() bool {
 
 func (c *ClusterInfoImp) IsHyperShiftManaged() bool {
 	return c.isHyperShiftManaged
+}
+
+func (c *ClusterInfoImp) SetMutatingAdmissionPolicySupported(supported bool) {
+	c.mutatingAdmissionPolicySupported = supported
+}
+
+func (c *ClusterInfoImp) IsMutatingAdmissionPolicySupported() bool {
+	return c.mutatingAdmissionPolicySupported
 }
 
 func (c *ClusterInfoImp) GetBaseDomain() string {

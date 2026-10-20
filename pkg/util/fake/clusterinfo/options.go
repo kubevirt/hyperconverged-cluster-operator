@@ -19,3 +19,9 @@ func WithIsManagedByOLM(isManagedByOLMV0 bool) MockOption {
 		mock.isManagedByOLM = isManagedByOLMV0
 	}
 }
+
+func WithMutatingAdmissionPolicySupported(supported bool) MockOption {
+	return func(mock *ClusterInfoMock) {
+		mock.mutatingAdmissionPolicySupported = supported
+	}
+}
