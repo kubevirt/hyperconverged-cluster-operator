@@ -110,12 +110,17 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc()),
 				handlers.NewKvUIPluginSAHandler(client, scheme),
 				handlers.NewKvUIProxySAHandler(client, scheme),
+				// The nginx ConfigMap must be reconciled before the plugin Deployment:
+				// the config is mounted via SubPath (which does not receive ConfigMap
+				// updates after a Pod starts), so a Deployment rollout must happen only
+				// after the new config is published, otherwise the new Pod would come up
+				// with the previous nginx configuration.
+				handlers.NewKvUINginxCMHandler(client, scheme),
 				handlers.NewKvUIPluginDeploymentHandler(client, scheme),
 				handlers.NewKvUIProxyDeploymentHandler(client, scheme),
 				handlers.NewKvUIUserSettingsCMHandler(client, scheme),
 				handlers.NewKvUIFeaturesCMHandler(client, scheme),
 				handlers.NewKvUIPluginCRHandler(client, scheme),
-				handlers.NewKvUINginxCMHandler(client, scheme),
 				handlers.NewKvUIConfigReaderRoleHandler(client, scheme),
 				handlers.NewKvUIConfigReaderRoleBindingHandler(client, scheme),
 				handlers.NewKVConsolePluginNetworkPolicyHandler(client, scheme),
