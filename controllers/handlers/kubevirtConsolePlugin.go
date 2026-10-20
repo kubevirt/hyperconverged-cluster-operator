@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
 	_ "embed"
 	"errors"
@@ -55,6 +56,11 @@ const (
 	kvUIFeaturesCMName        = "kubevirt-ui-features"
 	kvUIConfigReaderRoleName  = "kubevirt-ui-config-reader"
 	kvUIConfigReaderRBName    = "kubevirt-ui-config-reader-rolebinding"
+	// nginxConfigHashAnnotation stamps a hash of the rendered nginx config onto the
+	// console-plugin pod template so that changes to the nginx config (e.g. an updated
+	// TLS profile / curves) roll the deployment. nginx only reads its config at start,
+	// so without this the running pods keep serving the previous TLS configuration.
+	nginxConfigHashAnnotation = "hco.kubevirt.io/nginx-config-hash"
 )
 
 const ( // managed data fields
@@ -157,6 +163,15 @@ func NewKvUIPluginDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	}
 
 	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, nginxVolume)
+
+	// nginx reads its config only at startup and the config is delivered via a mounted
+	// ConfigMap, so stamp a hash of the config onto the pod template. When the TLS
+	// profile (ciphers/curves/min-version) changes, the hash changes and the deployment
+	// rolls, ensuring the new configuration actually takes effect on the running pods.
+	if deployment.Spec.Template.Annotations == nil {
+		deployment.Spec.Template.Annotations = map[string]string{}
+	}
+	deployment.Spec.Template.Annotations[nginxConfigHashAnnotation] = nginxConfigHash(hc)
 
 	return deployment
 }
@@ -375,7 +390,7 @@ type nginxConfTemplateData struct {
 	SSLECDHCurve string
 }
 
-func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
+func getNginxConfTemplateData(hc *hcov1.HyperConverged) nginxConfTemplateData {
 	ciphers, minTLS := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.Security.TLSSecurityProfile)
 	data := nginxConfTemplateData{
 		Port:         hcoutil.UIPluginServerPort,
@@ -394,12 +409,25 @@ func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
 		data.SSLECDHCurve = strings.Join(groupStrs, ":")
 	}
 
+	return data
+}
+
+func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
+	data := getNginxConfTemplateData(hc)
+
 	var out bytes.Buffer
 	if err := nginxConfTmpl.Execute(&out, data); err != nil {
 		return "", fmt.Errorf("failed rendering embedded nginx.conf template: %w", err)
 	}
 
 	return out.String(), nil
+}
+
+// nginxConfigHash returns a stable hash of the nginx config inputs, used to roll the
+// console-plugin deployment whenever the rendered nginx config would change.
+func nginxConfigHash(hc *hcov1.HyperConverged) string {
+	data := getNginxConfTemplateData(hc)
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%+v", data))))
 }
 
 func NewKVUINginxCM(hc *hcov1.HyperConverged) (*corev1.ConfigMap, error) {
