@@ -2,6 +2,7 @@ package operands
 
 import (
 	"errors"
+	"maps"
 	"reflect"
 	"sync"
 
@@ -78,8 +79,12 @@ func (h *deploymentHooks) UpdateCR(req *common.HcoRequest, Client client.Client,
 			}
 			return true, !req.HCOTriggered, nil
 		}
+		// Preserve pod-template annotations added by other controllers while applying
+		// the operator-managed ones (computed before the spec is overwritten below).
+		mergedTemplateAnnotations := mergeStringMaps(found.Spec.Template.Annotations, deployment.Spec.Template.Annotations)
 		util.MergeLabels(&deployment.ObjectMeta, &found.ObjectMeta)
 		deployment.Spec.DeepCopyInto(&found.Spec)
+		found.Spec.Template.Annotations = mergedTemplateAnnotations
 		err := Client.Update(req.Ctx, found)
 		if err != nil {
 			return false, false, err
@@ -102,7 +107,32 @@ func hasCorrectDeploymentFields(found *appsv1.Deployment, required *appsv1.Deplo
 		reflect.DeepEqual(found.Spec.Template.Spec.Affinity, required.Spec.Template.Spec.Affinity) &&
 		reflect.DeepEqual(found.Spec.Template.Spec.NodeSelector, required.Spec.Template.Spec.NodeSelector) &&
 		reflect.DeepEqual(found.Spec.Template.Spec.Tolerations, required.Spec.Template.Spec.Tolerations) &&
-		reflect.DeepEqual(found.Spec.Template.Annotations, required.Spec.Template.Annotations)
+		managedTemplateAnnotationsPresent(found, required)
+}
+
+// managedTemplateAnnotationsPresent reports whether every pod-template annotation the
+// operator manages (present in required) exists with the same value in found. Annotations
+// added by other controllers (present only in found) are ignored, so they neither trigger
+// a spurious rollout nor get removed on reconcile.
+func managedTemplateAnnotationsPresent(found, required *appsv1.Deployment) bool {
+	for key, value := range required.Spec.Template.Annotations {
+		if foundValue, ok := found.Spec.Template.Annotations[key]; !ok || foundValue != value {
+			return false
+		}
+	}
+	return true
+}
+
+// mergeStringMaps returns a new map with existing entries overlaid by managed entries
+// (managed wins on key conflicts). It returns nil when both inputs are empty.
+func mergeStringMaps(existing, managed map[string]string) map[string]string {
+	if len(existing) == 0 && len(managed) == 0 {
+		return nil
+	}
+	merged := make(map[string]string, len(existing)+len(managed))
+	maps.Copy(merged, existing)
+	maps.Copy(merged, managed)
+	return merged
 }
 
 func shouldRecreate(found, required *appsv1.Deployment) bool {
