@@ -107,14 +107,14 @@ func hasCorrectDeploymentFields(found *appsv1.Deployment, required *appsv1.Deplo
 		reflect.DeepEqual(found.Spec.Template.Spec.Affinity, required.Spec.Template.Spec.Affinity) &&
 		reflect.DeepEqual(found.Spec.Template.Spec.NodeSelector, required.Spec.Template.Spec.NodeSelector) &&
 		reflect.DeepEqual(found.Spec.Template.Spec.Tolerations, required.Spec.Template.Spec.Tolerations) &&
-		managedTemplateAnnotationsPresent(found, required)
+		compareTemplateAnnotations(found, required)
 }
 
-// managedTemplateAnnotationsPresent reports whether every pod-template annotation the
+// compareTemplateAnnotations reports whether every pod-template annotation the
 // operator manages (present in required) exists with the same value in found. Annotations
 // added by other controllers (present only in found) are ignored, so they neither trigger
 // a spurious rollout nor get removed on reconcile.
-func managedTemplateAnnotationsPresent(found, required *appsv1.Deployment) bool {
+func compareTemplateAnnotations(found, required *appsv1.Deployment) bool {
 	for key, value := range required.Spec.Template.Annotations {
 		if foundValue, ok := found.Spec.Template.Annotations[key]; !ok || foundValue != value {
 			return false

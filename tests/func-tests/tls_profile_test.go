@@ -40,6 +40,9 @@ const (
 	tlsDialTimeout  = 3 * time.Second
 	sspReadyTimeout = 4 * time.Minute
 	sspReadyPolling = 5 * time.Second
+
+	consolePluginRolloutTimeout = 5 * time.Minute
+	consolePluginRolloutPolling = 5 * time.Second
 )
 
 var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
@@ -107,6 +110,11 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 			}
 
 			tests.RestoreDefaults(ctx, cli)
+
+			// Restoring the default TLS profile rolls the console-plugin deployment
+			// (its nginx config changed), so wait for it to become ready again before
+			// the suite continues, to avoid leaving it mid-rollout for later tests.
+			waitForConsolePluginReady(ctx, k8sCli)
 		})
 
 		AfterEach(func(ctx context.Context) {
@@ -199,7 +207,80 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 		Entry("Check HCO webhook's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-webhook", "hyperconverged-cluster-webhook-operator-metrics", ""),
 		Entry("Check HCO operator's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-operator", hcoutil.OperatorMetricServiceName, hcoutil.OperatorMetricsSecretName),
 	)
+
+	It("should recreate the console-plugin pods when the TLS profile changes", Label("tls"), func(ctx context.Context) {
+		cli := tests.GetControllerRuntimeClient()
+		k8sCli := tests.GetK8sClientSet()
+		deploymentName := string(hcoutil.AppComponentUIPlugin)
+
+		DeferCleanup(func(ctx context.Context) {
+			tests.RestoreDefaults(ctx, cli)
+			waitForConsolePluginReady(ctx, k8sCli)
+		})
+
+		deployment, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(ctx, deploymentName, metav1.GetOptions{})
+		Expect(err).ToNot(HaveOccurred())
+		selector := metav1.FormatLabelSelector(deployment.Spec.Selector)
+
+		oldUIDs, err := consolePluginPodUIDs(ctx, k8sCli, selector)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(oldUIDs).ToNot(BeEmpty())
+
+		patch := fmt.Appendf(nil, `[{"op": "replace", "path": %q, "value": {"custom": {"minTLSVersion": "VersionTLS12", "ciphers": ["ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384"], "groups": ["secp256r1", "secp384r1"]}, "type": "Custom"}}]`, tlsPath)
+		tests.PatchHCO(ctx, cli, patch)
+
+		Eventually(func(g Gomega, gctx context.Context) {
+			dep, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(gctx, deploymentName, metav1.GetOptions{})
+			g.Expect(err).ToNot(HaveOccurred())
+
+			desired := int32(1)
+			if dep.Spec.Replicas != nil {
+				desired = *dep.Spec.Replicas
+			}
+			g.Expect(dep.Status.ObservedGeneration).To(BeNumerically(">=", dep.Generation))
+			g.Expect(dep.Status.UpdatedReplicas).To(Equal(desired))
+			g.Expect(dep.Status.ReadyReplicas).To(Equal(desired))
+
+			newUIDs, err := consolePluginPodUIDs(gctx, k8sCli, selector)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(newUIDs).To(HaveLen(int(desired)))
+			g.Expect(newUIDs.Intersection(oldUIDs).Len()).To(Equal(0), "console-plugin pods were not recreated after the TLS profile change")
+		}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
+	})
 })
+
+func waitForConsolePluginReady(ctx context.Context, k8sCli *kubernetes.Clientset) {
+	GinkgoHelper()
+	deploymentName := string(hcoutil.AppComponentUIPlugin)
+	Eventually(func(g Gomega, gctx context.Context) {
+		deployment, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(gctx, deploymentName, metav1.GetOptions{})
+		g.Expect(err).ToNot(HaveOccurred())
+
+		desired := int32(1)
+		if deployment.Spec.Replicas != nil {
+			desired = *deployment.Spec.Replicas
+		}
+		g.Expect(deployment.Status.ObservedGeneration).To(BeNumerically(">=", deployment.Generation))
+		g.Expect(deployment.Status.UpdatedReplicas).To(Equal(desired))
+		g.Expect(deployment.Status.ReadyReplicas).To(Equal(desired))
+		g.Expect(deployment.Status.AvailableReplicas).To(Equal(desired))
+	}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
+}
+
+func consolePluginPodUIDs(ctx context.Context, k8sCli *kubernetes.Clientset, selector string) (sets.Set[types.UID], error) {
+	pods, err := k8sCli.CoreV1().Pods(tests.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return nil, err
+	}
+
+	uids := sets.New[types.UID]()
+	for _, pod := range pods.Items {
+		if pod.DeletionTimestamp == nil {
+			uids.Insert(pod.UID)
+		}
+	}
+	return uids, nil
+}
 
 func isTLSVersionAccepted(ctx context.Context, addr string, version uint16) (bool, error) {
 	// Verify TCP connectivity first to distinguish transport errors from TLS rejections
