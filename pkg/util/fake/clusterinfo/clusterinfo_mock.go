@@ -4,22 +4,27 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	utilversion "k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 type ClusterInfoMock struct {
-	isOpenshift    bool
-	runningLocally bool
-	isManagedByOLM bool
+	isOpenshift       bool
+	runningLocally    bool
+	isManagedByOLM    bool
+	kubernetesVersion *utilversion.Version
 }
 
 // make sure ClusterInfoMock implements hcoutil.ClusterInfo
 var _ hcoutil.ClusterInfo = &ClusterInfoMock{}
 
 func New(opts ...MockOption) *ClusterInfoMock {
-	mock := &ClusterInfoMock{}
+	mock := &ClusterInfoMock{
+		kubernetesVersion: utilversion.MustParseSemantic("v1.36.0"),
+	}
 
 	for _, op := range opts {
 		op(mock)
@@ -36,7 +41,7 @@ func NewGetClusterInfo(opts ...MockOption) func() hcoutil.ClusterInfo {
 	}
 }
 
-func (ClusterInfoMock) Init(_ context.Context, _ client.Client, _ logr.Logger) error {
+func (ClusterInfoMock) Init(_ context.Context, _ client.Client, _ logr.Logger, _ ...*rest.Config) error {
 	return nil
 }
 
@@ -78,4 +83,8 @@ func (ClusterInfoMock) IsDeschedulerCRDDeployed(ctx context.Context, cl client.C
 
 func (ClusterInfoMock) IsSingleStackIPv6() bool {
 	return true
+}
+
+func (c ClusterInfoMock) GetKubernetesVersion() *utilversion.Version {
+	return c.kubernetesVersion
 }

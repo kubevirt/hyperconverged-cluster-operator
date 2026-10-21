@@ -15,6 +15,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -203,8 +204,8 @@ func SetHyperConvergedTLSProfile(ctx context.Context, operatorNamespace string, 
 	return nil
 }
 
-func ClusterInitializations(ctx context.Context, cl client.Client, scheme *apiruntime.Scheme, logger logr.Logger) error {
-	err := hcoutil.GetClusterInfo().Init(ctx, cl, logger)
+func ClusterInitializations(ctx context.Context, cl client.Client, cfg *rest.Config, scheme *apiruntime.Scheme, logger logr.Logger) error {
+	err := hcoutil.GetClusterInfo().Init(ctx, cl, logger, cfg)
 	if err != nil {
 		return nil
 	}

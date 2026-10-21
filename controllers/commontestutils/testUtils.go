@@ -30,6 +30,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	utilversion "k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -255,7 +257,7 @@ type ClusterInfoMock struct{}
 // make sure ClusterInfoMock implements hcoutil.ClusterInfo
 var _ hcoutil.ClusterInfo = &ClusterInfoMock{}
 
-func (ClusterInfoMock) Init(_ context.Context, _ client.Client, _ logr.Logger) error {
+func (ClusterInfoMock) Init(_ context.Context, _ client.Client, _ logr.Logger, _ ...*rest.Config) error {
 	return nil
 }
 func (ClusterInfoMock) IsOpenshift() bool {
@@ -288,6 +290,10 @@ func (c ClusterInfoMock) IsSingleStackIPv6() bool {
 
 func (c ClusterInfoMock) IsHyperShiftManaged() bool {
 	return false
+}
+
+func (ClusterInfoMock) GetKubernetesVersion() *utilversion.Version {
+	return utilversion.MustParseSemantic("v1.36.0")
 }
 
 func KeysFromSSMap(ssmap map[string]string) gstruct.Keys {
