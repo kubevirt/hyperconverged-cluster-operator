@@ -93,7 +93,20 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 
 			hc, err := tests.GetHCO(ctx, cli)
 			Expect(err).NotTo(HaveOccurred())
-			if hc.Spec.Security.TLSSecurityProfile != nil {
+
+			// Removing a non-default TLS profile rolls the console-plugin (its nginx
+			// config changes). Capture its current pods beforehand so we can wait for
+			// the rollout to actually complete afterwards, instead of observing the
+			// still-ready pre-rollout Deployment.
+			profileWasSet := hc.Spec.Security.TLSSecurityProfile != nil
+			var consolePluginSelectorStr string
+			var consolePluginOldPods sets.Set[types.UID]
+			if profileWasSet {
+				consolePluginSelectorStr, err = getConsolePluginSelector(ctx, k8sCli)
+				Expect(err).NotTo(HaveOccurred())
+				consolePluginOldPods, err = consolePluginPodUIDs(ctx, k8sCli, consolePluginSelectorStr)
+				Expect(err).NotTo(HaveOccurred())
+
 				removePatch := fmt.Appendf(nil, `[{"op": "remove", "path": %q}]`, tlsPath)
 				tests.PatchHCO(ctx, cli, removePatch)
 
@@ -111,10 +124,11 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 
 			tests.RestoreDefaults(ctx, cli)
 
-			// Restoring the default TLS profile rolls the console-plugin deployment
-			// (its nginx config changed), so wait for it to become ready again before
-			// the suite continues, to avoid leaving it mid-rollout for later tests.
-			waitForConsolePluginReady(ctx, k8sCli)
+			// Wait for the console-plugin rollout triggered by the restore to complete,
+			// so the suite doesn't leave it mid-rollout for later tests.
+			if profileWasSet {
+				waitForConsolePluginRolloutComplete(ctx, k8sCli, consolePluginSelectorStr, consolePluginOldPods)
+			}
 		})
 
 		AfterEach(func(ctx context.Context) {
@@ -211,45 +225,43 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 	It("should recreate the console-plugin pods when the TLS profile changes", Label("tls"), func(ctx context.Context) {
 		cli := tests.GetControllerRuntimeClient()
 		k8sCli := tests.GetK8sClientSet()
-		deploymentName := string(hcoutil.AppComponentUIPlugin)
 
 		DeferCleanup(func(ctx context.Context) {
+			selector, err := getConsolePluginSelector(ctx, k8sCli)
+			Expect(err).ToNot(HaveOccurred())
+			oldPods, err := consolePluginPodUIDs(ctx, k8sCli, selector)
+			Expect(err).ToNot(HaveOccurred())
+
 			tests.RestoreDefaults(ctx, cli)
-			waitForConsolePluginReady(ctx, k8sCli)
+			waitForConsolePluginRolloutComplete(ctx, k8sCli, selector, oldPods)
 		})
 
-		deployment, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(ctx, deploymentName, metav1.GetOptions{})
+		selector, err := getConsolePluginSelector(ctx, k8sCli)
 		Expect(err).ToNot(HaveOccurred())
-		selector := metav1.FormatLabelSelector(deployment.Spec.Selector)
-
-		oldUIDs, err := consolePluginPodUIDs(ctx, k8sCli, selector)
+		oldPods, err := consolePluginPodUIDs(ctx, k8sCli, selector)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(oldUIDs).ToNot(BeEmpty())
+		Expect(oldPods).ToNot(BeEmpty())
 
 		patch := fmt.Appendf(nil, `[{"op": "replace", "path": %q, "value": {"custom": {"minTLSVersion": "VersionTLS12", "ciphers": ["ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384"], "groups": ["secp256r1", "secp384r1"]}, "type": "Custom"}}]`, tlsPath)
 		tests.PatchHCO(ctx, cli, patch)
 
-		Eventually(func(g Gomega, gctx context.Context) {
-			dep, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(gctx, deploymentName, metav1.GetOptions{})
-			g.Expect(err).ToNot(HaveOccurred())
-
-			desired := int32(1)
-			if dep.Spec.Replicas != nil {
-				desired = *dep.Spec.Replicas
-			}
-			g.Expect(dep.Status.ObservedGeneration).To(BeNumerically(">=", dep.Generation))
-			g.Expect(dep.Status.UpdatedReplicas).To(Equal(desired))
-			g.Expect(dep.Status.ReadyReplicas).To(Equal(desired))
-
-			newUIDs, err := consolePluginPodUIDs(gctx, k8sCli, selector)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(newUIDs).To(HaveLen(int(desired)))
-			g.Expect(newUIDs.Intersection(oldUIDs).Len()).To(Equal(0), "console-plugin pods were not recreated after the TLS profile change")
-		}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
+		waitForConsolePluginRolloutComplete(ctx, k8sCli, selector, oldPods)
 	})
 })
 
-func waitForConsolePluginReady(ctx context.Context, k8sCli *kubernetes.Clientset) {
+func getConsolePluginSelector(ctx context.Context, k8sCli *kubernetes.Clientset) (string, error) {
+	deployment, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(ctx, string(hcoutil.AppComponentUIPlugin), metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return metav1.FormatLabelSelector(deployment.Spec.Selector), nil
+}
+
+// waitForConsolePluginRolloutComplete waits until the console-plugin rollout triggered by
+// a TLS config change has fully completed: the Deployment is settled and ready, and its
+// pods have been replaced (none shared with previousPods). Tying readiness to pod
+// replacement avoids observing the still-ready pre-rollout Deployment.
+func waitForConsolePluginRolloutComplete(ctx context.Context, k8sCli *kubernetes.Clientset, selector string, previousPods sets.Set[types.UID]) {
 	GinkgoHelper()
 	deploymentName := string(hcoutil.AppComponentUIPlugin)
 	Eventually(func(g Gomega, gctx context.Context) {
@@ -264,6 +276,11 @@ func waitForConsolePluginReady(ctx context.Context, k8sCli *kubernetes.Clientset
 		g.Expect(deployment.Status.UpdatedReplicas).To(Equal(desired))
 		g.Expect(deployment.Status.ReadyReplicas).To(Equal(desired))
 		g.Expect(deployment.Status.AvailableReplicas).To(Equal(desired))
+
+		currentPods, err := consolePluginPodUIDs(gctx, k8sCli, selector)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(currentPods).To(HaveLen(int(desired)))
+		g.Expect(currentPods.Intersection(previousPods).Len()).To(Equal(0), "console-plugin pods were not recreated after the TLS config change")
 	}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
 }
 
