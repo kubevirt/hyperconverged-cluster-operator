@@ -8,9 +8,10 @@ Applies to: `**/*_test.go`
 - Verify test scenarios cover error cases and edge conditions
 - Ensure tests are deterministic and not flaky
 - Do not add tests whose sole purpose is verifying logger output
-- When enabling a feature gate by default, update the test in
-  `controllers/hyperconverged/hyperconverged_controller_test.go`. Keep
-  expected KubeVirt feature gate literals independent without exporting or
-  referencing unexported constants from `controllers/handlers`
-- Assert against observable reconciliation behavior and object preservation
-  rather than internal call order or requeue returns
+- When enabling a KubeVirt feature gate by default, update the
+  `expectedFeatureGates` slice in the "should create all managed resources"
+  test in `controllers/hyperconverged/hyperconverged_controller_test.go`
+- Assert against observable behavior (resulting state, return values, errors)
+  rather than internal implementation details such as call order. only
+  assert on incidental implementation artifacts (e.g., a specific requeue
+  value) when they are part of the function's documented contract
