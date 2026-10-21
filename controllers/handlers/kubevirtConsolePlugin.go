@@ -64,7 +64,9 @@ const ( // managed data fields
 
 // **** Kubevirt UI Plugin Deployment Handler ****
 func NewKvUIPluginDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
-	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIPluginDeployment)
+	return operands.NewDeploymentHandlerWithReadyCondition(
+		cli, Scheme, NewKvUIPluginDeployment, hcov1.VirtConditionConsolePluginReady,
+	)
 }
 
 // **** Kubevirt UI apiserver proxy Deployment Handler ****

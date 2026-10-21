@@ -2,10 +2,14 @@ package operands
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,6 +22,126 @@ type newDeploymentFunc func(hc *hcov1.HyperConverged) *appsv1.Deployment
 
 func NewDeploymentHandler(cli client.Client, Scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc) *GenericOperand {
 	return NewGenericOperand(cli, Scheme, "Deployment", newDeploymentHooks(deploymentGenerator), false)
+}
+
+// NewDeploymentHandlerWithReadyCondition returns a Deployment handler that also reports a
+// readiness condition on the HyperConverged status after each Ensure.
+func NewDeploymentHandlerWithReadyCondition(
+	cli client.Client,
+	scheme *runtime.Scheme,
+	deploymentGenerator newDeploymentFunc,
+	conditionType string,
+) Operand {
+	return &deploymentReadyConditionHandler{
+		inner:               NewDeploymentHandler(cli, scheme, deploymentGenerator),
+		client:              cli,
+		conditionType:       conditionType,
+		deploymentGenerator: deploymentGenerator,
+	}
+}
+
+// NewConditionalDeploymentHandlerWithReadyCondition is like NewDeploymentHandlerWithReadyCondition,
+// but only deploys when shouldDeploy returns true. When disabled, the readiness condition is removed.
+func NewConditionalDeploymentHandlerWithReadyCondition(
+	cli client.Client,
+	scheme *runtime.Scheme,
+	deploymentGenerator newDeploymentFunc,
+	shouldDeploy ConditionFunc,
+	getCRWithName GetCRWithNameFunc,
+	conditionType string,
+) Operand {
+	return &deploymentReadyConditionHandler{
+		inner: NewConditionalHandler(
+			NewDeploymentHandler(cli, scheme, deploymentGenerator),
+			shouldDeploy,
+			getCRWithName,
+		),
+		client:              cli,
+		conditionType:       conditionType,
+		deploymentGenerator: deploymentGenerator,
+		shouldDeploy:        shouldDeploy,
+	}
+}
+
+type deploymentReadyConditionHandler struct {
+	inner               Operand
+	client              client.Client
+	conditionType       string
+	deploymentGenerator newDeploymentFunc
+	shouldDeploy        ConditionFunc
+}
+
+func (h *deploymentReadyConditionHandler) Ensure(req *common.HcoRequest) *EnsureResult {
+	result := h.inner.Ensure(req)
+	if result.Err != nil {
+		return result
+	}
+
+	if h.shouldDeploy != nil && !h.shouldDeploy(req.Instance) {
+		RemoveDeploymentCondition(req, h.conditionType)
+		return result
+	}
+
+	dep := &appsv1.Deployment{}
+	key := client.ObjectKeyFromObject(h.deploymentGenerator(req.Instance))
+	if err := h.client.Get(req.Ctx, key, dep); err != nil {
+		if !apierrors.IsNotFound(err) {
+			result.Err = err
+			return result
+		}
+		SetDeploymentCondition(req, h.conditionType, metav1.ConditionFalse, "DeploymentNotFound",
+			fmt.Sprintf("%s deployment not found", key.Name))
+		return result
+	}
+
+	if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 && dep.Status.ReadyReplicas == *dep.Spec.Replicas {
+		SetDeploymentCondition(req, h.conditionType, metav1.ConditionTrue, "DeploymentReady", "All replicas are ready")
+	} else {
+		desired := int32(0)
+		if dep.Spec.Replicas != nil {
+			desired = *dep.Spec.Replicas
+		}
+		SetDeploymentCondition(req, h.conditionType, metav1.ConditionFalse, "DeploymentNotReady",
+			fmt.Sprintf("%d/%d replicas ready", dep.Status.ReadyReplicas, desired))
+	}
+
+	return result
+}
+
+func (h *deploymentReadyConditionHandler) Reset() {
+	h.inner.Reset()
+}
+
+func (h *deploymentReadyConditionHandler) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
+	if getter, ok := h.inner.(CRGetter); ok {
+		return getter.GetFullCr(hc)
+	}
+	return nil, nil
+}
+
+// SetDeploymentCondition sets a Deployment readiness condition on the HyperConverged status.
+// This is the generalized form of the former setNetResInjCondition helper.
+func SetDeploymentCondition(req *common.HcoRequest, conditionType string, status metav1.ConditionStatus, reason, message string) {
+	cond := metav1.Condition{
+		Type:               conditionType,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: req.Instance.Generation,
+	}
+	changed := meta.SetStatusCondition(&req.Instance.Status.Conditions, cond)
+	if changed {
+		req.StatusDirty = true
+	}
+}
+
+// RemoveDeploymentCondition removes a Deployment readiness condition from the HyperConverged status.
+// This is the generalized form of the former removeNetResInjCondition helper.
+func RemoveDeploymentCondition(req *common.HcoRequest, conditionType string) {
+	changed := meta.RemoveStatusCondition(&req.Instance.Status.Conditions, conditionType)
+	if changed {
+		req.StatusDirty = true
+	}
 }
 
 type deploymentHooks struct {
