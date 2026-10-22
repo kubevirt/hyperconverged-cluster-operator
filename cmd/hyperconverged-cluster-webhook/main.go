@@ -119,6 +119,13 @@ func main() {
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
 	// Create a new Cmd to provide shared dependencies and start components
+	filterProvided := authorization.HttpWithBearerToken
+	mutateTLSConfigFunc := tlssecprofile.MutateTLSConfig
+	if ci.IsOpenshift() {
+		filterProvided = cmdcommon.FilterHTTPWithCert
+		mutateTLSConfigFunc = tlssecprofile.MutateTLSConfigCertBasedAuth
+	}
+
 	mgr, err := manager.New(cfg, manager.Options{
 		Metrics: server.Options{
 			SecureServing:  true,
@@ -126,8 +133,8 @@ func main() {
 			CertName:       hcoutil.WebhookCertName,
 			KeyName:        hcoutil.WebhookKeyName,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
-			FilterProvider: authorization.HttpWithBearerToken,
-			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
+			FilterProvider: filterProvided,
+			TLSOpts:        []func(*tls.Config){mutateTLSConfigFunc},
 		},
 		HealthProbeBindAddress:     fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:      hcoutil.ReadinessEndpointName,
@@ -185,6 +192,11 @@ func main() {
 
 		err = whapiservercontrollers.RegisterReconciler(mgr)
 		cmdHelper.ExitOnError(err, "Cannot register APIServer reconciler")
+
+		err = cmdcommon.RegisterClientCAController(ctx, mgr, apiClient, logger)
+		if err != nil {
+			cmdHelper.ExitOnError(err, "cannot get the client CA for the metrics endpoint")
+		}
 	}
 
 	logger.Info("Registering the Bearer Token reconciler")
@@ -249,6 +261,13 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 	if ci.IsOpenshift() {
 		objMap[&openshiftconfigv1.APIServer{}] = cache.ByObject{
 			SyncPeriod: ptr.To(5 * time.Minute),
+		}
+
+		objMap[&corev1.ConfigMap{}] = cache.ByObject{
+			Field: fields.Set{
+				"metadata.namespace": hcoutil.ClientCAConfigMapNamespace,
+				"metadata.name":      hcoutil.ClientCAConfigMapName,
+			}.AsSelector(),
 		}
 	}
 
