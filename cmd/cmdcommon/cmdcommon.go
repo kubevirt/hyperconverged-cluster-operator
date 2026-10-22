@@ -15,12 +15,15 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/clientca"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -212,4 +215,39 @@ func ClusterInitializations(ctx context.Context, cl client.Client, scheme *apiru
 	ownresources.Init(ctx, cl, scheme, logger)
 
 	return nil
+}
+
+// PrometheusK8sCN is the Common Name of the client certificate presented by
+// the in-cluster Prometheus (prometheus-k8s) when it scrapes metrics.
+const prometheusK8sCN = "system:serviceaccount:openshift-monitoring:prometheus-k8s"
+
+// FilterHTTPWithCert only from the in-cluster Prometheus service account, identified by its
+// client-certificate CN. The certificate itself is already cryptographically
+// verified by RequireAndVerifyClientCert; this adds application-layer authz so
+// that any other cluster-trusted client is still rejected.
+func FilterHTTPWithCert(_ *rest.Config, _ *http.Client) (server.Filter, error) {
+	return func(logger logr.Logger, handler http.Handler) (http.Handler, error) {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
+				logger.Error(nil, "request's TLS or TLS.PeerCertificates are empty")
+				http.Error(w, "client certificate required", http.StatusUnauthorized)
+				return
+			}
+			if cn := req.TLS.PeerCertificates[0].Subject.CommonName; cn != prometheusK8sCN {
+				logger.Error(nil, "unexpected common name", "CommonName", cn)
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+
+			handler.ServeHTTP(w, req)
+		}), nil
+	}, nil
+}
+
+func RegisterClientCAController(ctx context.Context, mgr manager.Manager, cli client.Client, logger logr.Logger) error {
+	if err := tlssecprofile.RefreshClientCA(ctx, cli, logger); err != nil {
+		return err
+	}
+
+	return clientca.RegisterReconciler(mgr)
 }
