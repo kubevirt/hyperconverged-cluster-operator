@@ -23,6 +23,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	fakeclusterinfo "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util/fake/clusterinfo"
 )
 
 func TestAlerts(t *testing.T) {
@@ -32,7 +33,7 @@ func TestAlerts(t *testing.T) {
 
 var _ = Describe("alert tests", func() {
 	var (
-		ci            = commontestutils.ClusterInfoMock{}
+		ci            = fakeclusterinfo.New(fakeclusterinfo.WithIsOpenshift(false))
 		ee            = commontestutils.NewEventEmitterMock()
 		ns            *corev1.Namespace
 		req           *common.HcoRequest
@@ -131,7 +132,7 @@ var _ = Describe("alert tests", func() {
 			Expect(err).To(MatchError(fakeError))
 		})
 
-		It("should recreate Secret, and delete ServiceMonitor, if token is changed", func(ctx context.Context) {
+		It("in K8s: should recreate Secret, and delete ServiceMonitor, if token is changed", func(ctx context.Context) {
 			cl := commontestutils.InitClient([]client.Object{ns})
 			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
 
@@ -160,13 +161,43 @@ var _ = Describe("alert tests", func() {
 			Expect(newSec.StringData["token"]).To(Equal(origToken))
 
 			newSM := &monitoringv1.ServiceMonitor{}
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, newSM)).To(MatchError(apierrors.IsNotFound, "not found error"))
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceMonitorName}, newSM)).To(MatchError(apierrors.IsNotFound, "not found error"))
 
 			Expect(r.Reconcile(req, false)).To(Succeed())
 			newSM = &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceMonitorName}, newSM)).To(Succeed())
 		})
 
+		It("in openshift: should not recreate Secret, and delete ServiceMonitor, if token is changed", func(ctx context.Context) {
+			cl := commontestutils.InitClient([]client.Object{ns})
+			openshiftCI := fakeclusterinfo.New(fakeclusterinfo.WithIsOpenshift(true))
+			r := NewMonitoringReconciler(openshiftCI, cl, ee, commontestutils.GetScheme())
+
+			Expect(r.Reconcile(req, false)).To(Succeed())
+
+			const secretContent = "some-wrong-token"
+			// Secret
+			sec := &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, sec)).To(MatchError(apierrors.IsNotFound, "not found error"))
+			sec = newSecret(commontestutils.Namespace, fakeownresources.GetFakeDeploymentRef(), secretContent)
+			Expect(cl.Create(ctx, sec)).To(Succeed())
+
+			newSec := &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, newSec)).To(Succeed())
+			Expect(newSec.StringData).To(HaveKey("token"))
+			Expect(newSec.StringData["token"]).To(Equal(secretContent))
+
+			// Reconcile ignore the secret in OpenShift
+			Expect(r.Reconcile(req, false)).To(Succeed())
+
+			newSec = &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, newSec)).To(Succeed())
+			Expect(newSec.StringData).To(HaveKey("token"))
+			Expect(newSec.StringData["token"]).To(Equal(secretContent), "should ignore the secret in OpenShift")
+
+			newSM := &monitoringv1.ServiceMonitor{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceMonitorName}, newSM)).To(Succeed(), "should not delete the ServiceMonitor")
+		})
 	})
 
 	Context("test PrometheusRule", func() {
@@ -834,7 +865,7 @@ var _ = Describe("alert tests", func() {
 		}
 
 		It("should update the labels if modified", func() {
-			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef)
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef, false)
 			existSM.Labels = map[string]string{
 				"wrongKey1": "wrongValue1",
 				"wrongKey2": "wrongValue2",
@@ -854,7 +885,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the labels if it's missing", func() {
-			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef)
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef, false)
 			existSM.Labels = nil
 
 			cl := commontestutils.InitClient([]client.Object{ns, existSM})
@@ -878,7 +909,7 @@ var _ = Describe("alert tests", func() {
 				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
-			existSM := NewServiceMonitor(commontestutils.Namespace, owner)
+			existSM := NewServiceMonitor(commontestutils.Namespace, owner, false)
 			cl := commontestutils.InitClient([]client.Object{ns, existSM})
 			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
 
@@ -904,7 +935,7 @@ var _ = Describe("alert tests", func() {
 				BlockOwnerDeletion: new(true),
 				UID:                "0987654321",
 			}
-			existSM := NewServiceMonitor(commontestutils.Namespace, owner)
+			existSM := NewServiceMonitor(commontestutils.Namespace, owner, false)
 			cl := commontestutils.InitClient([]client.Object{ns, existSM})
 			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
 
@@ -929,7 +960,7 @@ var _ = Describe("alert tests", func() {
 
 		It("should update the referenceOwner if missing", func() {
 			owner := metav1.OwnerReference{}
-			existSM := NewServiceMonitor(commontestutils.Namespace, owner)
+			existSM := NewServiceMonitor(commontestutils.Namespace, owner, false)
 			existSM.OwnerReferences = nil
 			cl := commontestutils.InitClient([]client.Object{ns, existSM})
 			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
@@ -946,7 +977,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the Spec if modified", func() {
-			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef)
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef, false)
 
 			existSM.Spec = monitoringv1.ServiceMonitorSpec{
 				Selector: metav1.LabelSelector{
@@ -975,7 +1006,29 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the Spec if it's missing", func() {
-			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef)
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef, false)
+
+			existSM.Spec = monitoringv1.ServiceMonitorSpec{}
+
+			cl := commontestutils.InitClient([]client.Object{ns, existSM})
+			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
+
+			Expect(r.Reconcile(req, false)).To(Succeed())
+			sm := &monitoringv1.ServiceMonitor{}
+			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceMonitorName}, sm)).To(Succeed())
+
+			expectedSelector := hcoutil.GetLabels(hcoutil.HCOOperatorName, hcoutil.AppComponentMonitoring)
+			delete(expectedSelector, hcoutil.AppLabelManagedBy)
+			delete(expectedSelector, hcoutil.AppLabelVersion)
+			Expect(sm.Spec.Selector).To(Equal(metav1.LabelSelector{MatchLabels: expectedSelector}))
+			Expect(sm.Spec.Endpoints[0].Port).To(Equal(OperatorPortName))
+
+			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
+			Expect(metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceMonitorName)).To(BeEquivalentTo(currentMetric))
+		})
+
+		It("should update an cert-based auth Spec if it's missing", func() {
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef, true)
 
 			existSM.Spec = monitoringv1.ServiceMonitorSpec{}
 

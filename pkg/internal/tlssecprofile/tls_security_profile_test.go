@@ -234,7 +234,6 @@ var _ = Describe("TLS Security Profile", func() {
 	)
 
 	Describe("GetCipherSuitesAndMinTLSVersion", func() {
-
 		BeforeEach(func() {
 			setAPIServerProfile(nil)
 		})
@@ -650,7 +649,7 @@ var _ = Describe("TLS Security Profile", func() {
 		})
 	})
 
-	Describe("MutateTLSConfig", func() {
+	DescribeTableSubtree("MutateTLSConfig", func(mutateTLSConfigFunc func(*tls.Config)) {
 		expectedCurvePreferences := []tls.CurveID{
 			tls.X25519MLKEM768,
 			tls.X25519,
@@ -664,7 +663,7 @@ var _ = Describe("TLS Security Profile", func() {
 
 			tlsConfig := &tls.Config{}
 
-			MutateTLSConfig(tlsConfig)
+			mutateTLSConfigFunc(tlsConfig)
 
 			config, err := tlsConfig.GetConfigForClient(nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -703,7 +702,7 @@ var _ = Describe("TLS Security Profile", func() {
 
 			tlsConfig := &tls.Config{}
 
-			MutateTLSConfig(tlsConfig)
+			mutateTLSConfigFunc(tlsConfig)
 
 			config, err := tlsConfig.GetConfigForClient(nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -719,7 +718,7 @@ var _ = Describe("TLS Security Profile", func() {
 
 			tlsConfig := &tls.Config{}
 
-			MutateTLSConfig(tlsConfig)
+			mutateTLSConfigFunc(tlsConfig)
 
 			config, err := tlsConfig.GetConfigForClient(nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -759,12 +758,52 @@ var _ = Describe("TLS Security Profile", func() {
 
 			tlsConfig := &tls.Config{}
 
-			MutateTLSConfig(tlsConfig)
+			mutateTLSConfigFunc(tlsConfig)
 
 			config, err := tlsConfig.GetConfigForClient(nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(config.CurvePreferences).To(BeNil())
+		})
+	},
+		Entry("with bearer token auth", MutateTLSConfig(false)),
+		Entry("With cert auth", MutateTLSConfig(true)),
+	)
+
+	Context("cert auth TLS config", Ordered, func() {
+		BeforeAll(func() {
+			certificate, _, err := commontestutils.GenerateTestCert()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(metricsEndpointCAPool.set(certificate)).To(Succeed())
+		})
+
+		It("should set cert auth TLS config, when enabled", func() {
+			mutateTLSConfigFunc := MutateTLSConfig(true)
+
+			tlsConfig := &tls.Config{}
+
+			mutateTLSConfigFunc(tlsConfig)
+
+			config, err := tlsConfig.GetConfigForClient(nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(config.InsecureSkipVerify).To(BeFalse())
+			Expect(config.ClientAuth).To(Equal(tls.RequireAndVerifyClientCert))
+			Expect(config.ClientCAs).ToNot(BeNil())
+		})
+
+		It("should not set cert auth TLS config, when disabled", func() {
+			mutateTLSConfigFunc := MutateTLSConfig(false)
+
+			tlsConfig := &tls.Config{}
+
+			mutateTLSConfigFunc(tlsConfig)
+
+			config, err := tlsConfig.GetConfigForClient(nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(config.ClientAuth).To(Equal(tls.NoClientCert))
+			Expect(config.ClientCAs).To(BeNil())
 		})
 	})
 })

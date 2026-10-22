@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/go-logr/logr"
@@ -15,18 +16,22 @@ import (
 
 type ServiceMonitorReconciler struct {
 	refresher         Refresher
+	isCertBasedAuth   bool
 	theServiceMonitor *monitoringv1.ServiceMonitor
 }
 
-func CreateServiceMonitorReconciler(serviceMonitor *monitoringv1.ServiceMonitor, rfr Refresher) *ServiceMonitorReconciler {
+func CreateServiceMonitorReconciler(serviceMonitor *monitoringv1.ServiceMonitor, rfr Refresher, isCertBasedAuth bool) *ServiceMonitorReconciler {
 	return &ServiceMonitorReconciler{
 		theServiceMonitor: serviceMonitor,
+		isCertBasedAuth:   isCertBasedAuth,
 		refresher:         rfr,
 	}
 }
 
-func newServiceMonitorReconciler(namespace string, owner metav1.OwnerReference, rfr Refresher) *ServiceMonitorReconciler {
-	return CreateServiceMonitorReconciler(NewServiceMonitor(namespace, owner), rfr)
+func newServiceMonitorReconciler(namespace string, owner metav1.OwnerReference, rfr Refresher, ci hcoutil.ClusterInfo) *ServiceMonitorReconciler {
+	isCertBasedAuth := ci.IsOpenshift()
+	sm := NewServiceMonitor(namespace, owner, isCertBasedAuth)
+	return CreateServiceMonitorReconciler(sm, rfr, isCertBasedAuth)
 }
 
 func (r ServiceMonitorReconciler) Kind() string {
@@ -48,10 +53,12 @@ func (r ServiceMonitorReconciler) EmptyObject() client.Object {
 func (r ServiceMonitorReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
 	found := resource.(*monitoringv1.ServiceMonitor)
 
-	if err := r.refresher.refresh(func() error {
-		return r.deleteServiceMonitor(ctx, cl, found)
-	}); err != nil {
-		return nil, false, err
+	if !r.isCertBasedAuth {
+		if err := r.refresher.refresh(func() error {
+			return r.deleteServiceMonitor(ctx, cl, found)
+		}); err != nil {
+			return nil, false, err
+		}
 	}
 
 	modified := false
@@ -82,7 +89,7 @@ func (r ServiceMonitorReconciler) deleteServiceMonitor(ctx context.Context, cl c
 // instead of creating new one. So we'll name it with the old service name.
 const serviceMonitorName = "kubevirt-hyperconverged-operator-metrics"
 
-func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
+func NewServiceMonitor(namespace string, owner metav1.OwnerReference, isCertBasedAuth bool) *monitoringv1.ServiceMonitor {
 	spec := monitoringv1.ServiceMonitorSpec{
 		Selector: metav1.LabelSelector{
 			MatchLabels: map[string]string{
@@ -91,9 +98,21 @@ func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitorin
 				hcoutil.AppLabelComponent: string(hcoutil.AppComponentMonitoring),
 			},
 		},
-		Endpoints: []monitoringv1.Endpoint{
-			CreateEndpoint(secretName),
-		},
+	}
+
+	var httpConfig monitoringv1.HTTPConfigWithTLSFiles
+	if isCertBasedAuth {
+		httpConfig = CertBasedHTTPConfig(namespace, serviceName)
+		spec.NamespaceSelector = monitoringv1.NamespaceSelector{
+			MatchNames: []string{namespace},
+		}
+		spec.ScrapeClassName = new(hcoutil.OpenShiftScrapeClassName)
+	} else {
+		httpConfig = TokenBasedHTTPConfig(secretName)
+	}
+
+	spec.Endpoints = []monitoringv1.Endpoint{
+		CreateEndpoint(httpConfig),
 	}
 
 	return &monitoringv1.ServiceMonitor{
@@ -111,28 +130,46 @@ func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitorin
 	}
 }
 
-func CreateEndpoint(bearerTokenSecretName string) monitoringv1.Endpoint {
-
+func CreateEndpoint(httpConfig monitoringv1.HTTPConfigWithTLSFiles) monitoringv1.Endpoint {
 	return monitoringv1.Endpoint{
 		Port:   OperatorPortName,
 		Scheme: new(monitoringv1.Scheme("https")),
 		HTTPConfigWithProxyAndTLSFiles: monitoringv1.HTTPConfigWithProxyAndTLSFiles{
-			HTTPConfigWithTLSFiles: monitoringv1.HTTPConfigWithTLSFiles{
-				HTTPConfigWithoutTLS: monitoringv1.HTTPConfigWithoutTLS{
-					Authorization: &monitoringv1.SafeAuthorization{
-						Credentials: &corev1.SecretKeySelector{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: bearerTokenSecretName,
-							},
-							Key: "token",
-						},
+			HTTPConfigWithTLSFiles: httpConfig,
+		},
+	}
+}
+
+func TokenBasedHTTPConfig(bearerTokenSecretName string) monitoringv1.HTTPConfigWithTLSFiles {
+	return monitoringv1.HTTPConfigWithTLSFiles{
+		HTTPConfigWithoutTLS: monitoringv1.HTTPConfigWithoutTLS{
+			Authorization: &monitoringv1.SafeAuthorization{
+				Credentials: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: bearerTokenSecretName,
 					},
+					Key: "token",
 				},
-				TLSConfig: &monitoringv1.TLSConfig{
-					SafeTLSConfig: monitoringv1.SafeTLSConfig{
-						InsecureSkipVerify: new(true),
-					},
-				},
+			},
+		},
+		TLSConfig: &monitoringv1.TLSConfig{
+			SafeTLSConfig: monitoringv1.SafeTLSConfig{
+				InsecureSkipVerify: new(true),
+			},
+		},
+	}
+}
+
+func CertBasedHTTPConfig(namespace, serviceName string) monitoringv1.HTTPConfigWithTLSFiles {
+	serverName := fmt.Sprintf("%s.%s.svc", serviceName, namespace)
+
+	return monitoringv1.HTTPConfigWithTLSFiles{
+		TLSConfig: &monitoringv1.TLSConfig{
+			SafeTLSConfig: monitoringv1.SafeTLSConfig{
+				CA:                 monitoringv1.SecretOrConfigMap{},
+				Cert:               monitoringv1.SecretOrConfigMap{},
+				InsecureSkipVerify: new(false),
+				ServerName:         &serverName,
 			},
 		},
 	}

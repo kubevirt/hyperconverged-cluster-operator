@@ -126,25 +126,33 @@ func SetHyperConvergedTLSSecurityProfile(fromHC *openshiftconfigv1.TLSSecurityPr
 	setHyperConvergedProfile(fromHC)
 }
 
-func MutateTLSConfig(cfg *tls.Config) {
-	// This callback executes on each client call returning a new config to be used
-	// please be aware that the APIServer is using http keepalive so this is going to
-	// be executed only after a while for fresh connections and not on existing ones
-	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
-		hcProfile := getHyperConvergedProfile()
-		cipherSuites, minVersion := GetCipherSuitesAndMinTLSVersionInGolangFormat(hcProfile)
-		config := cfg.Clone()
+func MutateTLSConfig(isCertBasedAuth bool) func(cfg *tls.Config) {
+	return func(cfg *tls.Config) {
+		// This callback executes on each client call returning a new config to be used
+		// please be aware that the APIServer is using http keepalive so this is going to
+		// be executed only after a while for fresh connections and not on existing ones
+		cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
+			hcProfile := getHyperConvergedProfile()
+			cipherSuites, minVersion := GetCipherSuitesAndMinTLSVersionInGolangFormat(hcProfile)
+			config := cfg.Clone()
 
-		config.MinVersion = minVersion
-		if minVersion < tls.VersionTLS13 {
-			config.CipherSuites = cipherSuites
+			config.MinVersion = minVersion
+			if minVersion < tls.VersionTLS13 {
+				config.CipherSuites = cipherSuites
+			}
+
+			if curvePrefs := GetGroupsInGolangFormat(hcProfile); len(curvePrefs) > 0 {
+				config.CurvePreferences = curvePrefs
+			}
+
+			if isCertBasedAuth {
+				config.InsecureSkipVerify = false
+				config.ClientCAs = metricsEndpointCAPool.get()
+				config.ClientAuth = tls.RequireAndVerifyClientCert
+			}
+
+			return config, nil
 		}
-
-		if curvePrefs := GetGroupsInGolangFormat(hcProfile); len(curvePrefs) > 0 {
-			config.CurvePreferences = curvePrefs
-		}
-
-		return config, nil
 	}
 }
 
