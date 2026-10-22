@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"maps"
 	"reflect"
 	"slices"
@@ -22,6 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
@@ -266,6 +269,103 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(foundResource.Labels).To(HaveKeyWithValue(k, v))
 			}
 			Expect(foundResource.Labels).To(HaveKeyWithValue(userLabelKey, userLabelValue))
+		})
+	})
+
+	Context("Console operator", func() {
+		newConsoleWithLogos := func() *operatorv1.Console {
+			console := &operatorv1.Console{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Console",
+					APIVersion: "operator.openshift.io/v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster",
+				},
+				Spec: operatorv1.ConsoleSpec{
+					Plugins: []string{"monitoring-plugin"},
+				},
+			}
+			console.Spec.Customization.Logos = []operatorv1.Logo{{
+				Type: operatorv1.LogoTypeMasthead,
+				Themes: []operatorv1.Theme{{
+					Mode: operatorv1.ThemeModeDark,
+					Source: operatorv1.FileReferenceSource{
+						From: operatorv1.SourceTypeConfigMap,
+						ConfigMap: &operatorv1.ConfigMapFileReference{
+							Name: "custom-logos",
+							Key:  "masthead.svg",
+						},
+					},
+				}},
+			}}
+			return console
+		}
+
+		It("should enable the plugin without modifying custom logos", func() {
+			console := newConsoleWithLogos()
+			var patchData []byte
+
+			cl := fake.NewClientBuilder().
+				WithScheme(commontestutils.GetScheme()).
+				WithObjects(console).
+				WithStatusSubresource(console).
+				WithInterceptorFuncs(interceptor.Funcs{
+					Patch: func(ctx context.Context, underlyingClient client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+						data, err := patch.Data(obj)
+						Expect(err).ToNot(HaveOccurred())
+						patchData = data
+						return underlyingClient.Patch(ctx, obj, patch, opts...)
+					},
+				}).
+				Build()
+
+			res := NewConsoleHandler(cl).Ensure(req)
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.UpgradeDone).To(BeTrue())
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			found := &operatorv1.Console{}
+			Expect(cl.Get(context.TODO(), types.NamespacedName{Name: console.Name}, found)).To(Succeed())
+			Expect(found.Spec.Plugins).To(Equal([]string{"monitoring-plugin", "kubevirt-plugin"}))
+			Expect(found.Spec.Customization.Logos).To(Equal(console.Spec.Customization.Logos))
+
+			var patchObject map[string]any
+			Expect(json.Unmarshal(patchData, &patchObject)).To(Succeed())
+			Expect(patchObject).To(HaveKey("metadata"))
+			Expect(patchObject["metadata"]).To(HaveKey("resourceVersion"))
+			patchSpec, ok := patchObject["spec"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(patchSpec).To(HaveLen(1))
+			Expect(patchSpec).To(HaveKey("plugins"))
+		})
+
+		It("should not patch the Console when the plugin is already enabled", func() {
+			console := newConsoleWithLogos()
+			console.Spec.Plugins = []string{"monitoring-plugin", "kubevirt-plugin"}
+			patchCalled := false
+
+			cl := fake.NewClientBuilder().
+				WithScheme(commontestutils.GetScheme()).
+				WithObjects(console).
+				WithStatusSubresource(console).
+				WithInterceptorFuncs(interceptor.Funcs{
+					Patch: func(ctx context.Context, underlyingClient client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+						patchCalled = true
+						return underlyingClient.Patch(ctx, obj, patch, opts...)
+					},
+				}).
+				Build()
+
+			res := NewConsoleHandler(cl).Ensure(req)
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.UpgradeDone).To(BeTrue())
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(patchCalled).To(BeFalse())
+
+			found := &operatorv1.Console{}
+			Expect(cl.Get(context.TODO(), types.NamespacedName{Name: console.Name}, found)).To(Succeed())
+			Expect(found.Spec).To(Equal(console.Spec))
 		})
 	})
 

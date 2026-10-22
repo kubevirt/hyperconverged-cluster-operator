@@ -715,7 +715,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		{
 			APIGroups: stringListToSlice("operator.openshift.io"),
 			Resources: stringListToSlice("consoles"),
-			Verbs:     stringListToSlice("get", "list", "watch", "update"),
+			Verbs:     stringListToSlice("get", "list", "watch", "patch"),
 		},
 		{
 			APIGroups: stringListToSlice("monitoring.coreos.com"),
