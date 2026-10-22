@@ -10,9 +10,10 @@ import (
 )
 
 type ClusterInfoMock struct {
-	isOpenshift    bool
-	runningLocally bool
-	isManagedByOLM bool
+	isOpenshift         bool
+	runningLocally      bool
+	isManagedByOLM      bool
+	monitoringAvailable bool
 }
 
 // make sure ClusterInfoMock implements hcoutil.ClusterInfo
@@ -60,8 +61,8 @@ func (ClusterInfoMock) IsConsolePluginImageProvided() bool {
 	return true
 }
 
-func (ClusterInfoMock) IsMonitoringAvailable() bool {
-	return true
+func (c ClusterInfoMock) IsMonitoringAvailable() bool {
+	return c.monitoringAvailable
 }
 
 func (ClusterInfoMock) IsDeschedulerAvailable() bool {

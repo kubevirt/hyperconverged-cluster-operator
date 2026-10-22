@@ -8,25 +8,50 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 var _ = Describe("NewServiceMonitor", func() {
-	It("should configures selector, endpoint, auth, and TLS", func() {
-		owner := metav1.OwnerReference{Name: "o"}
-		sm := newServiceMonitor(commontestutils.Namespace, owner)
+	When("Running on plain Kubernetes", func() {
+		It("should configures selector, endpoint, auth, and TLS", func() {
+			owner := metav1.OwnerReference{Name: "o"}
+			sm := newServiceMonitor(commontestutils.Namespace, owner, false)
 
-		Expect(sm.Spec.Selector.MatchLabels).To(Equal(getLabels()))
-		Expect(sm.Spec.Endpoints).To(HaveLen(1))
-		ep := sm.Spec.Endpoints[0]
-		Expect(ep.Port).To(Equal(alerts.OperatorPortName))
+			Expect(sm.Spec.Selector.MatchLabels).To(Equal(getLabels()))
+			Expect(sm.Spec.Endpoints).To(HaveLen(1))
+			ep := sm.Spec.Endpoints[0]
+			Expect(ep.Port).To(Equal(alerts.OperatorPortName))
 
-		expectedSchemeUpper := monitoringv1.SchemeHTTPS
-		expectedScheme := monitoringv1.Scheme(expectedSchemeUpper.String())
-		Expect(ep.Scheme).To(HaveValue(Equal(expectedScheme)))
-		Expect(ep.Authorization).ToNot(BeNil())
-		Expect(ep.Authorization.Credentials).ToNot(BeNil())
-		Expect(ep.Authorization.Credentials.Name).To(Equal(secretName))
-		Expect(ep.Authorization.Credentials.Key).To(Equal("token"))
-		Expect(*ep.TLSConfig.InsecureSkipVerify).To(BeTrue())
+			expectedScheme := monitoringv1.Scheme(new(monitoringv1.SchemeHTTPS).String())
+			Expect(ep.Scheme).To(HaveValue(Equal(expectedScheme)))
+			Expect(ep.TLSConfig).ToNot(BeNil())
+			Expect(ep.TLSConfig.InsecureSkipVerify).To(HaveValue(BeTrue()))
+			Expect(ep.Authorization).ToNot(BeNil())
+			Expect(ep.Authorization.Credentials).ToNot(BeNil())
+			Expect(ep.Authorization.Credentials.Name).To(Equal(secretName))
+			Expect(ep.Authorization.Credentials.Key).To(Equal("token"))
+			Expect(*ep.TLSConfig.InsecureSkipVerify).To(BeTrue())
+			Expect(sm.Spec.ScrapeClassName).To(BeNil())
+		})
+	})
+
+	When("Running on openshift", func() {
+		It("should configures selector, endpoint, auth, and TLS", func() {
+			owner := metav1.OwnerReference{Name: "o"}
+			sm := newServiceMonitor(commontestutils.Namespace, owner, true)
+
+			Expect(sm.Spec.Selector.MatchLabels).To(Equal(getLabels()))
+			Expect(sm.Spec.Endpoints).To(HaveLen(1))
+			ep := sm.Spec.Endpoints[0]
+			Expect(ep.Port).To(Equal(alerts.OperatorPortName))
+
+			expectedScheme := monitoringv1.Scheme(new(monitoringv1.SchemeHTTPS).String())
+			Expect(ep.Scheme).To(HaveValue(Equal(expectedScheme)))
+			Expect(ep.Authorization).To(BeNil())
+			Expect(ep.TLSConfig).ToNot(BeNil())
+			Expect(ep.TLSConfig.InsecureSkipVerify).To(HaveValue(BeFalse()))
+			Expect(ep.TLSConfig.SafeTLSConfig.ServerName).To(HaveValue(Equal(serviceName + "." + commontestutils.Namespace + ".svc")))
+			Expect(sm.Spec.ScrapeClassName).To(HaveValue(Equal(hcoutil.OpenShiftScrapeClassName)))
+		})
 	})
 })
