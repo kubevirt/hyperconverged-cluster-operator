@@ -15,3 +15,5 @@ Path-specific review guidelines are in `docs/review_guidelines/`:
 - `dockerfiles.md` — Dockerfile best practices (`**/Dockerfile*`)
 - `deploy.md` — Deployment manifests (`{deploy,manifests}/**`)
 - `api.md` — API types and CRD schemas (`api/**`)
+
+@AGENTS.md
