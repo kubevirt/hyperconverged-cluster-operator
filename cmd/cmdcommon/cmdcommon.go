@@ -203,13 +203,14 @@ func SetHyperConvergedTLSProfile(ctx context.Context, operatorNamespace string, 
 	return nil
 }
 
+// ClusterInitializations reads what the binaries need about the cluster and
+// themselves before they start. Its callers exit on an error, so a read that
+// fails during an API-server stall restarts the pod instead of leaving it
+// running without them.
 func ClusterInitializations(ctx context.Context, cl client.Client, scheme *apiruntime.Scheme, logger logr.Logger) error {
-	err := hcoutil.GetClusterInfo().Init(ctx, cl, logger)
-	if err != nil {
-		return nil
+	if err := hcoutil.GetClusterInfo().Init(ctx, cl, logger); err != nil {
+		return err
 	}
 
-	ownresources.Init(ctx, cl, scheme, logger)
-
-	return nil
+	return ownresources.Init(ctx, cl, scheme, logger)
 }

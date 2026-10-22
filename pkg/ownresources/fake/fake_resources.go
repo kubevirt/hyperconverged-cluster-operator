@@ -17,8 +17,7 @@ const (
 	podName   = RSName + "-12345"
 )
 
-func fakeInit(_ context.Context, _ client.Reader, _ *runtime.Scheme, _ logr.Logger) { /* no implementation */
-}
+func fakeInit(_ context.Context, _ client.Reader, _ *runtime.Scheme, _ logr.Logger) error { return nil }
 
 func fakeGetPod() *corev1.Pod {
 	return pod.DeepCopy()
