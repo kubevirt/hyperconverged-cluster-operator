@@ -75,14 +75,25 @@ func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.Owner
 		logger.Error(err, "failed to create the 'PrometheusRule' reconciler")
 	}
 
+	isCertBasedAuth := ci.IsOpenshift()
+
 	refresh := NewRefresher()
 	reconcilers := []MetricReconciler{
 		alertRuleReconciler,
 		newRoleReconciler(namespace, owner),
 		newRoleBindingReconciler(namespace, owner, ci),
-		NewSecretReconciler(namespace, owner, secretName, newSecret, refresh),
-		newServiceMonitorReconciler(namespace, owner, refresh),
 	}
+
+	// if exists, must run before the ServiceMonitor reconciler
+	if !isCertBasedAuth {
+		reconcilers = append(reconcilers,
+			NewSecretReconciler(namespace, owner, secretName, newSecret, refresh),
+		)
+	}
+
+	reconcilers = append(reconcilers,
+		newServiceMonitorReconciler(namespace, owner, refresh, ci),
+	)
 
 	return reconcilers
 }

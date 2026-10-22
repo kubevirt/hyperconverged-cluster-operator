@@ -76,6 +76,14 @@ func (r *RoleReconciler) UpdateExistingResource(ctx context.Context, cl client.C
 }
 
 func newRole(owner metav1.OwnerReference, namespace string) *rbacv1.Role {
+	rules := []rbacv1.PolicyRule{
+		{
+			APIGroups: []string{""},
+			Resources: []string{"services", "endpoints", "pods"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+	}
+
 	return &rbacv1.Role{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
@@ -87,13 +95,7 @@ func newRole(owner metav1.OwnerReference, namespace string) *rbacv1.Role {
 			Labels:          hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring),
 			OwnerReferences: []metav1.OwnerReference{owner},
 		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{""},
-				Resources: []string{"services", "endpoints", "pods"},
-				Verbs:     []string{"get", "list", "watch"},
-			},
-		},
+		Rules: rules,
 	}
 }
 
