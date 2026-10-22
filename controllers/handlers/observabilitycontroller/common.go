@@ -11,6 +11,9 @@ const (
 	serviceAccountName     = controllerName
 	deploymentName         = controllerName
 
+	guestDeviceDriversRoleName        = "guest-device-drivers-role"
+	guestDeviceDriversRoleBindingName = "guest-device-drivers-rolebinding"
+
 	featureGateName = "deployObservabilityController"
 )
 

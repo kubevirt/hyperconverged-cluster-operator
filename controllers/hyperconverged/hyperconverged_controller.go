@@ -458,6 +458,8 @@ func (r *ReconcileHyperConverged) EnsureOperandAndComplete(req *common.HcoReques
 		return reconcile.Result{RequeueAfter: requeue}, nil
 	}
 
+	removeOldGuestDeviceDriversConfigMap(req, r.client)
+
 	req.Logger.Info("Reconcile complete")
 
 	// Requeue if we just created everything

@@ -9,18 +9,53 @@ import (
 
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
+	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/patch"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/observabilitycontroller"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
+
+func removeOldGuestDeviceDriversConfigMap(req *common.HcoRequest, cl client.Client) {
+	if observabilitycontroller.GuestDeviceDriverExists() {
+		return
+	}
+
+	cm := observabilitycontroller.NewGuestDeviceDriversConfigMapWithNameOnly()
+	if _, err := hcoutil.EnsureDeleted(req.Ctx, cl, cm, req.Instance.Name, req.Logger, false, false, true); err != nil {
+		req.Logger.Error(err, "failed to delete guest device drivers ConfigMap", "name", cm.Name)
+		return
+	}
+
+	objectRef, err := reference.GetReference(cl.Scheme(), cm)
+	if err != nil {
+		req.Logger.Error(err, "failed to get object reference for guest device drivers ConfigMap")
+		return
+	}
+
+	ref, err := objectreferencesv1.FindObjectReference(req.Instance.Status.RelatedObjects, *objectRef)
+	if err != nil {
+		req.Logger.Error(err, "failed to find object reference for guest device drivers ConfigMap")
+		return
+	}
+
+	if ref != nil {
+		if err = objectreferencesv1.RemoveObjectReference(&req.Instance.Status.RelatedObjects, *objectRef); err != nil {
+			req.Logger.Error(err, "failed to remove object reference for guest device drivers ConfigMap")
+			return
+		}
+		req.StatusDirty = true
+	}
+}
 
 func removeOldQuickStartGuides(req *common.HcoRequest, cl client.Client, requiredQSList []string) {
 	existingQSList := &consolev1.ConsoleQuickStartList{}
