@@ -2,6 +2,8 @@ package ownresources
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -16,7 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/reference"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	fakeclusterinfo "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util/fake/clusterinfo"
@@ -53,6 +57,7 @@ var _ = Describe("Test OwnResources", func() {
 
 		//reset initOnce
 		initOnce = &sync.Once{}
+		initErr = nil
 
 		thePod = nil
 		deploymentRef = nil
@@ -116,6 +121,58 @@ var _ = Describe("Test OwnResources", func() {
 		ref, err := reference.GetReference(testScheme, csvObj)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ref).To(HaveValue(Equal(*csvRef)))
+	})
+
+	// The webhook and the operator read their own pod and Deployment at
+	// startup. When the API server stalls then, the read fails; carrying on
+	// without the Deployment reference silently skipped the conversion
+	// webhook's CA controller, and the HyperConverged CRD's conversion calls
+	// then failed with "x509: certificate signed by unknown authority" until
+	// the pod was restarted by hand. Init now reports the failure, and the
+	// binaries exit on it, so the pod restarts and tries again.
+	Context("when the API server can't be read", func() {
+		failing := func(kind client.Object) client.WithWatch {
+			dep := createDeployment(nil)
+			return fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(dep, createReplicaSet(), createPod()).
+				WithInterceptorFuncs(interceptor.Funcs{
+					Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+						if fmt.Sprintf("%T", obj) == fmt.Sprintf("%T", kind) {
+							return errors.New("context deadline exceeded")
+						}
+						return c.Get(ctx, key, obj, opts...)
+					},
+				}).
+				Build()
+		}
+
+		BeforeEach(func() {
+			hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(
+				fakeclusterinfo.WithIsManagedByOLM(true),
+				fakeclusterinfo.WithRunningLocally(false),
+			)
+		})
+
+		It("should fail when its own pod can't be read", func(ctx context.Context) {
+			Expect(Init(ctx, failing(&corev1.Pod{}), testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
+			Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
+		})
+
+		It("should fail when its deployment can't be read", func(ctx context.Context) {
+			Expect(Init(ctx, failing(&appsv1.Deployment{}), testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
+			Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
+		})
+
+		It("should not fail for a missing CSV: an install without OLM has none", func(ctx context.Context) {
+			cl := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(createDeployment(nil), createReplicaSet(), createPod()).
+				Build()
+			Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
+			Expect(GetDeploymentRef().Name).ToNot(BeEmpty())
+			Expect(GetCSVRef()).To(BeNil())
+		})
 	})
 
 	It("should run locally", func(ctx context.Context) {
