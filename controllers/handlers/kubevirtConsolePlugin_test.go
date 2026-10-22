@@ -743,6 +743,121 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 		})
 
+		Context("KubeVirt UI Plugin nginx config hash annotation", func() {
+			It("should stamp the nginx config hash on the plugin deployment pod template", func() {
+				deployment := NewKvUIPluginDeployment(hco)
+				Expect(deployment.Spec.Template.Annotations).To(HaveKey(nginxConfigHashAnnotation))
+				Expect(deployment.Spec.Template.Annotations[nginxConfigHashAnnotation]).ToNot(BeEmpty())
+			})
+
+			It("should change the hash when the TLS profile curves change", func() {
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS12,
+							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupSecP256r1},
+						},
+					},
+				}
+				firstHash := NewKvUIPluginDeployment(hco).Spec.Template.Annotations[nginxConfigHashAnnotation]
+
+				hco.Spec.Security.TLSSecurityProfile.Custom.Groups = []openshiftconfigv1.TLSGroup{
+					openshiftconfigv1.TLSGroupSecP256r1,
+					openshiftconfigv1.TLSGroupSecP384r1,
+				}
+				secondHash := NewKvUIPluginDeployment(hco).Spec.Template.Annotations[nginxConfigHashAnnotation]
+
+				Expect(secondHash).ToNot(Equal(firstHash))
+			})
+
+			It("should keep the hash stable for an unchanged TLS profile", func() {
+				Expect(NewKvUIPluginDeployment(hco).Spec.Template.Annotations[nginxConfigHashAnnotation]).To(
+					Equal(NewKvUIPluginDeployment(hco).Spec.Template.Annotations[nginxConfigHashAnnotation]),
+				)
+			})
+
+			It("should roll the plugin deployment when the TLS profile changes", func() {
+				existingResource := NewKvUIPluginDeployment(hco)
+
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS12,
+							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupSecP256r1},
+						},
+					},
+				}
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+
+				res := handler.Ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+				Expect(res.Updated).To(BeTrue())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+				).To(Succeed())
+				Expect(foundResource.Spec.Template.Annotations[nginxConfigHashAnnotation]).To(
+					Equal(NewKvUIPluginDeployment(hco).Spec.Template.Annotations[nginxConfigHashAnnotation]),
+				)
+				Expect(foundResource.Spec.Template.Annotations[nginxConfigHashAnnotation]).ToNot(
+					Equal(existingResource.Spec.Template.Annotations[nginxConfigHashAnnotation]),
+				)
+			})
+
+			It("should not roll the deployment for an unmanaged pod-template annotation", func() {
+				existingResource := NewKvUIPluginDeployment(hco)
+				existingResource.Spec.Template.Annotations["example.com/injected"] = "keep-me"
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+
+				res := handler.Ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+				Expect(res.Updated).To(BeFalse())
+			})
+
+			It("should preserve unmanaged pod-template annotations when rolling on a TLS change", func() {
+				existingResource := NewKvUIPluginDeployment(hco)
+				existingResource.Spec.Template.Annotations["example.com/injected"] = "keep-me"
+
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS12,
+							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupSecP256r1},
+						},
+					},
+				}
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler := NewKvUIPluginDeploymentHandler(cl, commontestutils.GetScheme())
+
+				res := handler.Ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+				Expect(res.Updated).To(BeTrue())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+				).To(Succeed())
+				Expect(foundResource.Spec.Template.Annotations[nginxConfigHashAnnotation]).To(
+					Equal(NewKvUIPluginDeployment(hco).Spec.Template.Annotations[nginxConfigHashAnnotation]),
+				)
+				Expect(foundResource.Spec.Template.Annotations).To(HaveKeyWithValue("example.com/injected", "keep-me"))
+			})
+		})
+
 		Context("Node Placement", func() {
 			DescribeTable("should add node placement if missing", func(appComponent hcoutil.AppComponent,
 				deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
