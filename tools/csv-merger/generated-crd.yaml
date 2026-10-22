@@ -2333,6 +2333,13 @@ spec:
                     feature is in Developer Preview.
                     Phase: alpha
 
+                  * networkDevicesWithDRA:
+                    NetworkDevicesWithDRA allows users to create VMIs with DRA provisioned
+                    network devices specified in spec.networks with resourceClaim type. This
+                    enables DRA-managed network resources to be attached to VMs using the
+                    natural networks API. Note: this feature is in Developer Preview.
+                    Phase: alpha
+
                   * objectGraph:
                     ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.
                     This subresource returns a structured list of k8s objects that are related
