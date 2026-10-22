@@ -5,21 +5,35 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func newWHServiceMonitorReconciler(namespace string, owner metav1.OwnerReference, refresher alerts.Refresher) *alerts.ServiceMonitorReconciler {
-	return alerts.CreateServiceMonitorReconciler(newServiceMonitor(namespace, owner), refresher)
+func newWHServiceMonitorReconciler(namespace string, owner metav1.OwnerReference, refresher alerts.Refresher, isCertBasedAuth bool) *alerts.ServiceMonitorReconciler {
+	sm := newServiceMonitor(namespace, owner, isCertBasedAuth)
+	return alerts.CreateServiceMonitorReconciler(sm, refresher, isCertBasedAuth)
 }
 
-func newServiceMonitor(namespace string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
+func newServiceMonitor(namespace string, owner metav1.OwnerReference, isCertBasedAuth bool) *monitoringv1.ServiceMonitor {
 	smLabels := getLabels()
 	spec := monitoringv1.ServiceMonitorSpec{
 		Selector: metav1.LabelSelector{
 			MatchLabels: smLabels,
 		},
-		Endpoints: []monitoringv1.Endpoint{
-			alerts.CreateEndpoint(secretName),
-		},
+	}
+
+	var httpConfig monitoringv1.HTTPConfigWithTLSFiles
+	if isCertBasedAuth {
+		httpConfig = alerts.CertBasedHTTPConfig(namespace, serviceName)
+		spec.NamespaceSelector = monitoringv1.NamespaceSelector{
+			MatchNames: []string{namespace},
+		}
+		spec.ScrapeClassName = new(hcoutil.OpenShiftScrapeClassName)
+	} else {
+		httpConfig = alerts.TokenBasedHTTPConfig(secretName)
+	}
+
+	spec.Endpoints = []monitoringv1.Endpoint{
+		alerts.CreateEndpoint(httpConfig),
 	}
 
 	return &monitoringv1.ServiceMonitor{

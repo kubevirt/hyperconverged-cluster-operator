@@ -124,14 +124,18 @@ func (r *ReconcileWHBearerToken) Reconcile(ctx context.Context, request reconcil
 	return reconcile.Result{RequeueAfter: requeueDurationForNextRequest}, nil // this will cause the reconciler to run every 5 minutes
 }
 
-func getReconcilers(_ hcoutil.ClusterInfo, namespace string, owner metav1.OwnerReference) []alerts.MetricReconciler {
+func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.OwnerReference) []alerts.MetricReconciler {
 	refresher := alerts.NewRefresher()
 
+	isCertBasedAuth := ci.IsOpenshift()
 	reconcilers := []alerts.MetricReconciler{
 		newWHMetricServiceReconciler(namespace, owner),
-		newWHSecretReconciler(namespace, owner, refresher),
-		newWHServiceMonitorReconciler(namespace, owner, refresher),
 	}
+
+	if !isCertBasedAuth {
+		reconcilers = append(reconcilers, newWHSecretReconciler(namespace, owner, refresher))
+	}
+	reconcilers = append(reconcilers, newWHServiceMonitorReconciler(namespace, owner, refresher, isCertBasedAuth))
 
 	return reconcilers
 }
