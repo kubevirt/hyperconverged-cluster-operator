@@ -59,6 +59,7 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
+	//lint:ignore SA1019 h2c is required until v4 is supported (end of 2026)
 	"golang.org/x/net/http2/h2c"
 )
 
@@ -97,7 +98,13 @@ type Echo struct {
 	Renderer         Renderer
 	Logger           Logger
 	IPExtractor      IPExtractor
-	ListenerNetwork  string
+	// SchemeExtractor defines the strategy for determining the request scheme (`http` or `https`),
+	// particularly important when behind proxies or load balancers that terminate TLS.
+	// Used by Context.Scheme and by the HTTPS redirect, Secure and Proxy middlewares.
+	// If not set, forwarding headers such as `X-Forwarded-Proto` are trusted only from loopback, link-local and
+	// private network addresses and unix sockets. See ExtractSchemeFromHeaders.
+	SchemeExtractor SchemeExtractor
+	ListenerNetwork string
 
 	// OnAddRouteHandler is called when Echo adds new route to specific host router.
 	OnAddRouteHandler func(host string, route Route, handler HandlerFunc, middleware []MiddlewareFunc)
@@ -105,6 +112,17 @@ type Echo struct {
 	Debug             bool
 	HideBanner        bool
 	HidePort          bool
+
+	// EnablePathUnescapingStaticFiles enables path parameter (param: *) unescaping for Static/StaticFS methods.
+	// Default false (safe): encoded slashes (%2f) in the wildcard param are NOT decoded,
+	// preventing ACL bypass where /admin%2fprivate.txt bypasses a /admin/* route guard by
+	// not matching that route but having its wildcard param decoded to admin/private.txt.
+	// Set to true only when serving files whose names contain URL-encoded characters
+	// (e.g. "hello world.txt" via /hello%20world.txt) and you are not relying on
+	// route-based ACL guards to restrict access.
+	// If you are enabling this option, make sure you understand the security implications.
+	// See: https://github.com/labstack/echo/security/advisories/GHSA-vfp3-v2gw-7wfq
+	EnablePathUnescapingStaticFiles bool
 }
 
 // Route contains a handler and information for matching against requests.
@@ -267,7 +285,7 @@ const (
 
 const (
 	// Version of Echo
-	Version = "4.15.3"
+	Version = "4.16.1"
 	website = "https://echo.labstack.com"
 	// http://patorjk.com/software/taag/#p=display&f=Small%20Slant&t=Echo
 	banner = `
@@ -342,6 +360,10 @@ var (
 	ErrValidatorNotRegistered = errors.New("validator not registered")
 	ErrRendererNotRegistered  = errors.New("renderer not registered")
 	ErrInvalidRedirectCode    = errors.New("invalid redirect status code")
+
+	// ErrInvalidJSONPCallback is wrapped in the 400 Bad Request error that Context.JSONP and Context.JSONPBlob
+	// return when the callback is not a valid JSONP function name. See Context.JSONP.
+	ErrInvalidJSONPCallback   = errors.New("invalid JSONP callback")
 	ErrCookieNotFound         = errors.New("cookie not found")
 	ErrInvalidCertOrKeyType   = errors.New("invalid cert or key type, must be string or []byte")
 	ErrInvalidListenerNetwork = errors.New("invalid listener network")
@@ -838,6 +860,8 @@ func (e *Echo) TLSListenerAddr() net.Addr {
 }
 
 // StartH2CServer starts a custom http/2 server with h2c (HTTP/2 Cleartext).
+//
+//lint:ignore SA1019 Preserve the v4 public API through its supported lifetime; x/net remains security patched.
 func (e *Echo) StartH2CServer(address string, h2s *http2.Server) error {
 	e.startupMutex.Lock()
 	// Setup
@@ -845,6 +869,7 @@ func (e *Echo) StartH2CServer(address string, h2s *http2.Server) error {
 	s.Addr = address
 	e.colorer.SetOutput(e.Logger.Output())
 	s.ErrorLog = e.StdLogger
+	//lint:ignore SA1019 h2c is required until v4 is supported (end of 2026)
 	s.Handler = h2c.NewHandler(e, h2s)
 	if e.Debug {
 		e.Logger.SetLevel(log.DEBUG)
