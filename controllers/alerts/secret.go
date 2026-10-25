@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	secretName = "hco-bearer-auth"
+	secretName = hcoutil.OperatorTokenSecretName
 )
 
 type CreateSecretFunc func(namespace string, owner metav1.OwnerReference, token string) *corev1.Secret

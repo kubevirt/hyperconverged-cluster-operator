@@ -5,10 +5,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const (
-	secretName = "hco-webhook-bearer-auth"
+	secretName = hcoutil.WebhookTokenSecretName
 )
 
 func newWHSecretReconciler(namespace string, owner metav1.OwnerReference, refresher alerts.Refresher) *alerts.SecretReconciler {

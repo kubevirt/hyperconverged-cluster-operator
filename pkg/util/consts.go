@@ -98,9 +98,11 @@ const (
 
 	OperatorMetricServiceName = HCOOperatorName + "-metrics-service"
 	OperatorMetricsSecretName = HCOOperatorName + "-service-cert"
+	OperatorTokenSecretName   = "hco-bearer-auth"
 
 	WebhookMetricServiceName = HCOWebhookName + "-metrics-service"
 	WebhookMetricsSecretName = WebhookMetricServiceName + "-cert"
+	WebhookTokenSecretName   = "hco-webhook-bearer-auth"
 
 	OpenShiftScrapeClassName = "tls-client-certificate-auth"
 

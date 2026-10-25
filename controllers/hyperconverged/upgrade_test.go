@@ -33,10 +33,12 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operandhandler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	fakeclusterinfo "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util/fake/clusterinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
 
@@ -1636,5 +1638,135 @@ var _ = Describe("Upgrade Mode", func() {
 					}
 				}, false, true, wrongFGPatch),
 		)
+	})
+
+	Context("Bearer token secrets", func() {
+		const nonRelatedSecName = "non-related-secret"
+
+		var (
+			cl         client.Client
+			reconciler *ReconcileHyperConverged
+		)
+
+		BeforeEach(func() {
+			origFunc := hcoutil.GetClusterInfo
+
+			hc := commontestutils.NewHco()
+			hc.Status.Conditions = []metav1.Condition{
+				{
+					Type:    hcov1.ConditionReconcileComplete,
+					Status:  metav1.ConditionTrue,
+					Reason:  common.ReconcileCompleted,
+					Message: common.ReconcileCompletedMessage,
+				},
+			}
+
+			UpdateVersion(&hc.Status, hcoVersionName, oldVersion)
+
+			resources := []client.Object{hc,
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      hcoutil.OperatorTokenSecretName,
+						Namespace: namespace,
+					},
+				},
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      hcoutil.WebhookTokenSecretName,
+						Namespace: namespace,
+					},
+				},
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      nonRelatedSecName,
+						Namespace: namespace,
+					},
+				},
+			}
+
+			hc.Status.RelatedObjects = []corev1.ObjectReference{
+				{
+					Kind:      "ConfigMap",
+					Name:      "cm-name",
+					Namespace: namespace,
+				},
+			}
+
+			for _, resource := range resources {
+				hc.Status.RelatedObjects = append(hc.Status.RelatedObjects, corev1.ObjectReference{
+					Kind:      "Secret",
+					Name:      resource.GetName(),
+					Namespace: namespace,
+				})
+			}
+
+			cl = commontestutils.InitClient(resources)
+
+			DeferCleanup(func() {
+				hcoutil.GetClusterInfo = origFunc
+			})
+		})
+
+		When("Running on OpnShift", func() {
+			BeforeEach(func() {
+				hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(fakeclusterinfo.WithIsOpenshift(true))
+				reconciler = initReconciler(cl, nil)
+				reconciler.operandHandler = operandhandler.NewOperandHandler(cl, reconciler.scheme, hcoutil.GetClusterInfo(), reconciler.eventEmitter)
+				reconciler.firstLoop = false
+			})
+
+			It("should drop the bearer token secrets", func(ctx context.Context) {
+				_, err := reconciler.Reconcile(ctx, request)
+				Expect(err).ToNot(HaveOccurred())
+
+				foundSecrets := &corev1.SecretList{}
+				Expect(cl.List(ctx, foundSecrets)).To(Succeed())
+
+				Expect(foundSecrets.Items).To(HaveLen(1))
+				Expect(foundSecrets.Items[0].Name).To(Equal(nonRelatedSecName))
+
+				foundHC := &hcov1.HyperConverged{}
+				Expect(cl.Get(ctx, client.ObjectKey{Name: hcov1.HyperConvergedName, Namespace: namespace}, foundHC)).To(Succeed())
+				Expect(foundHC.Status.RelatedObjects).ToNot(BeEmpty())
+				Expect(foundHC.Status.RelatedObjects).To(ContainElement(corev1.ObjectReference{Kind: "ConfigMap", Name: "cm-name", Namespace: namespace}))
+				Expect(foundHC.Status.RelatedObjects).To(ContainElement(corev1.ObjectReference{Kind: "Secret", Name: nonRelatedSecName, Namespace: namespace}))
+				Expect(foundHC.Status.RelatedObjects).ToNot(ContainElement(corev1.ObjectReference{Kind: "Secret", Name: hcoutil.OperatorTokenSecretName, Namespace: namespace}))
+				Expect(foundHC.Status.RelatedObjects).ToNot(ContainElement(corev1.ObjectReference{Kind: "Secret", Name: hcoutil.WebhookTokenSecretName, Namespace: namespace}))
+			})
+		})
+
+		When("Running on Plain K8s", func() {
+			BeforeEach(func() {
+				hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(fakeclusterinfo.WithIsOpenshift(false))
+				reconciler = initReconciler(cl, nil)
+				reconciler.operandHandler = operandhandler.NewOperandHandler(cl, reconciler.scheme, hcoutil.GetClusterInfo(), reconciler.eventEmitter)
+				reconciler.firstLoop = false
+			})
+
+			It("should not drop the bearer token secrets", func(ctx context.Context) {
+				_, err := reconciler.Reconcile(ctx, request)
+				Expect(err).ToNot(HaveOccurred())
+
+				foundSecrets := &corev1.SecretList{}
+				Expect(cl.List(ctx, foundSecrets)).To(Succeed())
+
+				Expect(foundSecrets.Items).To(HaveLen(3))
+				Expect(foundSecrets.Items).To(ContainElements(
+					HaveField("Name", nonRelatedSecName),
+					HaveField("Name", hcoutil.OperatorTokenSecretName),
+					HaveField("Name", hcoutil.WebhookTokenSecretName),
+				))
+
+				foundHC := &hcov1.HyperConverged{}
+				Expect(cl.Get(ctx, client.ObjectKey{Name: hcov1.HyperConvergedName, Namespace: namespace}, foundHC)).To(Succeed())
+				Expect(foundHC.Status.RelatedObjects).ToNot(BeEmpty())
+				Expect(foundHC.Status.RelatedObjects).To(ContainElements(
+					corev1.ObjectReference{Kind: "ConfigMap", Name: "cm-name", Namespace: namespace},
+					corev1.ObjectReference{Kind: "Secret", Name: nonRelatedSecName, Namespace: namespace},
+					corev1.ObjectReference{Kind: "Secret", Name: hcoutil.OperatorTokenSecretName, Namespace: namespace},
+					corev1.ObjectReference{Kind: "Secret", Name: hcoutil.WebhookTokenSecretName, Namespace: namespace},
+				))
+			})
+		})
 	})
 })

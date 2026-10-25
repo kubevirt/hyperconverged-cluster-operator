@@ -1142,6 +1142,10 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 		return upgradePatched, err
 	}
 
+	if err = removeBearerTokenSecrets(req, r.client); err != nil {
+		return upgradePatched, err
+	}
+
 	return upgradePatched, nil
 }
 

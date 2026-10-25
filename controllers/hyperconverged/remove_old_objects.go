@@ -11,6 +11,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,10 +49,30 @@ func removeOldQuickStartGuides(req *common.HcoRequest, cl client.Client, require
 // but the old object already removed (above) so you loos track of it. That why we must re-check all the names
 func removeRelatedObjects(req *common.HcoRequest, requiredNames []string, typeName string) {
 	refs := make([]corev1.ObjectReference, 0, len(req.Instance.Status.RelatedObjects))
-	foundOldQs := false
+	foundOldObj := false
 
 	for _, obj := range req.Instance.Status.RelatedObjects {
 		if obj.Kind == typeName && !slices.Contains(requiredNames, obj.Name) {
+			foundOldObj = true
+			continue
+		}
+		refs = append(refs, obj)
+	}
+
+	if foundOldObj {
+		req.Instance.Status.RelatedObjects = refs
+		req.StatusDirty = true
+	}
+}
+
+// removeExcludedRelatedObjects same as removeRelatedObjects, but the removes the objects in the excludeNames list
+// instead of leaving them and remove the others.
+func removeExcludedRelatedObjects(req *common.HcoRequest, excludeNames []string, typeName string) {
+	refs := make([]corev1.ObjectReference, 0, len(req.Instance.Status.RelatedObjects))
+	foundOldQs := false
+
+	for _, obj := range req.Instance.Status.RelatedObjects {
+		if obj.Kind == typeName && slices.Contains(excludeNames, obj.Name) {
 			foundOldQs = true
 			continue
 		}
@@ -108,6 +129,38 @@ func removeOldNetworkPolicies(req *common.HcoRequest, cl client.Client) error {
 	if err = errors.Join(errs...); err != nil {
 		return fmt.Errorf("can't delete NetworkPolicies; %v", err)
 	}
+
+	return nil
+}
+
+// removeBearerTokenSecrets, if running on openshift, removes the operator and webhook bearer token
+// secret, as we moved to cert-base authentication in openshift.
+func removeBearerTokenSecrets(req *common.HcoRequest, cl client.Client) error {
+	if !hcoutil.GetClusterInfo().IsOpenshift() {
+		return nil
+	}
+
+	secretsNames := []string{hcoutil.OperatorTokenSecretName, hcoutil.WebhookTokenSecretName}
+
+	for _, secretName := range secretsNames {
+		secret := &corev1.Secret{}
+		key := client.ObjectKey{
+			Name:      secretName,
+			Namespace: req.Instance.Namespace,
+		}
+		if err := cl.Get(req.Ctx, key, secret); err != nil {
+			if apierrors.IsNotFound(err) {
+				continue
+			}
+			return fmt.Errorf("can't read Secret %s; %v", secretName, err)
+		}
+
+		if err := cl.Delete(req.Ctx, secret); err != nil {
+			return fmt.Errorf("can't delete Secret %s; %v", secretName, err)
+		}
+	}
+
+	removeExcludedRelatedObjects(req, secretsNames, "Secret")
 
 	return nil
 }
