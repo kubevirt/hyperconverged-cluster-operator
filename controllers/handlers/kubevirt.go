@@ -148,6 +148,7 @@ const (
 	kvVSOCKFG                    = "VSOCK"
 	kvWorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
 	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
+	kvNetworkDevicesWithDRA      = "NetworkDevicesWithDRA"
 )
 
 var (
@@ -167,6 +168,7 @@ var (
 		kvContainerPathVolumes,
 		kvWorkloadEncryptionSEV,
 		kvWorkloadEncryptionTDX,
+		kvNetworkDevicesWithDRA,
 	}
 )
 

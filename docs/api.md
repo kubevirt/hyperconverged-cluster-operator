@@ -542,6 +542,7 @@ A feature gate may be in the following phases:
 | deployObservabilityController | Deploy the virt-observability-controller component. When enabled, the controller exposes KubeVirt metrics and manages PrometheusRule resources independently from the KubeVirt control plane. | alpha |
 | downwardMetrics | Allow to expose a limited set of host metrics to guests. | alpha |
 | incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Developer Preview. | alpha |
+| networkDevicesWithDRA | NetworkDevicesWithDRA allows users to create VMIs with DRA provisioned network devices specified in spec.networks with resourceClaim type. This enables DRA-managed network resources to be attached to VMs using the natural networks API. Note: this feature is in Developer Preview. | alpha |
 | objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | alpha |
 | workloadEncryptionSEV | Enable AMD SEV and SEV-SNP workload encryption for confidential VMs. Note: this feature is in Developer Preview. | alpha |
 | workloadEncryptionTDX | Enable Intel TDX workload encryption for confidential VMs. Note: this feature is in Developer Preview. | alpha |
