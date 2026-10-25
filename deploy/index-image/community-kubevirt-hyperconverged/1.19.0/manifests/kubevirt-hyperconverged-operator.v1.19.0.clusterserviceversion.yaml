@@ -693,7 +693,7 @@ spec:
           - get
           - list
           - watch
-          - update
+          - patch
         - apiGroups:
           - monitoring.coreos.com
           resources:
