@@ -222,6 +222,8 @@ spec:
           readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
+        - mountPath: /metrics.local.config/certificates
+          name: metrics-cert
         - mountPath: /apiserver.local.config/certificates
           name: apiservice-cert
       priorityClassName: system-node-critical
@@ -231,6 +233,15 @@ spec:
           type: RuntimeDefault
       serviceAccountName: hyperconverged-cluster-operator
       volumes:
+      - name: metrics-cert
+        secret:
+          defaultMode: 420
+          items:
+          - key: tls.crt
+            path: metrics.crt
+          - key: tls.key
+            path: metrics.key
+          secretName: hyperconverged-cluster-webhook-metrics-service-cert
       - name: apiservice-cert
         secret:
           defaultMode: 420
@@ -1354,6 +1365,23 @@ spec:
     targetPort: 8443
   selector:
     name: hyperconverged-cluster-operator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: hyperconverged-cluster-webhook
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: hyperconverged-cluster
+  name: hyperconverged-cluster-webhook-metrics-service
+spec:
+  ports:
+  - name: http-metrics
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    name: hyperconverged-cluster-webhook
 ---
 apiVersion: v1
 kind: Service

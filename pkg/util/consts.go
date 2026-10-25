@@ -99,11 +99,18 @@ const (
 	OperatorMetricServiceName = HCOOperatorName + "-metrics-service"
 	OperatorMetricsSecretName = HCOOperatorName + "-service-cert"
 
+	WebhookMetricServiceName = HCOWebhookName + "-metrics-service"
+	WebhookMetricsSecretName = WebhookMetricServiceName + "-cert"
+
 	OpenShiftScrapeClassName = "tls-client-certificate-auth"
 
 	OperatorCertName       = "metrics.crt"
 	OperatorKeyName        = "metrics.key"
 	DefaultOperatorCertDir = "/metrics.local.config/certificates"
+
+	WebhookMetricsCertName       = OperatorCertName
+	WebhookMetricsKeyName        = OperatorKeyName
+	DefaultWebhookMetricsCertDir = DefaultOperatorCertDir
 
 	CliDownloadsServerPort int32 = 8080
 	UIPluginServerPort     int32 = 9443
