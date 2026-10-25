@@ -184,6 +184,20 @@ spec:
   - hyperconverged-cluster-operator-metrics-service.kubevirt-hyperconverged.svc
   issuerRef:
     name: selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hyperconverged-cluster-webhook-metrics-service-cert
+  labels:
+    name: hyperconverged-cluster-webhook-metrics
+spec:
+  secretName: hyperconverged-cluster-webhook-metrics-service-cert
+  dnsNames:
+  - hyperconverged-cluster-webhook-metrics-service.kubevirt-hyperconverged.svc
+  issuerRef:
+    name: selfsigned
+---
 EOF
 
 ./operator-sdk run bundle -n kubevirt-hyperconverged --timeout=10m ${BUNDLE_IMAGE_NAME}
