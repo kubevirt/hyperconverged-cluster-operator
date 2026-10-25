@@ -263,6 +263,8 @@ func getHcoCsv() {
 		csvBase.Annotations["test-images-nvrs"] = *testImagesNVRs
 	}
 
+	csvBase.Spec.MinKubeVersion = "1.36.0"
+
 	setSupported(csvBase)
 
 	applyOverrides(csvBase)
