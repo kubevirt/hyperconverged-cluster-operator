@@ -8,7 +8,6 @@ import (
 	"iter"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -58,7 +57,6 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		restClient     rest.Interface
 		promClient     promApiv1.API
 		prometheusRule monitoringv1.PrometheusRule
-		hcoClient      *tests.HCOPrometheusClient
 	)
 
 	runbookClient.Timeout = time.Second * 3
@@ -71,10 +69,6 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		tests.FailIfNotOpenShift(ctx, cli, "Prometheus")
 		promClient = initializePromClient(getPrometheusURL(ctx, restClient), getAuthorizationTokenForPrometheus(ctx, cliSet))
 		prometheusRule = getPrometheusRule(ctx, restClient)
-
-		var err error
-		hcoClient, err = tests.GetHCOPrometheusClient(ctx, cli)
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("Alert rules should have all the required annotations", func() {
@@ -117,13 +111,21 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			jsonPatch = `[{"op": "add", "path": "/spec/configuration/developerConfiguration/featureGates/-", "value": "fake-fg-for-testing"}]`
 		)
 
-		By(fmt.Sprintf("Reading the `%s` metric from HCO prometheus endpoint", query))
+		By(fmt.Sprintf("Reading the `%s` metric", query))
 		var valueBefore float64
 		Eventually(func(g Gomega, ctx context.Context) {
-			var err error
-			valueBefore, err = hcoClient.GetHCOMetric(ctx, query)
+			val, found, err := getMetricValue(ctx, promClient, query)
 			g.Expect(err).NotTo(HaveOccurred())
-		}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			if !found {
+				valueBefore = 0
+			} else {
+				valueBefore = val
+			}
+		}).WithContext(ctx).
+			WithTimeout(5 * time.Minute).
+			WithPolling(10 * time.Second).
+			Should(Succeed())
+
 		GinkgoWriter.Printf("The metric value before the test is: %0.2f\n", valueBefore)
 
 		By("Patching kubevirt object")
@@ -144,18 +146,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			To(Succeed())
 
 		By("checking that the HCO metric was increased by 1")
-		Eventually(func(g Gomega, ctx context.Context) float64 {
-			valueAfter, err := hcoClient.GetHCOMetric(ctx, query)
-			g.Expect(err).NotTo(HaveOccurred())
-			return valueAfter
-		}).
-			WithTimeout(60*time.Second).
-			WithPolling(time.Second).
-			WithContext(ctx).
-			Should(
-				Equal(valueBefore+float64(1)),
-				"expected different counter value; value before: %0.2f; expected value: %0.2f", valueBefore, valueBefore+float64(1),
-			)
+		waitForMetricValue(ctx, promClient, query, valueBefore+1)
 
 		By("Checking the alert")
 		Eventually(func(ctx context.Context) *promApiv1.Alert {
@@ -189,11 +180,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			tests.UpdateHCORetry(ctx, cli, cleanHCO)
 
 			By("Waiting for the metric to return to 0")
-			Eventually(func(g Gomega, ctx context.Context) {
-				metricValue, err := hcoClient.GetHCOMetric(ctx, query)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(metricValue).To(Equal(float64(0)), "expected metric to return to 0 after cleanup")
-			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+			waitForMetricValue(ctx, promClient, query, float64(0))
 
 			By("Waiting for the alert to clear")
 			Eventually(func(ctx context.Context) *promApiv1.Alert {
@@ -206,13 +193,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		tests.UpdateHCORetry(ctx, cli, hco)
 
 		By(fmt.Sprintf("Reading the `%s` metric from HCO prometheus endpoint", query))
-		Eventually(func(g Gomega, ctx context.Context) {
-			var err error
-			metricValue, err := hcoClient.GetHCOMetric(ctx, query)
-
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(metricValue).To(Equal(float64(1)), "the expected value for the %q is 1, but got %.0f", query, metricValue)
-		}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+		waitForMetricValue(ctx, promClient, query, float64(1))
 
 		By("Checking the alert in Prometheus")
 		var alerts promApiv1.AlertsResult
@@ -299,6 +280,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 	})
 
 	Describe("KubeDescheduler", Serial, Ordered, Label(tests.OpenshiftLabel, "monitoring"), func() {
+		const query = `kubevirt_hco_misconfigured_descheduler`
 
 		var (
 			initialDescheduler = &deschedulerv1.KubeDescheduler{}
@@ -334,12 +316,13 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				err = cli.Update(ctx, descheduler)
 				g.Expect(err).NotTo(HaveOccurred())
 			}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+
+			By("checking that the metric doesn't report it as misconfigured (0.0)")
+			waitForMetricValue(ctx, promClient, query, float64(0))
 		})
 
 		It("HCOMisconfiguredDescheduler alert should fire when KubeDescheduler is installed and not properly configured for KubeVirt", Serial, func(ctx context.Context) {
-
 			const (
-				query                 = `kubevirt_hco_misconfigured_descheduler`
 				jsonPatchMisconfigure = `[{"op": "replace", "path": "/spec", "value": {"managementState": "Managed", "profiles": ["AffinityAndTaints"]}}]`
 				jsonPatchConfigure    = `[{"op": "replace", "path": "/spec", "value": {"managementState": "Managed", "profiles": ["DevKubeVirtRelieveAndMigrate"]}}]`
 			)
@@ -347,10 +330,15 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			By(fmt.Sprintf("Reading the `%s` metric from HCO prometheus endpoint", query))
 			var valueBefore float64
 			Eventually(func(g Gomega, ctx context.Context) {
-				var err error
-				valueBefore, err = hcoClient.GetHCOMetric(ctx, query)
+				val, found, err := getMetricValue(ctx, promClient, query)
 				g.Expect(err).NotTo(HaveOccurred())
-			}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+				if !found {
+					valueBefore = 0
+				} else {
+					valueBefore = val
+				}
+			}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).WithContext(ctx).Should(Succeed())
+
 			GinkgoWriter.Printf("The metric value before the test is: %0.2f\n", valueBefore)
 
 			patchMisconfigure := client.RawPatch(types.JSONPatchType, []byte(jsonPatchMisconfigure))
@@ -371,31 +359,8 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				WithPolling(500 * time.Millisecond).
 				Should(Succeed())
 
-			By("checking that the metric reports it as misconfigured (1.0)")
-			Eventually(func(g Gomega, ctx context.Context) float64 {
-				valueAfter, err := hcoClient.GetHCOMetric(ctx, query)
-				g.Expect(err).NotTo(HaveOccurred())
-				return valueAfter
-			}).
-				WithTimeout(60*time.Second).
-				WithPolling(time.Second).
-				WithContext(ctx).
-				Should(
-					Equal(float64(1)),
-					"expected descheduler to be misconfigured; expected value: %0.2f", float64(1),
-				)
-
 			By("checking that the prometheus metric reports it as misconfigured (1.0)")
-			Eventually(func(ctx context.Context) float64 {
-				return getMetricValue(ctx, promClient, query)
-			}).
-				WithTimeout(5*time.Minute).
-				WithPolling(10*time.Second).
-				WithContext(ctx).
-				Should(
-					Equal(float64(1)),
-					"expected descheduler to be misconfigured; expected value: 1", float64(1),
-				)
+			waitForMetricValue(ctx, promClient, query, float64(1))
 
 			By("Checking the alert")
 			Eventually(func(ctx context.Context) *promApiv1.Alert {
@@ -414,30 +379,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				Should(Succeed())
 
 			By("checking that the metric doesn't report it as misconfigured (0.0)")
-			Eventually(func(g Gomega, ctx context.Context) float64 {
-				valueAfter, err := hcoClient.GetHCOMetric(ctx, query)
-				g.Expect(err).NotTo(HaveOccurred())
-				return valueAfter
-			}).
-				WithTimeout(60*time.Second).
-				WithPolling(time.Second).
-				WithContext(ctx).
-				Should(
-					Equal(float64(0)),
-					"expected descheduler to NOT be misconfigured; expected value: %0.2f", float64(0),
-				)
-
-			By("checking that the prometheus metric doesn't report it as misconfigured (0.0)")
-			Eventually(func(ctx context.Context) float64 {
-				return getMetricValue(ctx, promClient, query)
-			}).
-				WithTimeout(5*time.Minute).
-				WithPolling(10*time.Second).
-				WithContext(ctx).
-				Should(
-					Equal(float64(0)),
-					"expected descheduler to NOT be misconfigured; expected value: %0.2f", float64(0),
-				)
+			waitForMetricValue(ctx, promClient, query, float64(0))
 
 			By("Checking the alert is not firing")
 			Eventually(func(ctx context.Context) *promApiv1.Alert {
@@ -455,31 +397,8 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				WithPolling(500 * time.Millisecond).
 				Should(Succeed())
 
-			By("checking that the metric reports it as misconfigured (1.0)")
-			Eventually(func(g Gomega, ctx context.Context) float64 {
-				valueAfter, err := hcoClient.GetHCOMetric(ctx, query)
-				g.Expect(err).NotTo(HaveOccurred())
-				return valueAfter
-			}).
-				WithTimeout(60*time.Second).
-				WithPolling(time.Second).
-				WithContext(ctx).
-				Should(
-					Equal(float64(1)),
-					"expected descheduler to be misconfigured; expected value: %0.2f", float64(1),
-				)
-
-			By("checking that the prometheus metric reports it as misconfigured (0.0)")
-			Eventually(func(ctx context.Context) float64 {
-				return getMetricValue(ctx, promClient, query)
-			}).
-				WithTimeout(5*time.Minute).
-				WithPolling(10*time.Second).
-				WithContext(ctx).
-				Should(
-					Equal(float64(1)),
-					"expected descheduler to be misconfigured; expected value: %0.2f", float64(1),
-				)
+			By("checking that the prometheus metric reports it as misconfigured (1.0)")
+			waitForMetricValue(ctx, promClient, query, float64(1))
 
 			By("Checking the alert")
 			Eventually(func(ctx context.Context) *promApiv1.Alert {
@@ -576,13 +495,16 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}).WithTimeout(30 * time.Second).WithPolling(2 * time.Second).WithContext(ctx).Should(Succeed())
 
 			By("Checking that the prometheus metric reports unhealthy status")
-			Eventually(func(ctx context.Context) float64 {
-				return getMetricValue(ctx, promClient, "kubevirt_hco_system_health_status")
+			Eventually(func(g Gomega, ctx context.Context) float64 {
+				val, found, err := getMetricValue(ctx, promClient, "kubevirt_hco_system_health_status")
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(found).To(BeTrue())
+				return val
 			}).
 				WithTimeout(5*time.Minute).
 				WithPolling(10*time.Second).
 				WithContext(ctx).
-				Should(BeNumerically(">=", 1), "expected system health status to be warning (1) or error (2)")
+				Should(Or(Equal(float64(1)), Equal(float64(2))), "expected system health status to be warning (1) or error (2)")
 
 			By("Checking that the alert fires")
 			Eventually(func(ctx context.Context) *promApiv1.Alert {
@@ -594,22 +516,20 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 	})
 
 	Describe("Webhook monitoring", Label(tests.OpenshiftLabel, "monitoring", "webhook"), func() {
-		var webhookClient *tests.HCOPrometheusClient
-		BeforeEach(func(ctx context.Context) {
-			var err error
-			Expect(tests.CreateTempWebhookRoute(ctx, cli)).To(Succeed())
-			webhookClient, err = tests.GetWebhookPrometheusClient(ctx, cli)
-			Expect(err).NotTo(HaveOccurred())
+		const justARandomMetric = `controller_runtime_webhook_latency_seconds_sum{namespace="%s",container="hyperconverged-cluster-webhook",webhook="/validate-hco-kubevirt-io-v1-hyperconverged"}`
 
-			DeferCleanup(func(ctx context.Context) {
-				Expect(tests.DeleteTempWebhookRoute(ctx, cli)).To(Succeed())
-			})
-		})
-
-		const justARandomMetric = `controller_runtime_max_concurrent_reconciles`
-		It("should allow reading from the webhook metrics endpoint, when using a bearer token", func(ctx context.Context) {
-			_, err := webhookClient.GetHCOMetric(ctx, justARandomMetric)
-			Expect(err).NotTo(HaveOccurred(), "should be able to read a metric from the webhook prometheus endpoint")
+		It("should allow reading from the webhook metrics endpoint", func(ctx context.Context) {
+			query := fmt.Sprintf(justARandomMetric, tests.InstallNamespace)
+			Eventually(func(g Gomega, ctx context.Context) {
+				vals, found, err := getMetricValues(ctx, promClient, query)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(found).To(BeTrue())
+				g.Expect(vals).ToNot(BeEmpty())
+				g.Expect(vals).To(ContainElement(BeNumerically(">", float64(0))))
+			}).WithContext(ctx).
+				WithPolling(5 * time.Second).
+				WithTimeout(5 * time.Minute).
+				Should(Succeed())
 		})
 	})
 })
@@ -623,21 +543,68 @@ func getAlertByName(alerts promApiv1.AlertsResult, alertName string) *promApiv1.
 	return nil
 }
 
-func getMetricValue(ctx context.Context, promClient promApiv1.API, metricName string) float64 {
-	queryResult, _, err := promClient.Query(ctx, metricName, time.Now())
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+func waitForMetricValue(ctx context.Context, promClient promApiv1.API, query string, expected float64) {
+	GinkgoHelper()
+	Eventually(func(g Gomega, ctx context.Context) {
+		queryResult, _, err := promClient.Query(ctx, query, time.Now())
+		g.Expect(err).NotTo(HaveOccurred())
+		vector, ok := queryResult.(promModel.Vector)
+		g.Expect(ok).To(BeTrue(), "expected a Vector result for the %q query", query)
+		g.Expect(vector).To(HaveLen(1), "the %q query returned no sample; a missing series is not a zero value", query)
+		val := float64(vector[0].Value)
+		g.Expect(val).To(Equal(expected), "the %q query should eventually return %0.2f", query, expected)
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(10 * time.Second).
+		WithContext(ctx).
+		Should(Succeed())
+}
 
-	resultVector := queryResult.(promModel.Vector)
-	if len(resultVector) == 0 {
-		return 0
+func getMetricValue(ctx context.Context, promClient promApiv1.API, metricName string) (val float64, found bool, err error) {
+	queryResult, _, err := promClient.Query(ctx, metricName, time.Now())
+	if err != nil {
+		return 0, false, err
 	}
 
-	ExpectWithOffset(1, resultVector).To(HaveLen(1))
+	switch res := queryResult.(type) {
+	case promModel.Vector:
+		if len(res) == 0 {
+			return 0, false, nil
+		}
 
-	metricValue, err := strconv.ParseFloat(resultVector[0].Value.String(), 64)
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+		if len(res) != 1 {
+			return 0, true, fmt.Errorf("expected 1 vector result, got %d; result: %v", len(res), res)
+		}
 
-	return metricValue
+		return float64(res[0].Value), true, nil
+
+	default:
+		return 0, false, fmt.Errorf("expected a Vector result, got %T", queryResult)
+	}
+}
+
+func getMetricValues(ctx context.Context, promClient promApiv1.API, metricName string) (vals []float64, found bool, err error) {
+	queryResult, _, err := promClient.Query(ctx, metricName, time.Now())
+	if err != nil {
+		return nil, false, err
+	}
+
+	switch res := queryResult.(type) {
+	case promModel.Vector:
+		if len(res) == 0 {
+			return nil, false, nil
+		}
+
+		vals = make([]float64, len(res))
+		for i, v := range res {
+			vals[i] = float64(v.Value)
+		}
+
+		return vals, true, nil
+
+	default:
+		return nil, false, fmt.Errorf("expected a Vector result, got %T", queryResult)
+	}
 }
 
 func getPrometheusRule(ctx context.Context, cli rest.Interface) monitoringv1.PrometheusRule {

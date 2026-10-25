@@ -7,6 +7,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
+	openshiftroutev1 "github.com/openshift/api/route/v1"
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	persesv1alpha1 "github.com/rhobs/perses-operator/api/v1alpha1"
@@ -86,6 +87,7 @@ func setScheme(cli client.Client) {
 			deschedulerv1.AddToScheme,
 			apiextensionsv1.AddToScheme,
 			persesv1alpha1.AddToScheme,
+			openshiftroutev1.Install,
 		}
 
 		for _, f := range funcs {
