@@ -17,7 +17,11 @@ var _ = Describe("NewServiceMonitor", func() {
 			owner := metav1.OwnerReference{Name: "o"}
 			sm := newServiceMonitor(commontestutils.Namespace, owner, false)
 
-			Expect(sm.Spec.Selector.MatchLabels).To(Equal(getLabels()))
+			lbls := getLabels()
+			delete(lbls, hcoutil.AppLabelManagedBy)
+			delete(lbls, hcoutil.AppLabelVersion)
+
+			Expect(sm.Spec.Selector.MatchLabels).To(Equal(lbls))
 			Expect(sm.Spec.Endpoints).To(HaveLen(1))
 			ep := sm.Spec.Endpoints[0]
 			Expect(ep.Port).To(Equal(alerts.OperatorPortName))
@@ -40,7 +44,11 @@ var _ = Describe("NewServiceMonitor", func() {
 			owner := metav1.OwnerReference{Name: "o"}
 			sm := newServiceMonitor(commontestutils.Namespace, owner, true)
 
-			Expect(sm.Spec.Selector.MatchLabels).To(Equal(getLabels()))
+			lbls := getLabels()
+			delete(lbls, hcoutil.AppLabelManagedBy)
+			delete(lbls, hcoutil.AppLabelVersion)
+
+			Expect(sm.Spec.Selector.MatchLabels).To(Equal(lbls))
 			Expect(sm.Spec.Endpoints).To(HaveLen(1))
 			ep := sm.Spec.Endpoints[0]
 			Expect(ep.Port).To(Equal(alerts.OperatorPortName))
@@ -50,7 +58,7 @@ var _ = Describe("NewServiceMonitor", func() {
 			Expect(ep.Authorization).To(BeNil())
 			Expect(ep.TLSConfig).ToNot(BeNil())
 			Expect(ep.TLSConfig.InsecureSkipVerify).To(HaveValue(BeFalse()))
-			Expect(ep.TLSConfig.SafeTLSConfig.ServerName).To(HaveValue(Equal(serviceName + "." + commontestutils.Namespace + ".svc")))
+			Expect(ep.TLSConfig.SafeTLSConfig.ServerName).To(HaveValue(Equal(hcoutil.WebhookMetricServiceName + "." + commontestutils.Namespace + ".svc")))
 			Expect(sm.Spec.ScrapeClassName).To(HaveValue(Equal(hcoutil.OpenShiftScrapeClassName)))
 		})
 	})

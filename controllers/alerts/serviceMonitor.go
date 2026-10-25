@@ -14,6 +14,10 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
+const (
+	OperatorPortName = "http-metrics"
+)
+
 type ServiceMonitorReconciler struct {
 	refresher         Refresher
 	isCertBasedAuth   bool
@@ -102,7 +106,7 @@ func NewServiceMonitor(namespace string, owner metav1.OwnerReference, isCertBase
 
 	var httpConfig monitoringv1.HTTPConfigWithTLSFiles
 	if isCertBasedAuth {
-		httpConfig = CertBasedHTTPConfig(namespace, serviceName)
+		httpConfig = CertBasedHTTPConfig(namespace, hcoutil.OperatorMetricServiceName)
 		spec.NamespaceSelector = monitoringv1.NamespaceSelector{
 			MatchNames: []string{namespace},
 		}

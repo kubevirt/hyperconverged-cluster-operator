@@ -120,17 +120,11 @@ var _ = Describe("Controller setup and reconcile", func() {
 				)
 			})
 
-			It("creates Service, Secret, and ServiceMonitor and requeues in 5 minutes", func(ctx context.Context) {
+			It("creates Secret and ServiceMonitor and requeues in 5 minutes", func(ctx context.Context) {
 				ctx = logr.NewContext(ctx, GinkgoLogr)
 				res, err := r.Reconcile(ctx, request)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
-
-				// Service
-				svc := &corev1.Service{}
-				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, svc)).To(Succeed())
-				Expect(svc.Spec.Ports).ToNot(BeEmpty())
-				Expect(svc.Labels).ToNot(BeEmpty())
 
 				// Secret
 				sec := &corev1.Secret{}
@@ -138,14 +132,14 @@ var _ = Describe("Controller setup and reconcile", func() {
 				Expect(sec.StringData).To(HaveKey("token"))
 
 				sm := &monitoringv1.ServiceMonitor{}
-				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, sm)).To(Succeed())
+				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceMonitorName}, sm)).To(Succeed())
 			})
 
 			It("propagates error from underlying metric reconciler and requeues quickly", func(ctx context.Context) {
 				ctx = logr.NewContext(ctx, GinkgoLogr)
 				// cause a create-error for Service to bubble up
 				cl.InitiateCreateErrors(func(obj client.Object) error {
-					if obj.GetObjectKind().GroupVersionKind().Kind == "Service" {
+					if obj.GetObjectKind().GroupVersionKind().Kind == "ServiceMonitor" {
 						return context.DeadlineExceeded
 					}
 					return nil
@@ -188,12 +182,12 @@ var _ = Describe("Controller setup and reconcile", func() {
 				Expect(newSec.StringData["token"]).To(Equal(origToken))
 
 				newSM := &monitoringv1.ServiceMonitor{}
-				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, newSM)).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceMonitorName}, newSM)).To(MatchError(apierrors.IsNotFound, "not found error"))
 
 				res, err = r.Reconcile(ctx, request)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
-				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, newSM)).To(Succeed())
+				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceMonitorName}, newSM)).To(Succeed())
 			})
 
 			Context("secret labels", func() {
@@ -442,31 +436,25 @@ var _ = Describe("Controller setup and reconcile", func() {
 				)
 			})
 
-			It("creates Service, and ServiceMonitor, but not secret", func(ctx context.Context) {
+			It("creates ServiceMonitor, but not secret", func(ctx context.Context) {
 				ctx = logr.NewContext(ctx, GinkgoLogr)
 				res, err := r.Reconcile(ctx, request)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
-
-				// Service
-				svc := &corev1.Service{}
-				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, svc)).To(Succeed())
-				Expect(svc.Spec.Ports).ToNot(BeEmpty())
-				Expect(svc.Labels).ToNot(BeEmpty())
 
 				// Secret
 				sec := &corev1.Secret{}
 				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, sec)).To(MatchError(apierrors.IsNotFound, "should be Not Found error"))
 
 				sm := &monitoringv1.ServiceMonitor{}
-				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, sm)).To(Succeed())
+				Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceMonitorName}, sm)).To(Succeed())
 			})
 
 			It("propagates error from underlying metric reconciler and requeues quickly", func(ctx context.Context) {
 				ctx = logr.NewContext(ctx, GinkgoLogr)
 				// cause a create-error for Service to bubble up
 				cl.InitiateCreateErrors(func(obj client.Object) error {
-					if obj.GetObjectKind().GroupVersionKind().Kind == "Service" {
+					if obj.GetObjectKind().GroupVersionKind().Kind == "ServiceMonitor" {
 						return context.DeadlineExceeded
 					}
 					return nil

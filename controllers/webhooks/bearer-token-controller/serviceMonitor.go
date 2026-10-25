@@ -13,17 +13,25 @@ func newWHServiceMonitorReconciler(namespace string, owner metav1.OwnerReference
 	return alerts.CreateServiceMonitorReconciler(sm, refresher, isCertBasedAuth)
 }
 
+// the webhook metrics service is now created by the deployer from a static manifest.
+// But the ServiceMonitor uses the same name. We want to edit the existing one
+// instead of creating new one. So we'll name it with the old service name.
+const serviceMonitorName = "hyperconverged-cluster-webhook-operator-metrics"
+
 func newServiceMonitor(namespace string, owner metav1.OwnerReference, isCertBasedAuth bool) *monitoringv1.ServiceMonitor {
-	smLabels := getLabels()
 	spec := monitoringv1.ServiceMonitorSpec{
 		Selector: metav1.LabelSelector{
-			MatchLabels: smLabels,
+			MatchLabels: map[string]string{
+				hcoutil.AppLabel:          hcoutil.HCOWebhookName,
+				hcoutil.AppLabelPartOf:    hcoutil.HyperConvergedCluster,
+				hcoutil.AppLabelComponent: string(hcoutil.AppComponentMonitoring),
+			},
 		},
 	}
 
 	var httpConfig monitoringv1.HTTPConfigWithTLSFiles
 	if isCertBasedAuth {
-		httpConfig = alerts.CertBasedHTTPConfig(namespace, serviceName)
+		httpConfig = alerts.CertBasedHTTPConfig(namespace, hcoutil.WebhookMetricServiceName)
 		spec.NamespaceSelector = monitoringv1.NamespaceSelector{
 			MatchNames: []string{namespace},
 		}
@@ -42,8 +50,8 @@ func newServiceMonitor(namespace string, owner metav1.OwnerReference, isCertBase
 			Kind:       monitoringv1.ServiceMonitorsKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            serviceName,
-			Labels:          smLabels,
+			Name:            serviceMonitorName,
+			Labels:          getLabels(),
 			Namespace:       namespace,
 			OwnerReferences: []metav1.OwnerReference{owner},
 		},

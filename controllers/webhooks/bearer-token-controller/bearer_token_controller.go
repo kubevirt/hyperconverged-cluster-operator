@@ -81,12 +81,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			&handler.TypedEnqueueRequestForObject[*appsv1.Deployment]{},
 			newPredicate[*appsv1.Deployment](), getDeployPredicate(),
 		),
-		source.Kind[*corev1.Service](
-			mgr.GetCache(),
-			&corev1.Service{},
-			&handler.TypedEnqueueRequestForObject[*corev1.Service]{},
-			newPredicate[*corev1.Service](), servicePredicate,
-		),
 		source.Kind[*corev1.Secret](
 			mgr.GetCache(),
 			&corev1.Secret{},
@@ -128,9 +122,7 @@ func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.Owner
 	refresher := alerts.NewRefresher()
 
 	isCertBasedAuth := ci.IsOpenshift()
-	reconcilers := []alerts.MetricReconciler{
-		newWHMetricServiceReconciler(namespace, owner),
-	}
+	var reconcilers []alerts.MetricReconciler
 
 	if !isCertBasedAuth {
 		reconcilers = append(reconcilers, newWHSecretReconciler(namespace, owner, refresher))
@@ -157,16 +149,12 @@ func getLogger(ctx context.Context, request reconcile.Request) logr.Logger {
 }
 
 var (
-	servicePredicate = predicate.NewTypedPredicateFuncs[*corev1.Service](func(service *corev1.Service) bool {
-		return service.Name == serviceName
-	})
-
 	secretPredicate = predicate.NewTypedPredicateFuncs[*corev1.Secret](func(secret *corev1.Secret) bool {
 		return secret.Name == secretName
 	})
 
 	smPredicate = predicate.NewTypedPredicateFuncs[*promv1.ServiceMonitor](func(sm *promv1.ServiceMonitor) bool {
-		return sm.Name == serviceName
+		return sm.Name == serviceMonitorName
 	})
 )
 
