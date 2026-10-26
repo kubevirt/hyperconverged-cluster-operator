@@ -60,6 +60,12 @@ type HyperConvergedSpec struct {
 	// * deprecated: the feature is deprecated. The feature gate will be removed in a future release.
 	//
 	// Feature-Gate list:
+	// * containerPathVolumes:
+	//   ContainerPathVolumes enables the use of container paths as volumes in
+	//   KubeVirt. This allows VMs to access files and directories from the
+	//   virt-launcher pod's filesystem via virtiofs.
+	//   Phase: beta
+	//
 	// * decentralizedLiveMigration:
 	//   DecentralizedLiveMigration enables the decentralized live migration
 	//   (cross-cluster migration) feature. This feature allows live migration of
@@ -99,12 +105,6 @@ type HyperConvergedSpec struct {
 	//   Enable KubeVirt to request up to two additional dedicated CPUs in order to
 	//   complete the total CPU count to an even parity when using emulator thread
 	//   isolation. Note: this feature is in Developer Preview.
-	//   Phase: alpha
-	//
-	// * containerPathVolumes:
-	//   ContainerPathVolumes enables the use of container paths as volumes in
-	//   KubeVirt. This allows VMs to access files and directories from the
-	//   virt-launcher pod's filesystem via virtiofs.
 	//   Phase: alpha
 	//
 	// * deployObservabilityController:

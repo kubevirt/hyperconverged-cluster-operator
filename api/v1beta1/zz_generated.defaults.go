@@ -65,7 +65,7 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		in.Spec.FeatureGates.IncrementalBackup = &ptrVar1
 	}
 	if in.Spec.FeatureGates.ContainerPathVolumes == nil {
-		var ptrVar1 bool = false
+		var ptrVar1 bool = true
 		in.Spec.FeatureGates.ContainerPathVolumes = &ptrVar1
 	}
 	if in.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster == nil {

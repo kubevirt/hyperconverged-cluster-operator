@@ -532,13 +532,13 @@ A feature gate may be in the following phases:
 
 | Name | Description | Phase |
 | ---- | ----------- | ----- |
+| containerPathVolumes | ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs. | beta |
 | decentralizedLiveMigration | DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Tech Preview. | beta |
 | declarativeHotplugVolumes | DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true or nil, the "DeclarativeHotplugVolumes" feature gate is enabled and the "HotplugVolumes" feature gate is not (default behavior). When set to false, the "HotplugVolumes" featuregate is enabled in KubeVirt. This feature is in Technical Preview. | beta |
 | rebootPolicy | RebootPolicy enables virtual machines to be recreated when they reboot from within the guest operating system. This feature is in Tech Preview. | beta |
 | template | VirtualMachine Templates provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable VM blueprints with parameterized values that can be processed to create virtual machine. the "template" feature gate enables this feature. Note: this feature is in Tech Preview. | beta |
 | vsock | VSOCK enables the AF_VSOCK host-guest communication channel for virtual machines. When enabled, a VSOCK device can be attached to a VM by setting spec.domain.devices.autoattachVSOCK. This feature is in Tech Preview. | beta |
 | alignCPUs | Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. | alpha |
-| containerPathVolumes | ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs. | alpha |
 | deployObservabilityController | Deploy the virt-observability-controller component. When enabled, the controller exposes KubeVirt metrics and manages PrometheusRule resources independently from the KubeVirt control plane. | alpha |
 | downwardMetrics | Allow to expose a limited set of host metrics to guests. | alpha |
 | incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Developer Preview. | alpha |
