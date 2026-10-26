@@ -34,6 +34,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoalerts "github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules/alerts"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
@@ -159,12 +160,40 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 	})
 
 	It("UnsupportedHCOModification alert should fired when there is an jsonpatch annotation to modify an operand CRs", func(ctx context.Context) {
+		query := fmt.Sprintf(`kubevirt_hco_unsafe_modifications{annotation_name=%q}`, common.JSONPatchKVAnnotationName)
+
 		By("Updating HCO object with a new label")
 		hco := tests.GetHCO(ctx, cli)
 
-		hco.Annotations = map[string]string{
-			"kubevirt.kubevirt.io/jsonpatch": `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`,
+		if hco.Annotations == nil {
+			hco.Annotations = make(map[string]string)
 		}
+		hco.Annotations[common.JSONPatchKVAnnotationName] = `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`
+
+		DeferCleanup(func(ctx context.Context) {
+			By("Cleaning up: removing the jsonpatch annotation from HCO")
+			cleanHCO := tests.GetHCO(ctx, cli)
+
+			if cleanHCO.Annotations != nil {
+				delete(cleanHCO.Annotations, common.JSONPatchKVAnnotationName)
+			}
+
+			tests.UpdateHCORetry(ctx, cli, cleanHCO)
+
+			By("Waiting for the metric to return to 0")
+			Eventually(func(g Gomega, ctx context.Context) {
+				metricValue, err := hcoClient.GetHCOMetric(ctx, query)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(metricValue).To(Equal(float64(0)), "expected metric to return to 0 after cleanup")
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+
+			By("Waiting for the alert to clear")
+			Eventually(func(ctx context.Context) *promApiv1.Alert {
+				alerts, err := promClient.Alerts(ctx)
+				Expect(err).ToNot(HaveOccurred())
+				return getAlertByName(alerts, "UnsupportedHCOModification")
+			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).Should(BeNil())
+		})
 		tests.UpdateHCORetry(ctx, cli, hco)
 
 		Eventually(func(ctx context.Context) *promApiv1.Alert {
