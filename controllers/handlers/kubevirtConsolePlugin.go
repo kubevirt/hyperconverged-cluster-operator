@@ -554,8 +554,10 @@ func (h consoleHandler) Ensure(req *common.HcoRequest) *operands.EnsureResult {
 
 	if !slices.Contains(consoleObj.Spec.Plugins, kvUIPluginName) {
 		req.Logger.Info("Enabling kubevirt plugin in Console")
-		consoleObj.Spec.Plugins = append(consoleObj.Spec.Plugins, kvUIPluginName)
-		err := h.Client.Update(req.Ctx, consoleObj)
+		consoleBefore := consoleObj.DeepCopy()
+		consoleObj.Spec.Plugins = append(slices.Clone(consoleObj.Spec.Plugins), kvUIPluginName)
+		patch := client.MergeFromWithOptions(consoleBefore, client.MergeFromWithOptimisticLock{})
+		err := h.Client.Patch(req.Ctx, consoleObj, patch)
 		if err != nil {
 			req.Logger.Error(err, fmt.Sprintf("Could not update resource - APIVersion: %s, Kind: %s, Name: %s",
 				consoleObj.APIVersion, consoleObj.Kind, consoleObj.Name))
