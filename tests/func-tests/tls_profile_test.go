@@ -40,6 +40,13 @@ const (
 	tlsDialTimeout  = 3 * time.Second
 	sspReadyTimeout = 4 * time.Minute
 	sspReadyPolling = 5 * time.Second
+
+	consolePluginRolloutTimeout = 3 * time.Minute
+	consolePluginRolloutPolling = 5 * time.Second
+
+	// The console-plugin pods are identified by their component label; the selector is
+	// known (set by the operator), so there is no need to read it from the Deployment.
+	consolePluginPodLabelSelector = hcoutil.AppLabelComponent + "=" + string(hcoutil.AppComponentUIPlugin)
 )
 
 var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
@@ -90,7 +97,23 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 
 			hc, err := tests.GetHCO(ctx, cli)
 			Expect(err).NotTo(HaveOccurred())
-			if hc.Spec.Security.TLSSecurityProfile != nil {
+
+			// Removing a non-default TLS profile rolls the console-plugin (its nginx
+			// config changes). Capture its current pods beforehand so we can wait for
+			// the rollout to actually complete afterwards, instead of observing the
+			// still-ready pre-rollout Deployment.
+			profileWasSet := hc.Spec.Security.TLSSecurityProfile != nil
+			// The console-plugin is only deployed on OpenShift, so skip its rollout
+			// checks on plain Kubernetes.
+			openshiftLabelIsSet := Label(tests.OpenshiftLabel).MatchesLabelFilter(GinkgoLabelFilter())
+
+			var consolePluginOldPods sets.Set[types.UID]
+			if profileWasSet {
+				if openshiftLabelIsSet {
+					consolePluginOldPods, err = consolePluginPodUIDs(ctx, k8sCli)
+					Expect(err).NotTo(HaveOccurred())
+				}
+
 				removePatch := fmt.Appendf(nil, `[{"op": "remove", "path": %q}]`, tlsPath)
 				tests.PatchHCO(ctx, cli, removePatch)
 
@@ -107,6 +130,12 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 			}
 
 			tests.RestoreDefaults(ctx, cli)
+
+			// Wait for the console-plugin rollout triggered by the restore to complete,
+			// so the suite doesn't leave it mid-rollout for later tests.
+			if profileWasSet && openshiftLabelIsSet {
+				waitForConsolePluginRolloutComplete(ctx, k8sCli, consolePluginOldPods)
+			}
 		})
 
 		AfterEach(func(ctx context.Context) {
@@ -199,7 +228,71 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 		Entry("Check HCO webhook's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-webhook", "hyperconverged-cluster-webhook-operator-metrics", ""),
 		Entry("Check HCO operator's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-operator", hcoutil.OperatorMetricServiceName, hcoutil.OperatorMetricsSecretName),
 	)
+
+	It("should recreate the console-plugin pods when the TLS profile changes", Label(tests.OpenshiftLabel), func(ctx context.Context) {
+		cli := tests.GetControllerRuntimeClient()
+		k8sCli := tests.GetK8sClientSet()
+
+		DeferCleanup(func(ctx context.Context) {
+			oldPods, err := consolePluginPodUIDs(ctx, k8sCli)
+			Expect(err).ToNot(HaveOccurred())
+
+			tests.RestoreDefaults(ctx, cli)
+			waitForConsolePluginRolloutComplete(ctx, k8sCli, oldPods)
+		})
+
+		oldPods, err := consolePluginPodUIDs(ctx, k8sCli)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(oldPods).ToNot(BeEmpty())
+
+		patch := fmt.Appendf(nil, `[{"op": "replace", "path": %q, "value": {"custom": {"minTLSVersion": "VersionTLS12", "ciphers": ["ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384"], "groups": ["secp256r1", "secp384r1"]}, "type": "Custom"}}]`, tlsPath)
+		tests.PatchHCO(ctx, cli, patch)
+
+		waitForConsolePluginRolloutComplete(ctx, k8sCli, oldPods)
+	})
 })
+
+// waitForConsolePluginRolloutComplete waits until the console-plugin rollout triggered by
+// a TLS config change has fully completed: the Deployment is settled and ready, and its
+// pods have been replaced (none shared with previousPods). Tying readiness to pod
+// replacement avoids observing the still-ready pre-rollout Deployment.
+func waitForConsolePluginRolloutComplete(ctx context.Context, k8sCli *kubernetes.Clientset, previousPods sets.Set[types.UID]) {
+	GinkgoHelper()
+	deploymentName := string(hcoutil.AppComponentUIPlugin)
+	Eventually(func(g Gomega, gctx context.Context) {
+		deployment, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(gctx, deploymentName, metav1.GetOptions{})
+		g.Expect(err).ToNot(HaveOccurred())
+
+		desired := int32(1)
+		if deployment.Spec.Replicas != nil {
+			desired = *deployment.Spec.Replicas
+		}
+		g.Expect(deployment.Status.ObservedGeneration).To(BeNumerically(">=", deployment.Generation))
+		g.Expect(deployment.Status.UpdatedReplicas).To(Equal(desired))
+		g.Expect(deployment.Status.ReadyReplicas).To(Equal(desired))
+		g.Expect(deployment.Status.AvailableReplicas).To(Equal(desired))
+
+		currentPods, err := consolePluginPodUIDs(gctx, k8sCli)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(currentPods).To(HaveLen(int(desired)))
+		g.Expect(currentPods.Intersection(previousPods).Len()).To(Equal(0), "console-plugin pods were not recreated after the TLS config change")
+	}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
+}
+
+func consolePluginPodUIDs(ctx context.Context, k8sCli *kubernetes.Clientset) (sets.Set[types.UID], error) {
+	pods, err := k8sCli.CoreV1().Pods(tests.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: consolePluginPodLabelSelector})
+	if err != nil {
+		return nil, err
+	}
+
+	uids := sets.New[types.UID]()
+	for _, pod := range pods.Items {
+		if pod.DeletionTimestamp == nil {
+			uids.Insert(pod.UID)
+		}
+	}
+	return uids, nil
+}
 
 func isTLSVersionAccepted(ctx context.Context, addr string, version uint16) (bool, error) {
 	// Verify TCP connectivity first to distinguish transport errors from TLS rejections
