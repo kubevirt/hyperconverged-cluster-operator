@@ -222,9 +222,9 @@ useful for exposing data dynamically injected into pods by Kubernetes or
 platform-specific mechanisms, such as projected service account tokens for
 workload identity.
 
-**Default**: `Disabled`
+**Default**: `Enabled`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
 ### enableMultiArchBootImageImport Feature Gate (Deprecated)
 This feature is GA now, and the feature gate is deprecated. It will be removed in a future version.
