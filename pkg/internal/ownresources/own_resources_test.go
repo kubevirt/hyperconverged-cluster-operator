@@ -114,7 +114,7 @@ var _ = Describe("Test OwnResources", func() {
 			WithStatusSubresource(csv, dep, rs, pod).
 			Build()
 
-		Init(ctx, cl, testScheme, GinkgoLogr)
+		Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
 		Expect(GetPod()).To(Equal(pod))
 		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
 		csvObj := GetCSVRef()
@@ -194,9 +194,29 @@ var _ = Describe("Test OwnResources", func() {
 			WithObjects(dep).
 			Build()
 
-		Init(ctx, cl, testScheme, GinkgoLogr)
+		Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
 		Expect(GetPod()).To(BeNil())
 		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
+		Expect(GetCSVRef()).To(BeNil())
+	})
+
+	// Running locally is for debugging, where there may be no Deployment.
+	// HCO runs without the owner reference rather than with a made-up one:
+	// the garbage collector would delete what it owns.
+	It("should not fail when running locally and there is no deployment", func(ctx context.Context) {
+		hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(
+			fakeclusterinfo.WithIsOpenshift(false),
+			fakeclusterinfo.WithIsManagedByOLM(false),
+			fakeclusterinfo.WithRunningLocally(true),
+		)
+
+		cl := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			Build()
+
+		Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
+		Expect(GetPod()).To(BeNil())
+		Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
 		Expect(GetCSVRef()).To(BeNil())
 	})
 
@@ -265,7 +285,7 @@ var _ = Describe("Test OwnResources", func() {
 			WithStatusSubresource(csv, dep, rs, pod).
 			Build()
 
-		Init(ctx, cl, testScheme, GinkgoLogr)
+		Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
 		Expect(GetPod()).To(Equal(pod))
 		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
 		csvObj := GetCSVRef()

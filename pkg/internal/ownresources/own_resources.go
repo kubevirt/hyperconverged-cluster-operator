@@ -65,7 +65,8 @@ func GetCSVRef() *corev1.ObjectReference {
 // the callers exit on that, so the pod restarts and reads them again, rather
 // than running without the Deployment reference the conversion webhook's CA
 // controller needs. A missing CSV is not an error: an install without OLM
-// has none.
+// has none. Nor is a missing Deployment when running locally, for debugging:
+// HCO then runs without its Deployment reference.
 func Init(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) error {
 	initOnce.Do(func() { initErr = doInit(ctx, cl, scheme, logger) })
 	return initErr
@@ -87,7 +88,8 @@ func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logge
 			Name:      "hyperconverged-cluster-operator",
 		}, deployment)
 		if err != nil {
-			return fmt.Errorf("can't get deployment: %w", err)
+			logger.Error(err, "Can't get deployment")
+			return nil
 		}
 
 		thePod = nil
