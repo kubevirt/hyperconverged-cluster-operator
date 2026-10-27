@@ -164,6 +164,17 @@ var _ = Describe("Test OwnResources", func() {
 			Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
 		})
 
+		It("should keep returning the first failure", func(ctx context.Context) {
+			Expect(Init(ctx, failing(&appsv1.Deployment{}), testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
+
+			healthy := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(createDeployment(nil), createReplicaSet(), createPod()).
+				Build()
+			Expect(Init(ctx, healthy, testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
+			Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
+		})
+
 		It("should not fail for a missing CSV: an install without OLM has none", func(ctx context.Context) {
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
