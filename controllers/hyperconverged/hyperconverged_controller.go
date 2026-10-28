@@ -1125,8 +1125,6 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 		return false, err
 	}
 
-	changed = modifyFGDefaults(req.Instance) || changed
-
 	if changed {
 		req.Dirty = true
 	}

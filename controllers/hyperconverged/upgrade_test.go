@@ -1477,30 +1477,21 @@ var _ = Describe("Upgrade Mode", func() {
 	})
 
 	const containerPathVolumesFG = "ContainerPathVolumes"
-	DescribeTableSubtree("modify feature gate defaults", func(modify func(hc *hcov1.HyperConverged), wasChanged bool) {
+	DescribeTable("modify feature gate defaults", func(modify func(hc *hcov1.HyperConverged), wasChanged bool) {
+		resources := expected.toArray()
+		UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
+		modify(expected.hco)
 
-		var hc *hcov1.HyperConverged
+		cl := commontestutils.InitClient(resources)
 
-		It("check the function result", func() {
-			hc = commontestutils.NewHco()
-			modify(hc)
-			changed := modifyFGDefaults(hc)
-			Expect(changed).To(Equal(wasChanged))
-			Expect(hc.Spec.FeatureGates.IsEnabled(containerPathVolumesFG)).To(BeTrue())
-		})
+		foundHC, r, requeue := doReconcile(cl, expected.hco, nil)
+		Expect(requeue).To(BeTrue())
+		Expect(foundHC.Spec.FeatureGates.IsEnabled(containerPathVolumesFG)).To(BeTrue())
 
-		It("check reconciliation", func(ctx context.Context) {
-			resources := expected.toArray()
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
-			modify(expected.hco)
+		foundHC, _, requeue = doReconcile(cl, expected.hco, r)
+		Expect(requeue).To(Equal(wasChanged))
 
-			cl := commontestutils.InitClient(resources)
-
-			foundHC, _, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeTrue())
-
-			Expect(foundHC.Spec.FeatureGates.IsEnabled(containerPathVolumesFG)).To(BeTrue())
-		})
+		Expect(foundHC.Spec.FeatureGates.IsEnabled(containerPathVolumesFG)).To(BeTrue())
 	},
 		Entry("when the FG is not set (default, already enabled), should not change",
 			func(_ *hcov1.HyperConverged) {}, false),
