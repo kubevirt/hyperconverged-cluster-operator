@@ -1475,4 +1475,42 @@ var _ = Describe("Upgrade Mode", func() {
 				}, false, true, wrongFGPatch),
 		)
 	})
+
+	const containerPathVolumesFG = "ContainerPathVolumes"
+	DescribeTableSubtree("modify feature gate defaults", func(modify func(hc *hcov1.HyperConverged), wasChanged bool) {
+
+		var hc *hcov1.HyperConverged
+
+		It("check the function result", func() {
+			hc = commontestutils.NewHco()
+			modify(hc)
+			changed := modifyFGDefaults(hc)
+			Expect(changed).To(Equal(wasChanged))
+			Expect(hc.Spec.FeatureGates.IsEnabled(containerPathVolumesFG)).To(BeTrue())
+		})
+
+		It("check reconciliation", func(ctx context.Context) {
+			resources := expected.toArray()
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
+			modify(expected.hco)
+
+			cl := commontestutils.InitClient(resources)
+
+			foundHC, _, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+
+			Expect(foundHC.Spec.FeatureGates.IsEnabled(containerPathVolumesFG)).To(BeTrue())
+		})
+	},
+		Entry("when the FG is not set (default, already enabled), should not change",
+			func(_ *hcov1.HyperConverged) {}, false),
+		Entry("when the FG is explicitly enabled, should not change",
+			func(hc *hcov1.HyperConverged) {
+				hc.Spec.FeatureGates.Enable(containerPathVolumesFG)
+			}, false),
+		Entry("when the FG is explicitly disabled, should enable it",
+			func(hc *hcov1.HyperConverged) {
+				hc.Spec.FeatureGates.Disable(containerPathVolumesFG)
+			}, true),
+	)
 })

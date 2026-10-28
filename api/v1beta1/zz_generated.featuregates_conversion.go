@@ -24,6 +24,24 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		v1Enabled bool
 	)
 
+	// converting the ContainerPathVolumes v1beta1 beta feature gate to v1
+	v1Idx = out.Index("containerPathVolumes")
+	v1Found = v1Idx >= 0
+	if in.ContainerPathVolumes == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && !*in.ContainerPathVolumes) || (v1Found && v1Enabled != *in.ContainerPathVolumes) {
+			if *in.ContainerPathVolumes {
+				out.Enable("containerPathVolumes")
+			} else {
+				out.Disable("containerPathVolumes")
+			}
+		}
+	}
+
 	// converting the DecentralizedLiveMigration v1beta1 beta feature gate to v1
 	v1Idx = out.Index("decentralizedLiveMigration")
 	v1Found = v1Idx >= 0
@@ -74,24 +92,6 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 				out.Enable("alignCPUs")
 			} else {
 				out.Disable("alignCPUs")
-			}
-		}
-	}
-
-	// converting the ContainerPathVolumes v1beta1 alpha feature gate to v1
-	v1Idx = out.Index("containerPathVolumes")
-	v1Found = v1Idx >= 0
-	if in.ContainerPathVolumes == nil {
-		if v1Found {
-			*out = slices.Delete(*out, v1Idx, v1Idx+1)
-		}
-	} else {
-		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
-		if (!v1Found && *in.ContainerPathVolumes) || (v1Found && v1Enabled != *in.ContainerPathVolumes) {
-			if *in.ContainerPathVolumes {
-				out.Enable("containerPathVolumes")
-			} else {
-				out.Disable("containerPathVolumes")
 			}
 		}
 	}
@@ -176,6 +176,9 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 }
 
 func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out *HyperConvergedFeatureGates) {
+	// converting the containerPathVolumes v1 beta feature gate to v1beta1
+	out.ContainerPathVolumes = new(in.IsEnabled("containerPathVolumes"))
+
 	// converting the decentralizedLiveMigration v1 beta feature gate to v1beta1
 	out.DecentralizedLiveMigration = new(in.IsEnabled("decentralizedLiveMigration"))
 
@@ -184,9 +187,6 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 
 	// converting the alignCPUs v1 alpha feature gate to v1beta1
 	out.AlignCPUs = new(in.IsEnabled("alignCPUs"))
-
-	// converting the containerPathVolumes v1 alpha feature gate to v1beta1
-	out.ContainerPathVolumes = new(in.IsEnabled("containerPathVolumes"))
 
 	// converting the deployKubeSecondaryDNS v1 alpha feature gate to v1beta1
 	out.DeployKubeSecondaryDNS = new(in.IsEnabled("deployKubeSecondaryDNS"))

@@ -39,7 +39,7 @@ var _ = Describe("KubeVirt Operand", func() {
 
 	const (
 		// Number of conditional featuregates always added by getFeatureGateChecks (one of the volume hotplug FGs, DecentralizedLiveMigration, Template, and RebootPolicy defaults)
-		conditionalFeatureGatesCount = 4
+		conditionalFeatureGatesCount = 5
 	)
 
 	var (
@@ -1990,7 +1990,7 @@ Version: 1.2.3`)
 							And(ContainElement(kvDeclarativeHotplugVolumesGate), Not(ContainElement(kvHotplugVolumesGate))),
 							Not(ContainElement(kvObjectGraph)),
 							And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
-							Not(ContainElement(kvContainerPathVolumes)),
+							ContainElement(kvContainerPathVolumes),
 							ContainElement(kvTemplateFG),
 							ContainElement(kvRebootPolicyFG),
 						),

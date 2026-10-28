@@ -76,7 +76,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			"declarativeHotplugVolumes":      BeTrueBecause("the declarativeHotplugVolumes feature gate should be enabled by default"),
 			"objectGraph":                    BeFalseBecause("the objectGraph feature gate should be disabled by default"),
 			"incrementalBackup":              BeFalseBecause("the incrementalBackup feature gate should be disabled by default"),
-			"containerPathVolumes":           BeFalseBecause("the containerPathVolumes feature gate should be disabled by default"),
+			"containerPathVolumes":           BeTrueBecause("the containerPathVolumes feature gate should be enabled by default"),
 		}
 
 		It("Check that featureGates defaults are behaving as expected", func(ctx context.Context) {

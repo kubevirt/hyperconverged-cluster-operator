@@ -1055,6 +1055,28 @@ var _ = Describe("api/v1beta1", func() {
 				})
 			})
 		})
+
+		DescribeTable("containerPathVolumes defaults and overrides survive conversion", func(value *bool, enabled bool) {
+			in := &HyperConverged{
+				Spec: HyperConvergedSpec{
+					FeatureGates: HyperConvergedFeatureGates{ContainerPathVolumes: value},
+				},
+			}
+			out := &hcov1.HyperConverged{}
+			Expect(in.ConvertTo(out)).To(Succeed())
+			Expect(out.Spec.FeatureGates.IsEnabled("containerPathVolumes")).To(Equal(enabled))
+
+			roundTripped := &HyperConverged{}
+			Expect(roundTripped.ConvertFrom(out)).To(Succeed())
+			Expect(roundTripped.Spec.FeatureGates.ContainerPathVolumes).To(HaveValue(Equal(enabled)))
+
+			SetObjectDefaults_HyperConverged(in)
+			Expect(in.Spec.FeatureGates.ContainerPathVolumes).To(HaveValue(Equal(enabled)))
+		},
+			Entry("enabled by default", nil, true),
+			Entry("explicitly enabled", new(true), true),
+			Entry("explicitly disabled", new(false), false),
+		)
 	})
 
 	Context("MDev enabled conversion", func() {
