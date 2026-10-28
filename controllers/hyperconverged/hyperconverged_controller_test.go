@@ -211,7 +211,6 @@ var _ = Describe("HyperconvergedController", func() {
 					"HostDevices",
 					"HypervStrictCheck",
 					"DownwardMetrics",
-					"KubevirtSeccompProfile",
 					"DecentralizedLiveMigration",
 					"Template",
 					"RebootPolicy",
