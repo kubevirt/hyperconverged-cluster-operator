@@ -15,6 +15,11 @@
     "description": "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true or nil, the \"DeclarativeHotplugVolumes\" feature gate is enabled and the \"HotplugVolumes\" feature gate is not (default behavior). When set to false, the \"HotplugVolumes\" featuregate is enabled in KubeVirt. This feature is in Technical Preview."
   },
   {
+    "name": "hostDevicesWithDRA",
+    "phase": "beta",
+    "description": "HostDevicesWithDRA allows users to create VMIs with DRA provisioned host devices specified in spec.domain.devices.hostDevices. This enables DRA-managed host devices to be attached to VMs. This feature is in Tech Preview."
+  },
+  {
     "name": "rebootPolicy",
     "phase": "beta",
     "description": "RebootPolicy enables virtual machines to be recreated when they reboot from within the guest operating system. This feature is in Tech Preview."
