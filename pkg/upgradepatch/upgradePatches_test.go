@@ -2,6 +2,7 @@ package upgradepatch
 
 import (
 	"bytes"
+	"io/fs"
 	"slices"
 	"sync"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 
+	hcov1fg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 )
@@ -296,6 +298,337 @@ var _ = Describe("upgradePatches", func() {
 
 			Expect(newHc).NotTo(BeNil())
 			Expect(newHc.Spec.Virtualization.VirtualMachineOptions).To(BeNil())
+		})
+	})
+
+	Context("default feature gates validation", func() {
+		BeforeEach(func() {
+			resetOnce()
+		})
+
+		It("Should detect missing name", func() {
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", fgMissingName))
+			Expect(Init(pwdFS, GinkgoLogr)).To(MatchError(ContainSubstring("no feature gate name specified")))
+		})
+
+		It("Should unknown state", func() {
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", fgUnknownState))
+			Expect(Init(pwdFS, GinkgoLogr)).To(MatchError(ContainSubstring("invalid feature gate state")))
+		})
+	})
+
+	Context("check default feature gates", func() {
+		var pwdFS fs.FS
+
+		BeforeEach(func() {
+			resetOnce()
+			pwdFS = dirtest.New(dirtest.WithFile("upgradePatches.json", defaultFeatureGates))
+		})
+
+		Context("implicit alpha -> beta", func() {
+			const fgMovedToBeta = "fgMovedToBeta"
+
+			It("should do nothing if the feature gate is not present", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates).To(BeEmpty())
+			})
+
+			It("should do nothing if the feature gate already set", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name: fgMovedToBeta,
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgMovedToBeta)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Enabled)))
+			})
+
+			It("should do nothing if explicitly enabled, and default state is not defined", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgMovedToBeta,
+						State: new(hcov1fg.Enabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgMovedToBeta)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Enabled)))
+			})
+
+			It("should change disabled FG to enabled", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgMovedToBeta,
+						State: new(hcov1fg.Disabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgMovedToBeta)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Enabled)))
+			})
+
+			It("should not change disabled FG to enabled, if the version does not match", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgMovedToBeta,
+						State: new(hcov1fg.Disabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.19.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgMovedToBeta)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Disabled)))
+			})
+		})
+
+		Context("explicit alpha -> beta", func() {
+			const fgExplicitlyMovedToBeta = "fgExplicitlyMovedToBeta"
+
+			It("should do nothing if the feature gate is not present", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates).To(BeEmpty())
+			})
+
+			It("should do nothing if the feature gate already set", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name: fgExplicitlyMovedToBeta,
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgExplicitlyMovedToBeta)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Enabled)))
+			})
+
+			It("should do nothing if explicitly enabled, and default state is not defined", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgExplicitlyMovedToBeta,
+						State: new(hcov1fg.Enabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgExplicitlyMovedToBeta)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Enabled)))
+			})
+
+			It("should change disabled FG to enabled", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgExplicitlyMovedToBeta,
+						State: new(hcov1fg.Disabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgExplicitlyMovedToBeta)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Enabled)))
+			})
+
+			It("should not change disabled FG to enabled, if the version does not match", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgExplicitlyMovedToBeta,
+						State: new(hcov1fg.Disabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.19.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgExplicitlyMovedToBeta)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Disabled)))
+			})
+		})
+
+		Context("beta -> alpha", func() {
+			const fgMovedToAlpha = "fgMovedToAlpha"
+
+			It("should do nothing if the feature gate is not present", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates).To(BeEmpty())
+			})
+
+			It("should disable if implicitly enabled", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name: fgMovedToAlpha,
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgMovedToAlpha)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Disabled)))
+			})
+
+			It("should disable if explicitly enabled", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgMovedToAlpha,
+						State: new(hcov1fg.Enabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgMovedToAlpha)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Disabled)))
+			})
+
+			It("should do nothing if already disabled", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgMovedToAlpha,
+						State: new(hcov1fg.Disabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.18.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgMovedToAlpha)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Disabled)))
+			})
+
+			It("should do nothing, if the version does not match", func() {
+				Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+				hc := commontestutils.NewHco()
+				hc.Spec.FeatureGates = []hcov1fg.FeatureGate{
+					{
+						Name:  fgMovedToAlpha,
+						State: new(hcov1fg.Enabled),
+					},
+				}
+
+				ver, err := semver.Parse("1.19.5")
+				Expect(err).NotTo(HaveOccurred())
+
+				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(newHc.Spec.FeatureGates.Index(fgMovedToAlpha)).To(Equal(0))
+				Expect(newHc.Spec.FeatureGates[0].State).To(HaveValue(Equal(hcov1fg.Enabled)))
+			})
 		})
 	})
 })
