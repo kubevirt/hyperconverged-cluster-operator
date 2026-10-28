@@ -27,6 +27,8 @@ import (
 
 const (
 	artifactServerMountName = "virtiowin-data"
+	metricsServicePortName  = "http-metrics"
+	metricsCertVolume       = "metrics-cert"
 )
 
 type DeploymentOperatorParams struct {
@@ -68,8 +70,6 @@ type DeploymentOperatorParams struct {
 }
 
 func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
-	const certVolume = "metrics-cert"
-
 	return appsv1.DeploymentSpec{
 		Replicas: new(int32(1)),
 		Selector: &metav1.LabelSelector{
@@ -109,7 +109,7 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{
-								Name:      certVolume,
+								Name:      metricsCertVolume,
 								MountPath: util.DefaultOperatorCertDir,
 							},
 						},
@@ -118,7 +118,7 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 				PriorityClassName: "system-cluster-critical",
 				Volumes: []corev1.Volume{
 					{
-						Name: certVolume,
+						Name: metricsCertVolume,
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName:  util.OperatorMetricsSecretName,
@@ -147,7 +147,7 @@ func GetOperatorMetricsService() corev1.Service {
 		Ports: []corev1.ServicePort{
 			{
 				Port:     util.MetricsPort,
-				Name:     "http-metrics",
+				Name:     metricsServicePortName,
 				Protocol: corev1.ProtocolTCP,
 				TargetPort: intstr.IntOrString{
 					Type: intstr.Int, IntVal: util.MetricsPort,
@@ -500,9 +500,36 @@ func GetDeploymentSpecWebhook(params *DeploymentOperatorParams) appsv1.Deploymen
 							getWebhookPort(),
 							getMetricsPort(),
 						},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      metricsCertVolume,
+								MountPath: util.DefaultWebhookMetricsCertDir,
+							},
+						},
 					},
 				},
 				PriorityClassName: "system-node-critical",
+				Volumes: []corev1.Volume{
+					{
+						Name: metricsCertVolume,
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName:  util.WebhookMetricsSecretName,
+								DefaultMode: new(int32(420)),
+								Items: []corev1.KeyToPath{
+									{
+										Key:  "tls.crt",
+										Path: util.WebhookMetricsCertName,
+									},
+									{
+										Key:  "tls.key",
+										Path: util.WebhookMetricsKeyName,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -544,6 +571,40 @@ func buildWebhookEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 			Value: params.HcoKvIoVersion,
 		},
 	}, params.Env...)
+}
+
+func GetWebhookMetricsService() corev1.Service {
+	spec := corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{
+			{
+				Port:     util.MetricsPort,
+				Name:     metricsServicePortName,
+				Protocol: corev1.ProtocolTCP,
+				TargetPort: intstr.IntOrString{
+					Type: intstr.Int, IntVal: util.MetricsPort,
+				},
+			},
+		},
+		Selector: map[string]string{"name": util.HCOWebhookName},
+	}
+
+	svc := corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: util.WebhookMetricServiceName,
+			Labels: map[string]string{
+				util.AppLabel:          util.HCOWebhookName,
+				util.AppLabelPartOf:    util.HyperConvergedCluster,
+				util.AppLabelComponent: string(util.AppComponentMonitoring),
+			},
+		},
+		Spec: spec,
+	}
+
+	return svc
 }
 
 var (

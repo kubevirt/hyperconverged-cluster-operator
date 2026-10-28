@@ -151,8 +151,6 @@ var (
 	testImagesNVRs      = flag.String("test-images-nvrs", "", "Test Images NVRs")
 	dumpNetworkPolicies = flag.Bool("dump-network-policies", false, "Dump network policy yamls to stdout")
 	dumpServices        = flag.Bool("dump-services", false, "Dump service yamls to stdout")
-	_                   = flag.String("network-passt-binding-image-name", "", "deprecated. this flag is ignored")
-	_                   = flag.String("network-passt-binding-cni-image-name", "", "deprecated. this flag is ignored")
 
 	envVars EnvVarFlags
 )
@@ -190,6 +188,7 @@ func main() {
 
 	if *dumpServices {
 		getOperatorMetricsService()
+		getWebhookMetricsService()
 	}
 }
 
@@ -280,6 +279,17 @@ func getOperatorMetricsService() {
 		svc.Annotations = make(map[string]string)
 	}
 	svc.Annotations["service.beta.openshift.io/serving-cert-secret-name"] = hcoutil.OperatorMetricsSecretName
+
+	panicOnError(util.MarshallObject(svc, os.Stdout))
+}
+
+func getWebhookMetricsService() {
+	svc := manifests.GetWebhookMetricsService()
+
+	if svc.Annotations == nil {
+		svc.Annotations = make(map[string]string)
+	}
+	svc.Annotations["service.beta.openshift.io/serving-cert-secret-name"] = hcoutil.WebhookMetricsSecretName
 
 	panicOnError(util.MarshallObject(svc, os.Stdout))
 }

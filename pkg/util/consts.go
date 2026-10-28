@@ -98,10 +98,21 @@ const (
 
 	OperatorMetricServiceName = HCOOperatorName + "-metrics-service"
 	OperatorMetricsSecretName = HCOOperatorName + "-service-cert"
+	OperatorTokenSecretName   = "hco-bearer-auth"
+
+	WebhookMetricServiceName = HCOWebhookName + "-metrics-service"
+	WebhookMetricsSecretName = WebhookMetricServiceName + "-cert"
+	WebhookTokenSecretName   = "hco-webhook-bearer-auth"
+
+	OpenShiftScrapeClassName = "tls-client-certificate-auth"
 
 	OperatorCertName       = "metrics.crt"
 	OperatorKeyName        = "metrics.key"
 	DefaultOperatorCertDir = "/metrics.local.config/certificates"
+
+	WebhookMetricsCertName       = OperatorCertName
+	WebhookMetricsKeyName        = OperatorKeyName
+	DefaultWebhookMetricsCertDir = DefaultOperatorCertDir
 
 	CliDownloadsServerPort int32 = 8080
 	UIPluginServerPort     int32 = 9443
@@ -148,4 +159,14 @@ const (
 	AppComponentNetResInjector     AppComponent = "virt-network-resources-injector"
 	AppComponentObservability      AppComponent = "virt-observability-controller"
 	AppComponentFileRestore        AppComponent = "vm-file-restore"
+)
+
+// The authoritative client CA used to verify metrics scrapers lives in the
+// kube-system extension-apiserver-authentication ConfigMap under
+// client-ca-file. (metrics-client-ca in openshift-monitoring is a
+// CMO-derived copy of the same CA.)
+const (
+	ClientCAConfigMapNamespace = "kube-system"
+	ClientCAConfigMapName      = "extension-apiserver-authentication"
+	ClientCAConfigMapKey       = "client-ca-file"
 )

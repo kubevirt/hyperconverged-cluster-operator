@@ -43,6 +43,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 
 		It("should return default value, if the env var is not set", func() {
 			Expect(GetWebhookCertDir()).To(Equal(hcoutil.DefaultWebhookCertDir))
+			Expect(GetWebhookMetricsCertDir()).To(Equal(hcoutil.DefaultWebhookMetricsCertDir))
 		})
 
 		It("should return the value of the env var, if set", func() {

@@ -93,11 +93,19 @@ func main() {
 
 	// Make sure the certificates are mounted, this should be handled by the OLM
 	webhookCertDir := webhooks.GetWebhookCertDir()
-	certs := []string{filepath.Join(webhookCertDir, hcoutil.WebhookCertName), filepath.Join(webhookCertDir, hcoutil.WebhookKeyName)}
+	webhookMetricsCertDir := webhooks.GetWebhookMetricsCertDir()
+	certs := []string{
+		// API Server Certificate
+		filepath.Join(webhookCertDir, hcoutil.WebhookCertName),
+		filepath.Join(webhookCertDir, hcoutil.WebhookKeyName),
+		// Metrics certificates
+		filepath.Join(webhookMetricsCertDir, hcoutil.WebhookMetricsCertName),
+		filepath.Join(webhookMetricsCertDir, hcoutil.WebhookMetricsKeyName),
+	}
 	for _, fname := range certs {
 		if _, err := os.Stat(fname); err != nil {
-			logger.Error(err, "CSV certificates were not found, skipping webhook initialization")
-			cmdHelper.ExitOnError(err, "CSV certificates were not found, skipping webhook initialization")
+			logger.Error(err, "certificates were not found, skipping webhook initialization")
+			cmdHelper.ExitOnError(err, "certificates were not found, skipping webhook initialization")
 		}
 	}
 
@@ -119,15 +127,22 @@ func main() {
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
 	// Create a new Cmd to provide shared dependencies and start components
+	filterProvided := authorization.HttpWithBearerToken
+	mutateTLSConfigFunc := tlssecprofile.MutateTLSConfig
+	if ci.IsOpenshift() {
+		filterProvided = cmdcommon.FilterHTTPWithCert
+		mutateTLSConfigFunc = tlssecprofile.MutateTLSConfigCertBasedAuth
+	}
+
 	mgr, err := manager.New(cfg, manager.Options{
 		Metrics: server.Options{
 			SecureServing:  true,
-			CertDir:        webhooks.GetWebhookCertDir(),
-			CertName:       hcoutil.WebhookCertName,
-			KeyName:        hcoutil.WebhookKeyName,
+			CertDir:        webhookMetricsCertDir,
+			CertName:       hcoutil.WebhookMetricsCertName,
+			KeyName:        hcoutil.WebhookMetricsKeyName,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
-			FilterProvider: authorization.HttpWithBearerToken,
-			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
+			FilterProvider: filterProvided,
+			TLSOpts:        []func(*tls.Config){mutateTLSConfigFunc},
 		},
 		HealthProbeBindAddress:     fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:      hcoutil.ReadinessEndpointName,
@@ -138,7 +153,7 @@ func main() {
 		Scheme:                     scheme,
 
 		WebhookServer: webhook.NewServer(webhook.Options{
-			CertDir:  webhooks.GetWebhookCertDir(),
+			CertDir:  webhookCertDir,
 			CertName: hcoutil.WebhookCertName,
 			KeyName:  hcoutil.WebhookKeyName,
 			Port:     hcoutil.WebhookPort,
@@ -185,6 +200,11 @@ func main() {
 
 		err = whapiservercontrollers.RegisterReconciler(mgr)
 		cmdHelper.ExitOnError(err, "Cannot register APIServer reconciler")
+
+		err = cmdcommon.RegisterClientCAController(ctx, mgr, apiClient, logger)
+		if err != nil {
+			cmdHelper.ExitOnError(err, "cannot get the client CA for the metrics endpoint")
+		}
 	}
 
 	logger.Info("Registering the Bearer Token reconciler")
@@ -249,6 +269,13 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 	if ci.IsOpenshift() {
 		objMap[&openshiftconfigv1.APIServer{}] = cache.ByObject{
 			SyncPeriod: ptr.To(5 * time.Minute),
+		}
+
+		objMap[&corev1.ConfigMap{}] = cache.ByObject{
+			Field: fields.Set{
+				"metadata.namespace": hcoutil.ClientCAConfigMapNamespace,
+				"metadata.name":      hcoutil.ClientCAConfigMapName,
+			}.AsSelector(),
 		}
 	}
 

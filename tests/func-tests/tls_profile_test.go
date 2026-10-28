@@ -45,14 +45,35 @@ const (
 var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 	const tlsPath = "/spec/security/tlsSecurityProfile"
 
+	var (
+		cli         client.Client
+		k8sCli      *kubernetes.Clientset
+		isOpenshift bool
+		promCert    *tls.Certificate
+	)
+
+	BeforeAll(func(ctx context.Context) {
+		cli = tests.GetControllerRuntimeClient()
+		k8sCli = tests.GetK8sClientSet()
+
+		var err error
+		isOpenshift, err = tests.IsOpenShift(ctx, cli)
+		Expect(err).NotTo(HaveOccurred())
+
+		if isOpenshift {
+			promCert, err = getPromCert(ctx, cli)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(promCert).NotTo(BeNil())
+		}
+	})
+
 	DescribeTableSubtree("check TLS configurations", Serial, Ordered, func(targetPort int, podNameLabel string, serviceName, secretName string) {
 		var (
-			cli            client.Client
-			k8sCli         *kubernetes.Clientset
 			webhookAddr    string
 			stopPF         func()
 			shouldCheckSSP bool
 			x509Alg        x509.PublicKeyAlgorithm
+			clientCert     *tls.Certificate
 		)
 
 		patchTLSProfile := func(ctx context.Context, profileJSON string) {
@@ -62,9 +83,6 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 		}
 
 		BeforeAll(func(ctx context.Context) {
-			cli = tests.GetControllerRuntimeClient()
-			k8sCli = tests.GetK8sClientSet()
-
 			if serviceName == "" || secretName == "" {
 				deploymentName, err := getDeployment(ctx, k8sCli, podNameLabel)
 				Expect(err).ToNot(HaveOccurred())
@@ -83,6 +101,12 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 
 			x509Alg, err = getCrtAlg(ctx, k8sCli, secretName)
 			Expect(err).NotTo(HaveOccurred())
+
+			if isOpenshift && targetPort == int(hcoutil.MetricsPort) {
+				clientCert = promCert
+			} else {
+				clientCert = nil
+			}
 		})
 
 		AfterAll(func(ctx context.Context) {
@@ -98,7 +122,7 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 				if !found {
 					GinkgoLogr.Info("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg)
 				} else {
-					verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileIntermediateType, expected)
+					verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileIntermediateType, expected, clientCert)
 				}
 			}
 
@@ -123,7 +147,7 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 			if !found {
 				Skip(fmt.Sprintf("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg))
 			}
-			verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileOldType, expected)
+			verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileOldType, expected, clientCert)
 		})
 
 		It("should not change TLS profile on dry-run patch", func(ctx context.Context) {
@@ -137,7 +161,7 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 				Skip(fmt.Sprintf("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg))
 			}
 
-			verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileOldType, expected)
+			verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileOldType, expected, clientCert)
 		})
 
 		It("should enforce Intermediate TLS profile", func(ctx context.Context) {
@@ -148,7 +172,7 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 				Skip(fmt.Sprintf("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg))
 			}
 
-			verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileIntermediateType, expected)
+			verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileIntermediateType, expected, clientCert)
 		})
 
 		It("should enforce Modern TLS profile", func(ctx context.Context) {
@@ -158,7 +182,7 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 			if !found {
 				Skip(fmt.Sprintf("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg))
 			}
-			verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileModernType, expected)
+			verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileModernType, expected, clientCert)
 		})
 
 		It("should reject Custom profile missing HTTP/2-required cipher", func(ctx context.Context) {
@@ -181,7 +205,7 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 				Skip(fmt.Sprintf("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg))
 			}
 
-			verifyTLSConfig(ctx, webhookAddr, tls.VersionTLS12, []tls.CurveID{}, expected)
+			verifyTLSConfig(ctx, webhookAddr, tls.VersionTLS12, []tls.CurveID{}, expected, clientCert)
 		})
 
 		It("should enforce Custom TLS profile, with PQC", func(ctx context.Context) {
@@ -192,16 +216,16 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 				Skip(fmt.Sprintf("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg))
 			}
 
-			verifyTLSConfig(ctx, webhookAddr, tls.VersionTLS12, []tls.CurveID{tls.X25519, tls.X25519MLKEM768}, expected)
+			verifyTLSConfig(ctx, webhookAddr, tls.VersionTLS12, []tls.CurveID{tls.X25519, tls.X25519MLKEM768}, expected, clientCert)
 		})
 	},
 		Entry("Check HCO webhook's webhook port (4343)", hcoutil.WebhookPort, "hyperconverged-cluster-webhook", "", ""),
-		Entry("Check HCO webhook's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-webhook", "hyperconverged-cluster-webhook-operator-metrics", ""),
+		Entry("Check HCO webhook's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-webhook", hcoutil.WebhookMetricServiceName, hcoutil.WebhookMetricsSecretName),
 		Entry("Check HCO operator's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-operator", hcoutil.OperatorMetricServiceName, hcoutil.OperatorMetricsSecretName),
 	)
 })
 
-func isTLSVersionAccepted(ctx context.Context, addr string, version uint16) (bool, error) {
+func isTLSVersionAccepted(ctx context.Context, addr string, version uint16, clientCert *tls.Certificate) (bool, error) {
 	// Verify TCP connectivity first to distinguish transport errors from TLS rejections
 	conn, err := net.DialTimeout("tcp", addr, tlsDialTimeout)
 	if err != nil {
@@ -217,6 +241,10 @@ func isTLSVersionAccepted(ctx context.Context, addr string, version uint16) (boo
 			MinVersion:         version,
 			MaxVersion:         version,
 		},
+	}
+
+	if clientCert != nil {
+		dialer.Config.Certificates = append(dialer.Config.Certificates, *clientCert)
 	}
 
 	conn, err = dialer.DialContext(ctx, "tcp", addr)
@@ -235,7 +263,7 @@ func isTLSVersionAccepted(ctx context.Context, addr string, version uint16) (boo
 
 // enumerateServerCiphers discovers which TLS 1.2 cipher suites the server
 // accepts by attempting a handshake with each known suite individually.
-func enumerateServerCiphers(ctx context.Context, addr string, tlsVersion uint16, curves []tls.CurveID) []uint16 {
+func enumerateServerCiphers(ctx context.Context, addr string, tlsVersion uint16, curves []tls.CurveID, clientCert *tls.Certificate) []uint16 {
 	allSuites := getAllTLSCipherSuite()
 
 	var supported []uint16
@@ -244,7 +272,7 @@ func enumerateServerCiphers(ctx context.Context, addr string, tlsVersion uint16,
 			continue
 		}
 
-		if isCipherSetSupported(ctx, addr, tlsVersion, suite.ID, curves) {
+		if isCipherSetSupported(ctx, addr, tlsVersion, suite.ID, curves, clientCert) {
 			supported = append(supported, suite.ID)
 		}
 	}
@@ -252,7 +280,7 @@ func enumerateServerCiphers(ctx context.Context, addr string, tlsVersion uint16,
 	return supported
 }
 
-func isCipherSetSupported(ctx context.Context, addr string, tlsVersion, cipherSuitID uint16, curves []tls.CurveID) bool {
+func isCipherSetSupported(ctx context.Context, addr string, tlsVersion, cipherSuitID uint16, curves []tls.CurveID, clientCert *tls.Certificate) bool {
 	dialer := &tls.Dialer{
 		NetDialer: &net.Dialer{Timeout: tlsDialTimeout},
 		Config: &tls.Config{
@@ -262,6 +290,10 @@ func isCipherSetSupported(ctx context.Context, addr string, tlsVersion, cipherSu
 			CipherSuites:       []uint16{cipherSuitID},
 			CurvePreferences:   curves,
 		},
+	}
+
+	if clientCert != nil {
+		dialer.Config.Certificates = append(dialer.Config.Certificates, *clientCert)
 	}
 
 	conn, err := dialer.DialContext(ctx, "tcp", addr)
@@ -276,7 +308,7 @@ func isCipherSetSupported(ctx context.Context, addr string, tlsVersion, cipherSu
 
 // verifyTLSConfig checks that the server enforces the expected minimum TLS
 // version and only accepts cipher suites from the allowed set.
-func verifyTLSConfig(ctx context.Context, addr string, minVersion uint16, allowedCurves []tls.CurveID, expectedCiphers map[uint16][]uint16) {
+func verifyTLSConfig(ctx context.Context, addr string, minVersion uint16, allowedCurves []tls.CurveID, expectedCiphers map[uint16][]uint16, clientCert *tls.Certificate) {
 	GinkgoHelper()
 
 	for _, v := range []uint16{tls.VersionTLS10, tls.VersionTLS11, tls.VersionTLS12, tls.VersionTLS13} {
@@ -287,7 +319,7 @@ func verifyTLSConfig(ctx context.Context, addr string, minVersion uint16, allowe
 
 		if v >= minVersion {
 			Eventually(func(g Gomega, ctx context.Context) {
-				accepted, err := isTLSVersionAccepted(ctx, addr, v)
+				accepted, err := isTLSVersionAccepted(ctx, addr, v, clientCert)
 				g.Expect(err).NotTo(HaveOccurred(),
 					"transport error while checking TLS version %s", vStr)
 				g.Expect(accepted).To(BeTrue(),
@@ -297,14 +329,14 @@ func verifyTLSConfig(ctx context.Context, addr string, minVersion uint16, allowe
 
 			Eventually(enumerateServerCiphers).
 				WithContext(ctx).
-				WithArguments(addr, v, allowedCurves).
+				WithArguments(addr, v, allowedCurves, clientCert).
 				WithTimeout(30 * time.Second).
 				WithPolling(5 * time.Second).
 				Should(ConsistOf(expectedCiphers[v]))
 
 		} else {
 			Eventually(func(g Gomega, ctx context.Context) {
-				accepted, err := isTLSVersionAccepted(ctx, addr, v)
+				accepted, err := isTLSVersionAccepted(ctx, addr, v, clientCert)
 				g.Expect(err).NotTo(HaveOccurred(),
 					"transport error while checking TLS version %s", vStr)
 				g.Expect(accepted).To(BeFalse(),
@@ -314,7 +346,7 @@ func verifyTLSConfig(ctx context.Context, addr string, minVersion uint16, allowe
 	}
 }
 
-func verifyStandardProfile(ctx context.Context, addr string, profileType openshiftconfigv1.TLSProfileType, expectedCiphers map[uint16][]uint16) {
+func verifyStandardProfile(ctx context.Context, addr string, profileType openshiftconfigv1.TLSProfileType, expectedCiphers map[uint16][]uint16, clientCert *tls.Certificate) {
 	GinkgoHelper()
 
 	spec := openshiftconfigv1.TLSProfiles[profileType]
@@ -322,7 +354,7 @@ func verifyStandardProfile(ctx context.Context, addr string, profileType openshi
 
 	minVersion := crypto.TLSVersionOrDie(string(spec.MinTLSVersion))
 	curvesIDs, _ := crypto.TLSGroupsToCurveIDs(spec.Groups)
-	verifyTLSConfig(ctx, addr, minVersion, curvesIDs, expectedCiphers)
+	verifyTLSConfig(ctx, addr, minVersion, curvesIDs, expectedCiphers, clientCert)
 }
 
 func getEndpointToTest(ctx context.Context, k8sCli *kubernetes.Clientset, targetPort int, nameLabel string, serviceName string) (string, func(), error) {
@@ -512,4 +544,19 @@ func getCrtAlg(ctx context.Context, clientSet *kubernetes.Clientset, secretName 
 	}
 
 	return certificate.PublicKeyAlgorithm, nil
+}
+
+func getPromCert(ctx context.Context, cli client.Client) (*tls.Certificate, error) {
+	promSec := &corev1.Secret{}
+	err := cli.Get(ctx, client.ObjectKey{Name: "metrics-client-certs", Namespace: "openshift-monitoring"}, promSec)
+	if err != nil {
+		return nil, err
+	}
+
+	promCerts, err := tls.X509KeyPair(promSec.Data["tls.crt"], promSec.Data["tls.key"])
+	if err != nil {
+		return nil, err
+	}
+
+	return &promCerts, nil
 }

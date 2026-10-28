@@ -12,5 +12,7 @@ var (
 	GetGroupsInStringFormat                       = internal.GetGroupsInStringFormat
 	Refresh                                       = internal.Refresh
 	SetHyperConvergedTLSSecurityProfile           = internal.SetHyperConvergedTLSSecurityProfile
-	MutateTLSConfig                               = internal.MutateTLSConfig
+	MutateTLSConfig                               = internal.MutateTLSConfig(false)
+	MutateTLSConfigCertBasedAuth                  = internal.MutateTLSConfig(true)
+	RefreshClientCA                               = internal.RefreshClientCA
 )

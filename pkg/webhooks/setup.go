@@ -1,6 +1,7 @@
 package webhooks
 
 import (
+	"cmp"
 	"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -53,10 +54,9 @@ func SetupWebhookWithManager(mgr ctrl.Manager, isOpenshift bool) error {
 }
 
 func GetWebhookCertDir() string {
-	webhookCertDir := os.Getenv(webHookCertDirEnv)
-	if webhookCertDir != "" {
-		return webhookCertDir
-	}
+	return cmp.Or(os.Getenv(webHookCertDirEnv), hcoutil.DefaultWebhookCertDir)
+}
 
-	return hcoutil.DefaultWebhookCertDir
+func GetWebhookMetricsCertDir() string {
+	return cmp.Or(os.Getenv(webHookCertDirEnv), hcoutil.DefaultWebhookMetricsCertDir)
 }

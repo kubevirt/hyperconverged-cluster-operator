@@ -288,6 +288,12 @@ func main() {
 			eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register API Server; "+err.Error())
 			os.Exit(1)
 		}
+
+		err = cmdcommon.RegisterClientCAController(ctx, mgr, apiClient, logger)
+		if err != nil {
+			logger.Error(err, "failed to register the client-CA controller")
+			os.Exit(1)
+		}
 	}
 
 	if ci.IsDeschedulerAvailable() {
@@ -368,7 +374,18 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
 			},
 			&corev1.ConfigMap{}: {
-				Label: labelSelector,
+				// cache the extension-apiserver-authentication CM in the kube-system namespace
+				// or any CM matches to the labels, in any other namespace
+				Namespaces: map[string]cache.Config{
+					cache.AllNamespaces: {
+						LabelSelector: labelSelector,
+					},
+					hcoutil.ClientCAConfigMapNamespace: {
+						FieldSelector: fields.Set{
+							"metadata.name": hcoutil.ClientCAConfigMapName,
+						}.AsSelector(),
+					},
+				},
 			},
 			&corev1.Service{}: {
 				Field: namespaceSelector,
@@ -499,6 +516,13 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 }
 
 func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hcoutil.ClusterInfo, scheme *apiruntime.Scheme, persesAvailable bool) manager.Options {
+	filterProvided := authorization.HttpWithBearerToken
+	mutateTLSConfigFunc := tlssecprofile.MutateTLSConfig
+	if ci.IsOpenshift() {
+		filterProvided = cmdcommon.FilterHTTPWithCert
+		mutateTLSConfigFunc = tlssecprofile.MutateTLSConfigCertBasedAuth
+	}
+
 	return manager.Options{
 		Metrics: server.Options{
 			SecureServing:  true,
@@ -506,8 +530,8 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 			CertName:       hcoutil.OperatorCertName,
 			KeyName:        hcoutil.OperatorKeyName,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
-			FilterProvider: authorization.HttpWithBearerToken,
-			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
+			FilterProvider: filterProvided,
+			TLSOpts:        []func(*tls.Config){mutateTLSConfigFunc},
 		},
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:  hcoutil.ReadinessEndpointName,

@@ -137,6 +137,7 @@ func main() {
 	services := []corev1.Service{
 		getServiceWebhook(),
 		manifests.GetOperatorMetricsService(),
+		manifests.GetWebhookMetricsService(),
 	}
 
 	serviceAccounts := map[string]corev1.ServiceAccount{

@@ -20,9 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -38,13 +36,7 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 	BeforeEach(func(ctx context.Context) {
 		tests.BeforeEach(ctx)
-		cfg, err := config.GetConfig()
-		Expect(err).ToNot(HaveOccurred())
-
-		s := scheme.Scheme
-		Expect(consolev1.Install(s)).To(Succeed())
-		cli, err = client.New(cfg, client.Options{Scheme: s})
-		Expect(err).ToNot(HaveOccurred())
+		cli = tests.GetControllerRuntimeClient()
 
 		tests.FailIfNotOpenShift(ctx, cli, "ConsoleCliDownload")
 	})

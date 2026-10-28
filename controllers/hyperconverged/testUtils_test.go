@@ -226,7 +226,7 @@ func getBasicDeployment() *BasicExpected {
 		BlockOwnerDeletion: new(false),
 		Controller:         new(false),
 	}
-	res.serviceMonitor = alerts.NewServiceMonitor(namespace, deploymentRef)
+	res.serviceMonitor = alerts.NewServiceMonitor(namespace, deploymentRef, true)
 
 	expectedKV, err := handlers.NewKubeVirt(hco, namespace)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
