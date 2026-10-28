@@ -255,6 +255,64 @@ spec:
 
 **Graduation Status**: Alpha
 
+### hostDevicesWithDRA Feature Gate
+The `hostDevicesWithDRA` feature gate enables VMIs to use DRA-provisioned
+host devices and is enabled by default. It lets KubeVirt consume
+DRA-backed host-device claims. It does not provision host devices or
+configure a DRA driver; those remain the responsibility of the DRA
+driver already installed on the cluster.
+
+When enabled, a VMI attaches a DRA-provisioned host device by naming the
+device request and the resource claim that provides it.
+
+`spec.domain.devices.hostDevices[].claimName` must match
+`spec.resourceClaims[].name`. That entry references either an existing
+`ResourceClaim` (`resourceClaimName`) or a `ResourceClaimTemplate`
+(`resourceClaimTemplateName`) in the VMI namespace. Set exactly one of those
+fields. `requestName` selects a request from that claim's
+`spec.devices.requests`. KubeVirt rejects the VMI when a host device names a
+claim that `spec.resourceClaims` does not list.
+
+```yaml
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  name: vmi-dra-host-device
+spec:
+  resourceClaims:
+  - name: crypto-device
+    resourceClaimName: my-crypto-claim
+  domain:
+    devices:
+      hostDevices:
+      - name: crypto
+        claimName: crypto-device
+        requestName: crypto-request
+```
+
+`my-crypto-claim` is a `ResourceClaim` in the same namespace, and
+`crypto-request` is a device request in that claim. To create the claim from
+a template, set `resourceClaimTemplateName` instead of `resourceClaimName`.
+
+Set its state to `Disabled` to disable this feature.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: hostDevicesWithDRA
+    state: Disabled
+```
+
+**Note**: this feature is in Tech Preview.
+
+**Default**: `Enabled`
+
+**Graduation Status**: Beta
+
 ### gpusWithDRA Feature Gate
 Add the `gpusWithDRA` feature gate in order to enable DRA (Dynamic Resource
 Allocation) provisioning of GPUs for virtual machines. When enabled, VMIs can

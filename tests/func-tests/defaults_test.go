@@ -78,6 +78,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			"incrementalBackup":              BeFalseBecause("the incrementalBackup feature gate should be disabled by default"),
 			"containerPathVolumes":           BeTrueBecause("the containerPathVolumes feature gate should be enabled by default"),
 			"observeVMStat":                  BeFalseBecause("the observeVMStat feature gate should be disabled by default"),
+			"hostDevicesWithDRA":             BeTrueBecause("the hostDevicesWithDRA feature gate should be enabled by default"),
 		}
 
 		It("Check that featureGates defaults are behaving as expected", func(ctx context.Context) {

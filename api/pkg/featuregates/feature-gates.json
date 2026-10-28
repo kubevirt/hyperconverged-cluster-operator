@@ -20,6 +20,11 @@
     "description": "Publish KubeVirt metrics, alerts, and recording rules. This is enabled by default. Disable this feature gate to stop publishing them. This feature is in Tech Preview."
   },
   {
+    "name": "hostDevicesWithDRA",
+    "phase": "beta",
+    "description": "HostDevicesWithDRA allows users to create VMIs with DRA provisioned host devices specified in spec.domain.devices.hostDevices. This enables DRA-managed host devices to be attached to VMs. This feature is in Tech Preview."
+  },
+  {
     "name": "rebootPolicy",
     "phase": "beta",
     "description": "RebootPolicy enables virtual machines to be recreated when they reboot from within the guest operating system. This feature is in Tech Preview."
