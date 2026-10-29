@@ -97,9 +97,6 @@ const (
 
 	// Allow assigning host devices to virtual machines
 	kvHostDevicesGate = "HostDevices"
-
-	// Enable the installation of the KubeVirt seccomp profile
-	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
 )
 
 // KubeVirt architecture dependant feature gates.
@@ -114,7 +111,6 @@ var (
 		kvCPUManagerGate,
 		kvSnapshotGate,
 		kvHostDevicesGate,
-		kvKubevirtSeccompProfile,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of

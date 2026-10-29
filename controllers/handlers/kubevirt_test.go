@@ -2414,12 +2414,11 @@ Version: 1.2.3`)
 					Expect(disabled).To(BeEmpty())
 				})
 
-				It("should not include Snapshot or KubevirtSeccompProfile when they are in mandatory FGs", func() {
+				It("should not include Snapshot when it is in mandatory FGs", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					fgs := getKvFeatureGateList(hco)
 					disabled := getKvDisabledFeatureGateList(fgs)
 					Expect(disabled).NotTo(ContainElement(kvSnapshotGate))
-					Expect(disabled).NotTo(ContainElement(kvKubevirtSeccompProfile))
 				})
 
 				It("should not include declarativeHotplugVolumes when it is enabled by default", func() {
