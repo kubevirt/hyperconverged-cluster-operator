@@ -6,7 +6,7 @@ Applies to: `**/*.go`
 
 - Use shared constants for feature gate names, annotation keys, and
   label values; flag any duplicated string literals that should be
-  constants
+  constants.
 - When assigning slices from Kubernetes API objects into other objects,
   use `DeepCopy()` to avoid shared-reference bugs
 
