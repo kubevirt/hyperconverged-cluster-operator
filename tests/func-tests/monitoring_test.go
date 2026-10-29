@@ -313,6 +313,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				err := cli.Get(ctx, key, descheduler)
 				g.Expect(err).NotTo(HaveOccurred())
 				initialDescheduler.Spec.DeepCopyInto(&descheduler.Spec)
+				descheduler.Annotations = initialDescheduler.Annotations
 				err = cli.Update(ctx, descheduler)
 				g.Expect(err).NotTo(HaveOccurred())
 			}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
@@ -323,8 +324,8 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 
 		It("HCOMisconfiguredDescheduler alert should fire when KubeDescheduler is installed and not properly configured for KubeVirt", Serial, func(ctx context.Context) {
 			const (
-				jsonPatchMisconfigure = `[{"op": "replace", "path": "/spec", "value": {"managementState": "Managed", "profiles": ["AffinityAndTaints"]}}]`
-				jsonPatchConfigure    = `[{"op": "replace", "path": "/spec", "value": {"managementState": "Managed", "profiles": ["DevKubeVirtRelieveAndMigrate"]}}]`
+				mergePatchMisconfigure = `{"metadata":{"annotations":{"platform.kubevirt.io/mode":"unmanaged"}},"spec":{"profiles":["AffinityAndTaints"]}}`
+				mergePatchConfigure    = `{"spec":{"profiles":["DevKubeVirtRelieveAndMigrate"]}}`
 			)
 
 			By(fmt.Sprintf("Reading the `%s` metric from HCO prometheus endpoint", query))
@@ -341,8 +342,8 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 
 			GinkgoWriter.Printf("The metric value before the test is: %0.2f\n", valueBefore)
 
-			patchMisconfigure := client.RawPatch(types.JSONPatchType, []byte(jsonPatchMisconfigure))
-			patchConfigure := client.RawPatch(types.JSONPatchType, []byte(jsonPatchConfigure))
+			patchMisconfigure := client.RawPatch(types.MergePatchType, []byte(mergePatchMisconfigure))
+			patchConfigure := client.RawPatch(types.MergePatchType, []byte(mergePatchConfigure))
 
 			descheduler := &deschedulerv1.KubeDescheduler{
 				ObjectMeta: metav1.ObjectMeta{
