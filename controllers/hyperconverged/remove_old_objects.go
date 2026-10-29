@@ -127,26 +127,6 @@ func mustGetOldNetworkPolicySelector() client.MatchingLabelsSelector {
 	return networkPolicySelector
 }
 
-var graduatedToBeta = []string{"ContainerPathVolumes"}
-
-// For FGs that was graduated to beta, but because they were defined in v1beta1 as
-// alpha, are disabled by default, and now are converted to v1 as Disabled, we
-// want to enable them on upgrade.
-func modifyFGDefaults(hc *hcov1.HyperConverged) bool {
-	modified := false
-
-	for _, fg := range graduatedToBeta {
-		if hc.Spec.FeatureGates.IsEnabled(fg) {
-			continue
-		}
-
-		modified = true
-		hc.Spec.FeatureGates.Enable(fg)
-	}
-
-	return modified
-}
-
 func removeWrongJsonPatch(hc *hcov1.HyperConverged) (bool, error) {
 	patchStr, found := hc.Annotations[common.JSONPatchKVAnnotationName]
 	if !found {
