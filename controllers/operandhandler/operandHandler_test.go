@@ -30,6 +30,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	observabilitycontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/observabilitycontroller"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -183,6 +184,73 @@ var _ = Describe("Test operandHandler", func() {
 				Expect(cmList).ToNot(BeNil())
 				Expect(cmList.Items).To(HaveLen(1))
 				Expect(cmList.Items[0].Name).To(Equal("grafana-dashboard-kubevirt-top-consumers"))
+			})
+		})
+
+		Context("guest device drivers reference ConfigMap", func() {
+			const sampleDriversYAML = `version: v1alpha1
+devices:
+  - deviceID: "1041"
+    deviceName: "VirtIO network device"
+    current:
+      - guestOSVersionID: "2022"
+        driverVersion: "100.95.104.26200"
+`
+
+			BeforeEach(func() {
+				origImage, origImageSet := os.LookupEnv(hcoutil.ObservabilityControllerImageEnvV)
+				Expect(os.Setenv(hcoutil.ObservabilityControllerImageEnvV, "quay.io/kubevirt/virt-observability-controller:test")).To(Succeed())
+				DeferCleanup(func() {
+					if origImageSet {
+						Expect(os.Setenv(hcoutil.ObservabilityControllerImageEnvV, origImage)).To(Succeed())
+					} else {
+						Expect(os.Unsetenv(hcoutil.ObservabilityControllerImageEnvV)).To(Succeed())
+					}
+				})
+			})
+
+			It("should deploy the reference ConfigMap when the image ships the drivers file", func() {
+				hco := commontestutils.NewHco()
+				hco.Spec.FeatureGates.Enable("deployObservabilityController")
+				cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
+				ci := commontestutils.ClusterInfoMock{}
+
+				driversFS := dirtest.New(
+					dirtest.WithFile(path.Join(observabilitycontroller.GuestDeviceDriversManifestLocation, "drivers.yaml"), []byte(sampleDriversYAML)),
+				)
+
+				handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, commontestutils.NewEventEmitterMock())
+				handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, driversFS)
+
+				req := commontestutils.NewReq(hco)
+				Expect(handler.Ensure(req)).To(Succeed())
+
+				cm := &corev1.ConfigMap{}
+				Expect(cli.Get(context.Background(), client.ObjectKey{
+					Name:      "kubevirt-guest-device-drivers-config",
+					Namespace: commontestutils.Namespace,
+				}, cm)).To(Succeed())
+				Expect(cm.Data).To(HaveKeyWithValue("drivers.yaml", sampleDriversYAML))
+			})
+
+			It("should not deploy the reference ConfigMap when the image does not ship the drivers file", func() {
+				hco := commontestutils.NewHco()
+				hco.Spec.FeatureGates.Enable("deployObservabilityController")
+				cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
+				ci := commontestutils.ClusterInfoMock{}
+
+				handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, commontestutils.NewEventEmitterMock())
+				handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, dirtest.New())
+
+				req := commontestutils.NewReq(hco)
+				Expect(handler.Ensure(req)).To(Succeed())
+
+				cm := &corev1.ConfigMap{}
+				err := cli.Get(context.Background(), client.ObjectKey{
+					Name:      "kubevirt-guest-device-drivers-config",
+					Namespace: commontestutils.Namespace,
+				}, cm)
+				Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 			})
 		})
 

@@ -107,6 +107,18 @@ var _ = Describe("Observability Controller Handlers", func() {
 			newHandler: func(cl client.Client, s *runtime.Scheme) operands.Operand { return NewServiceAccountHandler(cl, s) },
 			existing:   func() client.Object { return newServiceAccount() },
 		}),
+		Entry("GuestDeviceDriversRole", handlerTestEntry{
+			newHandler: func(cl client.Client, s *runtime.Scheme) operands.Operand {
+				return NewGuestDeviceDriversRoleHandler(cl, s)
+			},
+			existing: func() client.Object { return newGuestDeviceDriversRole() },
+		}),
+		Entry("GuestDeviceDriversRoleBinding", handlerTestEntry{
+			newHandler: func(cl client.Client, s *runtime.Scheme) operands.Operand {
+				return NewGuestDeviceDriversRoleBindingHandler(cl, s)
+			},
+			existing: func() client.Object { return newGuestDeviceDriversRoleBinding() },
+		}),
 		Entry("Deployment", handlerTestEntry{
 			newHandler: func(cl client.Client, s *runtime.Scheme) operands.Operand { return NewDeploymentHandler(cl, s) },
 			existing:   func() client.Object { return newDeployment(commontestutils.NewHco()) },
@@ -140,7 +152,7 @@ var _ = Describe("Handler resource verification", func() {
 
 		foundCR := newClusterRoleWithNameOnly()
 		Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(foundCR), foundCR)).To(Succeed())
-		Expect(foundCR.Rules).To(HaveLen(9))
+		Expect(foundCR.Rules).To(HaveLen(8))
 	})
 
 	It("should create Deployment with correct replicas", func() {

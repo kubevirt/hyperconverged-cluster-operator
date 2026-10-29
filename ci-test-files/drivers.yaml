@@ -1,0 +1,7 @@
+version: v1alpha1
+devices:
+  - deviceID: "1041"
+    deviceName: "VirtIO network device"
+    current:
+      - guestOSVersionID: "2022"
+        driverVersion: "100.95.104.26200"
