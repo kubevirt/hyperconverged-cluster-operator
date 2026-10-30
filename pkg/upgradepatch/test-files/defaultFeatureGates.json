@@ -1,0 +1,18 @@
+{
+  "defaultFeatureGates": [
+    {
+      "semverRange": ">=1.18.0 <1.19.0",
+      "name": "fgMovedToBeta"
+    },
+    {
+      "semverRange": ">=1.18.0 <1.19.0",
+      "name": "fgExplicitlyMovedToBeta",
+      "state": "Enabled"
+    },
+    {
+      "semverRange": ">=1.18.0 <1.19.0",
+      "name": "fgMovedToAlpha",
+      "state": "Disabled"
+    }
+  ]
+}

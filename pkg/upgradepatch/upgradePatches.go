@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1fg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 )
 
 //go:generate go run ../../tools/crwriter/ --format=json --api-version=v1 --out=./hc.cr.json
@@ -88,6 +90,78 @@ func (o ObjectToBeRemoved) IsAffectedRange(ver semver.Version) bool {
 	return o.SemverRange.isAffectedRange(ver)
 }
 
+// DefaultFeatureGate holds a feature gate that its default value should be changed on upgrade
+type DefaultFeatureGate struct {
+	// SemverRange is a set of conditions which specify which versions satisfy the range
+	// (see https://github.com/blang/semver#ranges as a reference).
+	SemverRange semverRange `json:"semverRange"`
+
+	// Name holds the FeatureGate name
+	Name string `json:"name"`
+
+	// State is the new default state; optional; assuming most cases are moving from alpha to beta
+	State *hcov1fg.State `json:"state,omitempty"`
+}
+
+func (dfg DefaultFeatureGate) IsAffectedRange(ver semver.Version) bool {
+	return dfg.SemverRange.isAffectedRange(ver)
+}
+
+func (dfg DefaultFeatureGate) applyDefault(ver semver.Version, hc *hcov1.HyperConverged) {
+	if !dfg.IsAffectedRange(ver) {
+		return
+	}
+
+	idx := hc.Spec.FeatureGates.Index(dfg.Name)
+	if idx < 0 { // not explicitly set
+		return
+	}
+
+	newDefaultState := hcov1fg.Enabled
+	if dfg.State != nil {
+		newDefaultState = *dfg.State
+	}
+
+	if hc.Spec.FeatureGates[idx].State == nil {
+		if newDefaultState == hcov1fg.Disabled {
+			hc.Spec.FeatureGates[idx].State = new(hcov1fg.Disabled)
+		}
+
+		return
+	}
+
+	if *hc.Spec.FeatureGates[idx].State != newDefaultState {
+		hc.Spec.FeatureGates[idx].State = &newDefaultState
+	}
+}
+
+func (dfg *DefaultFeatureGate) UnmarshalJSON(dfgBytes []byte) error {
+	type _dfg DefaultFeatureGate
+
+	var d = _dfg{}
+
+	err := json.Unmarshal(dfgBytes, &d)
+	if err != nil {
+		return err
+	}
+
+	if d.Name == "" {
+		return fmt.Errorf("no feature gate name specified")
+	}
+
+	if d.State != nil {
+		switch *d.State {
+		case hcov1fg.Enabled, hcov1fg.Disabled:
+		default:
+			return fmt.Errorf(`invalid feature gate state "%v" specified`, *d.State)
+		}
+	}
+
+	*dfg = DefaultFeatureGate(d)
+
+	return nil
+}
+
 type semverRange struct {
 	ver string
 	fn  semver.Range
@@ -143,6 +217,9 @@ type UpgradePatches struct {
 	// ObjectsToBeRemoved is a list of objects to be removed on upgrades.
 	// Each objectToBeRemoved consists in a semver range of affected source versions and schema.GroupVersionKind and types.NamespacedName of the object to be eventually removed during the upgrade.
 	ObjectsToBeRemoved []ObjectToBeRemoved `json:"objectsToBeRemoved"`
+
+	// DefaultFeatureGates - holds a list of feature gates that their default value should be changed on upgrade
+	DefaultFeatureGates []DefaultFeatureGate `json:"defaultFeatureGates,omitempty"`
 }
 
 func (up UpgradePatches) applyUpgradePatch(logger logr.Logger, hc *hcov1.HyperConverged, knownHcoSV semver.Version) (*hcov1.HyperConverged, error) {
@@ -167,6 +244,12 @@ func (up UpgradePatches) applyUpgradePatch(logger logr.Logger, hc *hcov1.HyperCo
 	return tmpInstance, nil
 }
 
+func (up UpgradePatches) applyDefaultFeatureGates(hc *hcov1.HyperConverged, knownHcoSV semver.Version) {
+	for _, dfg := range up.DefaultFeatureGates {
+		dfg.applyDefault(knownHcoSV, hc)
+	}
+}
+
 var (
 	hcoUpgradeChanges UpgradePatches
 	once              = &sync.Once{}
@@ -174,7 +257,13 @@ var (
 )
 
 func ApplyUpgradePatch(logger logr.Logger, hc *hcov1.HyperConverged, knownHcoSV semver.Version) (*hcov1.HyperConverged, error) {
-	return hcoUpgradeChanges.applyUpgradePatch(logger, hc, knownHcoSV)
+	modified, err := hcoUpgradeChanges.applyUpgradePatch(logger, hc, knownHcoSV)
+	if err != nil {
+		return nil, err
+	}
+
+	hcoUpgradeChanges.applyDefaultFeatureGates(modified, knownHcoSV)
+	return modified, nil
 }
 
 func GetObjectsToBeRemoved() []ObjectToBeRemoved {

@@ -183,5 +183,12 @@
         "namespace": "kubevirt-hyperconverged"
       }
     }
+  ],
+  "defaultFeatureGates": [
+    {
+      "semverRange": "<1.19.0",
+      "name": "containerPathVolumes",
+      "state": "Enabled"
+    }
   ]
 }
