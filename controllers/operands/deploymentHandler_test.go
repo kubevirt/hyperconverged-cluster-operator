@@ -2,11 +2,14 @@ package operands
 
 import (
 	"context"
+	"fmt"
 	"maps"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,6 +18,8 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 )
+
+const testReadyCondition = "VirtConditionTestDeploymentReady"
 
 var _ = Describe("Deployment Handler", func() {
 	Context("update or recreate the Deployment as required", func() {
@@ -50,7 +55,7 @@ var _ = Describe("Deployment Handler", func() {
 			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 
 			// let's Ensure the handler properly reconcile it back to the expected state
-			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, "")
 			res := handler.Ensure(req)
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -88,7 +93,7 @@ var _ = Describe("Deployment Handler", func() {
 			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 
 			// let's Ensure the handler properly reconcile it back to the expected state
-			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, "")
 			res := handler.Ensure(req)
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -117,7 +122,7 @@ var _ = Describe("Deployment Handler", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, "")
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -153,7 +158,7 @@ var _ = Describe("Deployment Handler", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, "")
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -175,9 +180,104 @@ var _ = Describe("Deployment Handler", func() {
 
 	})
 
+	Context("Deployment readiness condition", func() {
+		var (
+			hco *hcov1.HyperConverged
+			req *common.HcoRequest
+		)
+
+		BeforeEach(func() {
+			hco = commontestutils.NewHco()
+			req = commontestutils.NewReq(hco)
+		})
+
+		It("should set condition to True when deployment is ready", func() {
+			dep := NewExpectedDeployment(hco)
+			replicas := *dep.Spec.Replicas
+			dep.Generation = 1
+			dep.Status.ObservedGeneration = 1
+			dep.Status.UpdatedReplicas = replicas
+			dep.Status.ReadyReplicas = replicas
+			dep.Status.Replicas = replicas
+			cl := commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, testReadyCondition)
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(meta.IsStatusConditionTrue(req.Instance.Status.Conditions, testReadyCondition)).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, testReadyCondition)
+			Expect(cond.Reason).To(Equal("DeploymentReady"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should set condition to False when deployment is not ready", func() {
+			dep := NewExpectedDeployment(hco)
+			dep.Status.ReadyReplicas = 0
+			dep.Status.Replicas = *dep.Spec.Replicas
+			cl := commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, testReadyCondition)
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, testReadyCondition)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+			Expect(cond.Message).To(Equal(fmt.Sprintf("0/%d replicas ready", *dep.Spec.Replicas)))
+		})
+
+		It("should set condition to False when deployment is not found", func() {
+			cl := commontestutils.InitClient([]client.Object{hco})
+			// Force Get to always return NotFound for the Deployment so the readiness
+			// path observes a missing Deployment even after the inner handler creates it.
+			cl.InitiateGetErrors(func(key client.ObjectKey) error {
+				if key.Name == "modifiedDeployment" {
+					return apierrors.NewNotFound(appsv1.Resource("deployments"), key.Name)
+				}
+				return nil
+			})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, testReadyCondition)
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, testReadyCondition)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotFound"))
+			Expect(cond.Message).To(Equal("modifiedDeployment deployment not found"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should remove condition when shouldDeploy is false", func() {
+			meta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
+				Type:   testReadyCondition,
+				Status: metav1.ConditionTrue,
+				Reason: "DeploymentReady",
+			})
+			req = commontestutils.NewReq(hco)
+			cl := commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewConditionalHandler(
+				NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, testReadyCondition),
+				func(_ *hcov1.HyperConverged) bool { return false },
+				func(hc *hcov1.HyperConverged) client.Object { return NewExpectedDeployment(hc) },
+			)
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, testReadyCondition)
+			Expect(cond).To(BeNil())
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+	})
+
 })
 
 func NewExpectedDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
+	replicas := int32(1)
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
@@ -188,6 +288,7 @@ func NewExpectedDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 			Labels: map[string]string{"key1": "value1"},
 		},
 		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"key1": "value1"},
 			},
