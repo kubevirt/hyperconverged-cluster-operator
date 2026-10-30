@@ -207,14 +207,11 @@ func SetHyperConvergedTLSProfile(ctx context.Context, operatorNamespace string, 
 }
 
 func ClusterInitializations(ctx context.Context, cl client.Client, scheme *apiruntime.Scheme, logger logr.Logger) error {
-	err := hcoutil.GetClusterInfo().Init(ctx, cl, logger)
-	if err != nil {
-		return nil
+	if err := hcoutil.GetClusterInfo().Init(ctx, cl, logger); err != nil {
+		return err
 	}
 
-	ownresources.Init(ctx, cl, scheme, logger)
-
-	return nil
+	return ownresources.Init(ctx, cl, scheme, logger)
 }
 
 // PrometheusK8sCN is the Common Name of the client certificate presented by
