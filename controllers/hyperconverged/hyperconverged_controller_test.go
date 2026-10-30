@@ -215,6 +215,7 @@ var _ = Describe("HyperconvergedController", func() {
 					"Template",
 					"RebootPolicy",
 					"VSOCK",
+					"HostDevicesWithDRA",
 				}
 				// Get the KV
 				kvList := &kubevirtcorev1.KubeVirtList{}

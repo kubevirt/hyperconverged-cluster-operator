@@ -145,6 +145,7 @@ const (
 	kvWorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
 	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
 	kvNetworkDevicesWithDRA      = "NetworkDevicesWithDRA"
+	kvHostDevicesWithDRA         = "HostDevicesWithDRA"
 )
 
 var (
@@ -155,6 +156,7 @@ var (
 		kvTemplateFG,
 		kvRebootPolicyFG,
 		kvVSOCKFG,
+		kvHostDevicesWithDRA,
 	}
 
 	// these FGs are disabled by default, but exposed in the HyperConverged CR and may be switched on
