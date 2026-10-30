@@ -29,7 +29,6 @@ var (
 	csvRef        *corev1.ObjectReference
 
 	initOnce = &sync.Once{}
-	initErr  error
 
 	ownVersion = findOwnVersion()
 )
@@ -60,16 +59,12 @@ func GetCSVRef() *corev1.ObjectReference {
 	return csvRef.DeepCopy()
 }
 
-// Init reads the running pod, its Deployment and its CSV, once. It fails if
-// the pod or the Deployment can't be read (an API-server stall at startup):
-// the callers exit on that, so the pod restarts and reads them again, rather
-// than running without the Deployment reference the conversion webhook's CA
-// controller needs. A missing CSV is not an error: an install without OLM
-// has none. Nor is a missing Deployment when running locally, for debugging:
-// HCO then runs without its Deployment reference.
+// Init reads the running pod, its Deployment and its CSV, once. Unless running locally, it returns an error
+// if the pod or the Deployment can't be read.
 func Init(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) error {
-	initOnce.Do(func() { initErr = doInit(ctx, cl, scheme, logger) })
-	return initErr
+	var err error
+	initOnce.Do(func() { err = doInit(ctx, cl, scheme, logger) })
+	return err
 }
 
 func Version() string {

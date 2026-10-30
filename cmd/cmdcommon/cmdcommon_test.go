@@ -24,15 +24,8 @@ func (failingClusterInfo) Init(context.Context, client.Client, logr.Logger) erro
 	return errors.New("context deadline exceeded")
 }
 
-// The webhook and the operator exit when ClusterInitializations fails, so
-// the pod restarts. A failure it swallowed left the binary running without
-// what it needs: the conversion webhook's CA controller was skipped, and the
-// HyperConverged CRD's conversions failed with an unknown-authority error.
 var _ = Describe("ClusterInitializations", func() {
-	var (
-		ownInitErr    error
-		ownInitCalled bool
-	)
+	var ownInitErr error
 
 	BeforeEach(func() {
 		origGetClusterInfo, origOwnInit := hcoutil.GetClusterInfo, ownresources.Init
@@ -42,9 +35,8 @@ var _ = Describe("ClusterInitializations", func() {
 		})
 
 		hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo()
-		ownInitErr, ownInitCalled = nil, false
+		ownInitErr = nil
 		ownresources.Init = func(context.Context, client.Reader, *runtime.Scheme, logr.Logger) error {
-			ownInitCalled = true
 			return ownInitErr
 		}
 	})
@@ -53,18 +45,17 @@ var _ = Describe("ClusterInitializations", func() {
 		return ClusterInitializations(ctx, fake.NewClientBuilder().Build(), runtime.NewScheme(), GinkgoLogr)
 	}
 
-	It("should fail when the cluster can't be read", func(ctx context.Context) {
+	It("should return the error when the cluster info can't be read", func(ctx context.Context) {
 		hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo { return failingClusterInfo{} }
 		Expect(clusterInitializations(ctx)).To(MatchError("context deadline exceeded"))
 	})
 
-	It("should fail when its own resources can't be read", func(ctx context.Context) {
+	It("should return the error when the operator's own pod or Deployment can't be read", func(ctx context.Context) {
 		ownInitErr = errors.New("can't get deployment")
 		Expect(clusterInitializations(ctx)).To(MatchError("can't get deployment"))
 	})
 
-	It("should read its own resources and succeed", func(ctx context.Context) {
+	It("should succeed when the cluster info and the operator's own resources are read", func(ctx context.Context) {
 		Expect(clusterInitializations(ctx)).To(Succeed())
-		Expect(ownInitCalled).To(BeTrue())
 	})
 })

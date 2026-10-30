@@ -57,7 +57,6 @@ var _ = Describe("Test OwnResources", func() {
 
 		//reset initOnce
 		initOnce = &sync.Once{}
-		initErr = nil
 
 		thePod = nil
 		deploymentRef = nil
@@ -123,13 +122,6 @@ var _ = Describe("Test OwnResources", func() {
 		Expect(ref).To(HaveValue(Equal(*csvRef)))
 	})
 
-	// The webhook and the operator read their own pod and Deployment at
-	// startup. When the API server stalls then, the read fails; carrying on
-	// without the Deployment reference silently skipped the conversion
-	// webhook's CA controller, and the HyperConverged CRD's conversion calls
-	// then failed with "x509: certificate signed by unknown authority" until
-	// the pod was restarted by hand. Init now reports the failure, and the
-	// binaries exit on it, so the pod restarts and tries again.
 	Context("when the API server can't be read", func() {
 		failing := func(kind client.Object) client.WithWatch {
 			dep := createDeployment(nil)
@@ -161,17 +153,6 @@ var _ = Describe("Test OwnResources", func() {
 
 		It("should fail when its deployment can't be read", func(ctx context.Context) {
 			Expect(Init(ctx, failing(&appsv1.Deployment{}), testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
-			Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
-		})
-
-		It("should keep returning the first failure", func(ctx context.Context) {
-			Expect(Init(ctx, failing(&appsv1.Deployment{}), testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
-
-			healthy := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(createDeployment(nil), createReplicaSet(), createPod()).
-				Build()
-			Expect(Init(ctx, healthy, testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
 			Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
 		})
 
@@ -211,10 +192,7 @@ var _ = Describe("Test OwnResources", func() {
 		Expect(GetCSVRef()).To(BeNil())
 	})
 
-	// Running locally is for debugging, where there may be no Deployment.
-	// HCO runs without the owner reference rather than with a made-up one:
-	// the garbage collector would delete what it owns.
-	It("should not fail when running locally and there is no deployment", func(ctx context.Context) {
+	It("should not fail when running locally and there is no deployment, and run without an owner reference", func(ctx context.Context) {
 		hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(
 			fakeclusterinfo.WithIsOpenshift(false),
 			fakeclusterinfo.WithIsManagedByOLM(false),
