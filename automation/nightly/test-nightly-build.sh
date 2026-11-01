@@ -142,7 +142,7 @@ chmod +x operator-sdk
 OLM_VERSION=$(curl https://api.github.com/repos/operator-framework/operator-lifecycle-manager/releases/latest | jq -r .name)
 
 # start K8s cluster
-export KUBEVIRT_PROVIDER=k8s-1.36
+export KUBEVIRT_PROVIDER=k8s-1.37
 export KUBEVIRT_MEMORY_SIZE=12G
 export KUBEVIRT_NUM_NODES=4
 export KUBEVIRT_DEPLOY_PROMETHEUS=true

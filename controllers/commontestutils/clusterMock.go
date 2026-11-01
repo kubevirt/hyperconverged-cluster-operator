@@ -4,15 +4,14 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/events"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/recorder"
 )
 
 var _ cluster.Cluster = &clusterMock{}
@@ -43,14 +42,6 @@ type clusterMock struct {
 
 	// mapper is used to map resources to kind, and map kind and version.
 	mapper meta.RESTMapper
-
-	// Logger is the logger that should be used by this manager.
-	// If none is set, it defaults to log.Log global logger.
-	logger logr.Logger
-}
-
-func (cm *clusterMock) SetFields(_ any) error {
-	return nil
 }
 
 func (cm *clusterMock) GetHTTPClient() *http.Client {
@@ -81,7 +72,7 @@ func (cm *clusterMock) GetEventRecorderFor(_ string) record.EventRecorder {
 	return nil
 }
 
-func (cm *clusterMock) GetEventRecorder(_ string) events.EventRecorder {
+func (cm *clusterMock) GetEventRecorder(_ string) recorder.EventRecorder {
 	return nil
 }
 
@@ -93,16 +84,12 @@ func (cm *clusterMock) GetAPIReader() client.Reader {
 	return cm.apiReader
 }
 
-func (cm *clusterMock) GetLogger() logr.Logger {
-	return cm.logger
-}
-
 func (cm *clusterMock) Start(_ context.Context) error {
 	return nil
 }
 
 // NewClusterMock returns a new mocked Cluster for creating Controllers.
-func NewClusterMock(config *rest.Config, options cluster.Options, client client.Client, logger logr.Logger) (cluster.Cluster, error) {
+func NewClusterMock(config *rest.Config, options cluster.Options, client client.Client) (cluster.Cluster, error) {
 
 	return &clusterMock{
 		config:       config,
@@ -113,6 +100,5 @@ func NewClusterMock(config *rest.Config, options cluster.Options, client client.
 		client:       client,
 		apiReader:    client,
 		mapper:       nil,
-		logger:       logger,
 	}, nil
 }
