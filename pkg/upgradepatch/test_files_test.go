@@ -58,3 +58,12 @@ var emptyFileContent []byte
 
 //go:embed test-files/missingPathOnRemove.json
 var missingPathOnRemove []byte
+
+//go:embed test-files/defaultFeatureGates.json
+var defaultFeatureGates []byte
+
+//go:embed test-files/fg_missing_name.json
+var fgMissingName []byte
+
+//go:embed test-files/fg_unknow_state.json
+var fgUnknownState []byte
