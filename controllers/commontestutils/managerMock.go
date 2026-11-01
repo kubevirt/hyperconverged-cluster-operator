@@ -4,10 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"k8s.io/client-go/tools/events"
-	"sigs.k8s.io/controller-runtime/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/conversion"
-
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -16,9 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/recorder"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/conversion"
 )
 
 var _ manager.Manager = &ManagerMock{}
@@ -108,7 +107,7 @@ func (mm *ManagerMock) GetEventRecorderFor(name string) record.EventRecorder {
 	return mm.cluster.GetEventRecorderFor(name)
 }
 
-func (mm *ManagerMock) GetEventRecorder(name string) events.EventRecorder {
+func (mm *ManagerMock) GetEventRecorder(name string) recorder.EventRecorder {
 	return mm.cluster.GetEventRecorder(name)
 }
 
@@ -147,12 +146,12 @@ func (mm *ManagerMock) GetRunnables() []manager.Runnable {
 // NewManagerMock returns a new mocked Manager for unit test which involves Controller Managers
 func NewManagerMock(config *rest.Config, options manager.Options, client client.Client, logger logr.Logger) (manager.Manager, error) {
 
-	fakeCluster, err := NewClusterMock(config, cluster.Options{Scheme: options.Scheme}, client, logger)
+	fakeCluster, err := NewClusterMock(config, cluster.Options{Scheme: options.Scheme}, client)
 	if err != nil {
 		return nil, err
 	}
 
-	runnables := make([]manager.Runnable, 0)
+	var runnables []manager.Runnable
 
 	return &ManagerMock{
 		cluster:           fakeCluster,
