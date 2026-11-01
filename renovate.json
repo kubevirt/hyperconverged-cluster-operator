@@ -12,7 +12,8 @@
     "gomodVendor"
   ],
   "labels": [
-    "release-note-none"
+    "release-note-none",
+    "ok-to-test"
   ],
   "extends": [
     ":gitSignOff"
