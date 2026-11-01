@@ -2,6 +2,8 @@ package ownresources
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -16,7 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/reference"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	fakeclusterinfo "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util/fake/clusterinfo"
@@ -109,13 +113,58 @@ var _ = Describe("Test OwnResources", func() {
 			WithStatusSubresource(csv, dep, rs, pod).
 			Build()
 
-		Init(ctx, cl, testScheme, GinkgoLogr)
+		Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
 		Expect(GetPod()).To(Equal(pod))
 		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
 		csvObj := GetCSVRef()
 		ref, err := reference.GetReference(testScheme, csvObj)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ref).To(HaveValue(Equal(*csvRef)))
+	})
+
+	Context("when the API server can't be read", func() {
+		failing := func(kind client.Object) client.WithWatch {
+			dep := createDeployment(nil)
+			return fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(dep, createReplicaSet(), createPod()).
+				WithInterceptorFuncs(interceptor.Funcs{
+					Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+						if fmt.Sprintf("%T", obj) == fmt.Sprintf("%T", kind) {
+							return errors.New("context deadline exceeded")
+						}
+						return c.Get(ctx, key, obj, opts...)
+					},
+				}).
+				Build()
+		}
+
+		BeforeEach(func() {
+			hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(
+				fakeclusterinfo.WithIsManagedByOLM(true),
+				fakeclusterinfo.WithRunningLocally(false),
+			)
+		})
+
+		It("should fail when its own pod can't be read", func(ctx context.Context) {
+			Expect(Init(ctx, failing(&corev1.Pod{}), testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
+			Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
+		})
+
+		It("should fail when its deployment can't be read", func(ctx context.Context) {
+			Expect(Init(ctx, failing(&appsv1.Deployment{}), testScheme, GinkgoLogr)).To(MatchError(ContainSubstring("deadline")))
+			Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
+		})
+
+		It("should not fail for a missing CSV: an install without OLM has none", func(ctx context.Context) {
+			cl := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(createDeployment(nil), createReplicaSet(), createPod()).
+				Build()
+			Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
+			Expect(GetDeploymentRef().Name).ToNot(BeEmpty())
+			Expect(GetCSVRef()).To(BeNil())
+		})
 	})
 
 	It("should run locally", func(ctx context.Context) {
@@ -137,9 +186,26 @@ var _ = Describe("Test OwnResources", func() {
 			WithObjects(dep).
 			Build()
 
-		Init(ctx, cl, testScheme, GinkgoLogr)
+		Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
 		Expect(GetPod()).To(BeNil())
 		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
+		Expect(GetCSVRef()).To(BeNil())
+	})
+
+	It("should not fail when running locally and there is no deployment, and run without an owner reference", func(ctx context.Context) {
+		hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(
+			fakeclusterinfo.WithIsOpenshift(false),
+			fakeclusterinfo.WithIsManagedByOLM(false),
+			fakeclusterinfo.WithRunningLocally(true),
+		)
+
+		cl := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			Build()
+
+		Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
+		Expect(GetPod()).To(BeNil())
+		Expect(GetDeploymentRef()).To(Equal(metav1.OwnerReference{}))
 		Expect(GetCSVRef()).To(BeNil())
 	})
 
@@ -208,7 +274,7 @@ var _ = Describe("Test OwnResources", func() {
 			WithStatusSubresource(csv, dep, rs, pod).
 			Build()
 
-		Init(ctx, cl, testScheme, GinkgoLogr)
+		Expect(Init(ctx, cl, testScheme, GinkgoLogr)).To(Succeed())
 		Expect(GetPod()).To(Equal(pod))
 		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
 		csvObj := GetCSVRef()

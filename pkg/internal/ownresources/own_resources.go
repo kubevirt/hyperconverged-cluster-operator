@@ -59,8 +59,12 @@ func GetCSVRef() *corev1.ObjectReference {
 	return csvRef.DeepCopy()
 }
 
-func Init(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) {
-	initOnce.Do(doInit(ctx, cl, scheme, logger))
+// Init reads the running pod, its Deployment and its CSV, once. Unless running locally, it returns an error
+// if the pod or the Deployment can't be read.
+func Init(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) error {
+	var err error
+	initOnce.Do(func() { err = doInit(ctx, cl, scheme, logger) })
+	return err
 }
 
 func Version() string {
@@ -71,48 +75,44 @@ func findOwnVersion() string {
 	return cmp.Or(os.Getenv(hcoutil.HcoKvIoVersionName), version.Version)
 }
 
-func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) func() {
-	return func() {
-		if !hcoutil.GetClusterInfo().IsRunningLocally() {
-			var err error
-
-			pod, err := getThePod(ctx, cl, logger)
-			if err != nil {
-				logger.Error(err, "Can't get self pod")
-				return
-			}
-
-			thePod = pod
-
-			deployment, err := getDeploymentFromPod(ctx, pod, cl, logger)
-			if err != nil {
-				logger.Error(err, "Can't get deployment")
-				return
-			}
-
-			deploymentRef = buildOwnerReference(deployment)
-
-			csvRef, err = getCSVFromDeployment(ctx, deployment, cl, scheme, logger)
-			if err != nil {
-				logger.Error(err, "Can't get CSV object reference")
-			}
-
-		} else {
-			deployment := &appsv1.Deployment{}
-			err := cl.Get(ctx, client.ObjectKey{
-				Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
-				Name:      "hyperconverged-cluster-operator",
-			}, deployment)
-			if err != nil {
-				logger.Error(err, "Can't get deployment")
-				return
-			}
-
-			thePod = nil
-			deploymentRef = buildOwnerReference(deployment)
-			csvRef = nil
+func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) error {
+	if hcoutil.GetClusterInfo().IsRunningLocally() {
+		deployment := &appsv1.Deployment{}
+		err := cl.Get(ctx, client.ObjectKey{
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Name:      "hyperconverged-cluster-operator",
+		}, deployment)
+		if err != nil {
+			logger.Error(err, "Can't get deployment")
+			return nil
 		}
+
+		thePod = nil
+		deploymentRef = buildOwnerReference(deployment)
+		csvRef = nil
+		return nil
 	}
+
+	pod, err := getThePod(ctx, cl, logger)
+	if err != nil {
+		return fmt.Errorf("can't get self pod: %w", err)
+	}
+
+	thePod = pod
+
+	deployment, err := getDeploymentFromPod(ctx, pod, cl, logger)
+	if err != nil {
+		return fmt.Errorf("can't get deployment: %w", err)
+	}
+
+	deploymentRef = buildOwnerReference(deployment)
+
+	csvRef, err = getCSVFromDeployment(ctx, deployment, cl, scheme, logger)
+	if err != nil {
+		logger.Error(err, "Can't get CSV object reference")
+	}
+
+	return nil
 }
 
 func getThePod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev1.Pod, error) {
