@@ -5,13 +5,15 @@ set -ex
 source "hack/cri-bin.sh"
 source "hack/validate-kv-fg-file.sh"
 
+INSTALL_NAMESPACE="${INSTALL_NAMESPACE:-kubevirt-hyperconverged}"
+
 function dump() {
     rv=$?
     if [ "x$rv" != "x0" ]; then
         echo "Error during HCO CR deployment: exit status: $rv"
         ${KUBECTL} logs -n olm -l app=olm-operator
-        ${KUBECTL} get pod -n kubevirt-hyperconverged
-        ${KUBECTL} logs -n kubevirt-hyperconverged -l name=hyperconverged-cluster-operator
+        ${KUBECTL} get pod -n "${INSTALL_NAMESPACE}"
+        ${KUBECTL} logs -n "${INSTALL_NAMESPACE}" -l name=hyperconverged-cluster-operator
         echo "*** HCO CR deployment failed ***"
     fi
     exit $rv
@@ -159,14 +161,14 @@ CMD=${KUBECTL} ./hack/deploy-cert-manager.sh
 trap "dump" INT TERM EXIT
 
 # install HCO on the cluster
-$KUBECTL create ns kubevirt-hyperconverged
+$KUBECTL create ns "${INSTALL_NAMESPACE}"
 
 cat <<EOF | ${KUBECTL} apply -f -
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: selfsigned
-  namespace: kubevirt-hyperconverged
+  namespace: ${INSTALL_NAMESPACE}
 spec:
   selfSigned: {}
 ---
@@ -174,14 +176,14 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: hyperconverged-cluster-operator-service-cert
-  namespace: kubevirt-hyperconverged
+  namespace: ${INSTALL_NAMESPACE}
   labels:
     name: hyperconverged-cluster-operator
 spec:
   secretName: hyperconverged-cluster-operator-service-cert
   dnsNames:
-  - hyperconverged-cluster-operator-service.kubevirt-hyperconverged.svc
-  - hyperconverged-cluster-operator-metrics-service.kubevirt-hyperconverged.svc
+  - hyperconverged-cluster-operator-service.${INSTALL_NAMESPACE}.svc
+  - hyperconverged-cluster-operator-metrics-service.${INSTALL_NAMESPACE}.svc
   issuerRef:
     name: selfsigned
 ---
@@ -189,22 +191,23 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: hyperconverged-cluster-webhook-metrics-service-cert
+  namespace: ${INSTALL_NAMESPACE}
   labels:
     name: hyperconverged-cluster-webhook-metrics
 spec:
   secretName: hyperconverged-cluster-webhook-metrics-service-cert
   dnsNames:
-  - hyperconverged-cluster-webhook-metrics-service.kubevirt-hyperconverged.svc
+  - hyperconverged-cluster-webhook-metrics-service.${INSTALL_NAMESPACE}.svc
   issuerRef:
     name: selfsigned
 ---
 EOF
 
-./operator-sdk run bundle -n kubevirt-hyperconverged --timeout=10m ${BUNDLE_IMAGE_NAME}
+./operator-sdk run bundle -n "${INSTALL_NAMESPACE}" --timeout=10m ${BUNDLE_IMAGE_NAME}
 
 # deploy the HyperConverged CR
-$KUBECTL apply -n kubevirt-hyperconverged -f deploy/hco.cr.yaml
-$KUBECTL wait -n kubevirt-hyperconverged hco kubevirt-hyperconverged --for=condition=Available --timeout=5m
+$KUBECTL apply -n "${INSTALL_NAMESPACE}" -f deploy/hco.cr.yaml
+$KUBECTL wait -n "${INSTALL_NAMESPACE}" hco kubevirt-hyperconverged --for=condition=Available --timeout=5m
 
 # build func test
 go install github.com/onsi/ginkgo/v2/ginkgo@$(grep github.com/onsi/ginkgo go.mod | cut -d " " -f2)
@@ -217,7 +220,7 @@ if [[ -n ${ARTIFACTS} ]]; then
 fi
 
 # run functest
-./functest.test  -ginkgo.v -ginkgo.junit-report="${REPORT_FLAG}" -installed-namespace="kubevirt-hyperconverged" --ginkgo.label-filter='!OpenShift && !SINGLE_NODE_ONLY'
+./functest.test  -ginkgo.v -ginkgo.junit-report="${REPORT_FLAG}" -installed-namespace="${INSTALL_NAMESPACE}" --ginkgo.label-filter='!OpenShift && !SINGLE_NODE_ONLY'
 
 # functional test passed: publish latest nightly build
 echo "${build_date}" > build-date
