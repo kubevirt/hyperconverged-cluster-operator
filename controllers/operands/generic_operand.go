@@ -40,7 +40,26 @@ func NewGenericOperand(client client.Client, scheme *runtime.Scheme, crType stri
 	}
 }
 
+func (h *GenericOperand) Cleanup(req *common.HcoRequest) error {
+	if cc, ok := h.hooks.(ConditionalCleaner); ok {
+		return cc.Cleanup(req)
+	}
+	return nil
+}
+
 func (h *GenericOperand) Ensure(req *common.HcoRequest) *EnsureResult {
+	res := h.ensureImp(req)
+
+	if pe, ok := h.hooks.(PostEnsureHook); ok {
+		if err := pe.PostEnsure(req, h.Client); err != nil {
+			return res.Error(err)
+		}
+	}
+
+	return res
+}
+
+func (h *GenericOperand) ensureImp(req *common.HcoRequest) *EnsureResult {
 	cr, err := h.hooks.GetFullCr(req.Instance)
 	if err != nil {
 		return &EnsureResult{

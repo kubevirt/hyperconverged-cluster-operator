@@ -2,10 +2,14 @@ package operands
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -14,21 +18,93 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
+const (
+	reasonDeploymentNotFound = "DeploymentNotFound"
+	reasonDeploymentReady    = "DeploymentReady"
+	reasonDeploymentNotReady = "DeploymentNotReady"
+)
+
 type newDeploymentFunc func(hc *hcov1.HyperConverged) *appsv1.Deployment
 
-func NewDeploymentHandler(cli client.Client, Scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc) *GenericOperand {
-	return NewGenericOperand(cli, Scheme, "Deployment", newDeploymentHooks(deploymentGenerator), false)
+func NewDeploymentHandler(cli client.Client, scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc, conditionType string) *GenericOperand {
+	return NewGenericOperand(cli, scheme, "Deployment", newDeploymentHooks(deploymentGenerator, conditionType), false)
 }
 
 type deploymentHooks struct {
 	sync.Mutex
 	deploymentGenerator newDeploymentFunc
+	conditionType       string
 	cache               *appsv1.Deployment
 }
 
-func newDeploymentHooks(deploymentGenerator newDeploymentFunc) *deploymentHooks {
+func newDeploymentHooks(deploymentGenerator newDeploymentFunc, conditionType string) *deploymentHooks {
 	return &deploymentHooks{
 		deploymentGenerator: deploymentGenerator,
+		conditionType:       conditionType,
+	}
+}
+
+func (h *deploymentHooks) Cleanup(req *common.HcoRequest) error {
+	if h.conditionType == "" {
+		return nil
+	}
+	h.removeDeploymentCondition(req)
+	return nil
+}
+
+func (h *deploymentHooks) PostEnsure(req *common.HcoRequest, cli client.Client) error {
+	if h.conditionType == "" {
+		return nil
+	}
+
+	fullCr, err := h.GetFullCr(req.Instance)
+	if err != nil {
+		return err
+	}
+
+	dep := &appsv1.Deployment{}
+	key := client.ObjectKeyFromObject(fullCr)
+	if err := cli.Get(req.Ctx, key, dep); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+		h.setDeploymentCondition(req, metav1.ConditionFalse, reasonDeploymentNotFound,
+			fmt.Sprintf("%s deployment not found", key.Name))
+		return nil
+	}
+
+	if isDeploymentReady(dep) {
+		h.setDeploymentCondition(req, metav1.ConditionTrue, reasonDeploymentReady, "All replicas are ready")
+	} else {
+		desired := int32(0)
+		if dep.Spec.Replicas != nil {
+			desired = *dep.Spec.Replicas
+		}
+		h.setDeploymentCondition(req, metav1.ConditionFalse, reasonDeploymentNotReady,
+			fmt.Sprintf("%s: %d/%d replicas ready", dep.Name, dep.Status.ReadyReplicas, desired))
+	}
+
+	return nil
+}
+
+func (h *deploymentHooks) setDeploymentCondition(req *common.HcoRequest, status metav1.ConditionStatus, reason, message string) {
+	cond := metav1.Condition{
+		Type:               h.conditionType,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: req.Instance.Generation,
+	}
+	changed := meta.SetStatusCondition(&req.Instance.Status.Conditions, cond)
+	if changed {
+		req.StatusDirty = true
+	}
+}
+
+func (h *deploymentHooks) removeDeploymentCondition(req *common.HcoRequest) {
+	changed := meta.RemoveStatusCondition(&req.Instance.Status.Conditions, h.conditionType)
+	if changed {
+		req.StatusDirty = true
 	}
 }
 
@@ -88,6 +164,18 @@ func (h *deploymentHooks) UpdateCR(req *common.HcoRequest, Client client.Client,
 	}
 
 	return false, false, nil
+}
+
+func isDeploymentReady(dep *appsv1.Deployment) bool {
+	desired := int32(0)
+	if dep.Spec.Replicas != nil {
+		desired = *dep.Spec.Replicas
+	}
+	return desired > 0 &&
+		dep.Status.ObservedGeneration >= dep.Generation &&
+		dep.Status.UpdatedReplicas == desired &&
+		dep.Status.Replicas == desired &&
+		dep.Status.ReadyReplicas == desired
 }
 
 // We need to check only certain fields in the deployment resource, since some of the fields

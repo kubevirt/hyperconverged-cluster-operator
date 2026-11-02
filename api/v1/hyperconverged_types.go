@@ -1041,6 +1041,10 @@ const (
 	// ConditionNetworkResourcesInjectorReady indicates whether the network resources injector
 	// deployment is fully ready (all replicas running).
 	ConditionNetworkResourcesInjectorReady = "VirtNetworkResourcesInjectorReady"
+
+	// ConditionKubevirtConsolePluginReady indicates whether the kubevirt-console-plugin
+	// deployment is fully ready (all replicas running).
+	ConditionKubevirtConsolePluginReady = "KubevirtConsolePluginReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
