@@ -18,6 +18,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -421,6 +422,68 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(cond).ToNot(BeNil())
 			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+		})
+	})
+
+	Context("Apiserver Proxy readiness condition", func() {
+		It("should set condition to True when deployment is ready", func() {
+			dep := NewKvUIProxyDeployment(hco)
+			replicas := *dep.Spec.Replicas
+			dep.Generation = 1
+			dep.Status.ObservedGeneration = 1
+			dep.Status.UpdatedReplicas = replicas
+			dep.Status.ReadyReplicas = replicas
+			dep.Status.Replicas = replicas
+			cl := commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewKvUIProxyDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(meta.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1.ConditionKubevirtApiserverProxyReady)).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtApiserverProxyReady)
+			Expect(cond.Reason).To(Equal("DeploymentReady"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should set condition to False when deployment is not ready", func() {
+			dep := NewKvUIProxyDeployment(hco)
+			dep.Status.ReadyReplicas = 0
+			dep.Status.Replicas = *dep.Spec.Replicas
+			cl := commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewKvUIProxyDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtApiserverProxyReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+			Expect(cond.Message).To(Equal(fmt.Sprintf("%s: 0/%d replicas ready", dep.Name, *dep.Spec.Replicas)))
+		})
+
+		It("should set condition to False when deployment is not found", func() {
+			cl := commontestutils.InitClient([]client.Object{hco})
+			// Force Get to return NotFound for the Deployment so the readiness
+			// path observes a missing Deployment even after the inner handler creates it.
+			cl.InitiateGetErrors(func(key client.ObjectKey) error {
+				if key.Name == kvUIProxyDeploymentName {
+					return apierrors.NewNotFound(appsv1.Resource("deployments"), key.Name)
+				}
+				return nil
+			})
+
+			handler := NewKvUIProxyDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtApiserverProxyReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotFound"))
+			Expect(cond.Message).To(Equal(kvUIProxyDeploymentName + " deployment not found"))
+			Expect(req.StatusDirty).To(BeTrue())
 		})
 	})
 

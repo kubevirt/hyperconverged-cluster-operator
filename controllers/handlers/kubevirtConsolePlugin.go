@@ -69,7 +69,7 @@ func NewKvUIPluginDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) o
 
 // **** Kubevirt UI apiserver proxy Deployment Handler ****
 func NewKvUIProxyDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
-	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIProxyDeployment, "")
+	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIProxyDeployment, hcov1.ConditionKubevirtApiserverProxyReady)
 }
 
 // **** Kubevirt UI Plugin ServiceAccount Handler ****

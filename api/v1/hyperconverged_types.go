@@ -1053,6 +1053,10 @@ const (
 	// ConditionKubevirtAieWebhookReady indicates whether the kubevirt-aie-webhook
 	// deployment is fully ready (all replicas running).
 	ConditionKubevirtAieWebhookReady = "KubevirtAieWebhookReady"
+
+	// ConditionKubevirtApiserverProxyReady indicates whether the kubevirt-apiserver-proxy
+	// deployment is fully ready (all replicas running).
+	ConditionKubevirtApiserverProxyReady = "KubevirtApiserverProxyReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
