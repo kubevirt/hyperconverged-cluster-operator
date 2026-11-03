@@ -1049,6 +1049,10 @@ const (
 	// ConditionKubevirtObservabilityControllerReady indicates whether the
 	// virt-observability-controller deployment is fully ready (all replicas running).
 	ConditionKubevirtObservabilityControllerReady = "KubevirtObservabilityControllerReady"
+
+	// ConditionKubevirtAieWebhookReady indicates whether the kubevirt-aie-webhook
+	// deployment is fully ready (all replicas running).
+	ConditionKubevirtAieWebhookReady = "KubevirtAieWebhookReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

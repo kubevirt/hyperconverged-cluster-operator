@@ -10,6 +10,9 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -249,6 +252,105 @@ var _ = Describe("AIE Webhook Deployment", func() {
 			Expect(cl.List(context.Background(), foundDep)).To(Succeed())
 			Expect(foundDep.Items).To(HaveLen(1))
 			Expect(foundDep.Items[0].Name).To(Equal(aieWebhookName))
+		})
+	})
+
+	Context("AIE Webhook readiness condition", func() {
+		BeforeEach(func() {
+			hco.Annotations[DeployAIEAnnotation] = "true"
+			req = commontestutils.NewReq(hco)
+		})
+
+		It("should set condition to True when deployment is ready", func() {
+			dep := newAIEWebhookDeployment(hco)
+			replicas := *dep.Spec.Replicas
+			dep.Generation = 1
+			dep.Status.ObservedGeneration = 1
+			dep.Status.UpdatedReplicas = replicas
+			dep.Status.ReadyReplicas = replicas
+			dep.Status.Replicas = replicas
+			cl = commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewAIEWebhookDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(meta.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1.ConditionKubevirtAieWebhookReady)).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtAieWebhookReady)
+			Expect(cond.Reason).To(Equal("DeploymentReady"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should set condition to False when deployment is just created", func() {
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewAIEWebhookDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtAieWebhookReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+		})
+
+		It("should set condition to False when deployment is not ready", func() {
+			dep := newAIEWebhookDeployment(hco)
+			dep.Status.ReadyReplicas = 0
+			dep.Status.Replicas = *dep.Spec.Replicas
+			cl = commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewAIEWebhookDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtAieWebhookReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+		})
+
+		It("should set condition to False when deployment is not found", func() {
+			testClient := commontestutils.InitClient([]client.Object{hco})
+			// Force Get to return NotFound for the Deployment so the readiness
+			// path observes a missing Deployment even after the inner handler creates it.
+			testClient.InitiateGetErrors(func(key client.ObjectKey) error {
+				if key.Name == aieWebhookName {
+					return apierrors.NewNotFound(appsv1.Resource("deployments"), key.Name)
+				}
+				return nil
+			})
+
+			handler := NewAIEWebhookDeploymentHandler(testClient, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtAieWebhookReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotFound"))
+			Expect(cond.Message).To(Equal(aieWebhookName + " deployment not found"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should remove condition when shouldDeployAIE is false", func() {
+			delete(hco.Annotations, DeployAIEAnnotation)
+			meta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
+				Type:   hcov1.ConditionKubevirtAieWebhookReady,
+				Status: metav1.ConditionTrue,
+				Reason: "DeploymentReady",
+			})
+			req = commontestutils.NewReq(hco)
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewAIEWebhookDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtAieWebhookReady)
+			Expect(cond).To(BeNil())
+			Expect(req.StatusDirty).To(BeTrue())
 		})
 	})
 

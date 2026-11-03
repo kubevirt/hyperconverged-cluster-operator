@@ -29,7 +29,7 @@ var (
 
 func NewAIEWebhookDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewDeploymentHandler(cli, Scheme, newAIEWebhookDeployment, ""),
+		operands.NewDeploymentHandler(cli, Scheme, newAIEWebhookDeployment, hcov1.ConditionKubevirtAieWebhookReady),
 		shouldDeployAIE,
 		func(hc *hcov1.HyperConverged) client.Object {
 			return newAIEWebhookDeploymentWithNameOnly()
