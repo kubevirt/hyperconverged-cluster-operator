@@ -82,6 +82,13 @@ type HyperConvergedSpec struct {
 	//   feature is in Technical Preview.
 	//   Phase: beta
 	//
+	// * hostDevicesWithDRA:
+	//   HostDevicesWithDRA allows users to create VMIs with DRA provisioned host
+	//   devices specified in spec.domain.devices.hostDevices. This enables
+	//   DRA-managed host devices to be attached to VMs. This feature is in Tech
+	//   Preview.
+	//   Phase: beta
+	//
 	// * rebootPolicy:
 	//   RebootPolicy enables virtual machines to be recreated when they reboot
 	//   from within the guest operating system. This feature is in Tech Preview.
