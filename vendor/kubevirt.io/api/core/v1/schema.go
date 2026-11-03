@@ -406,6 +406,8 @@ type NUMAGuestMappingPassthrough struct {
 type NUMA struct {
 	// GuestMappingPassthrough will create an efficient guest topology based on host CPUs exclusively assigned to a pod.
 	// The created topology ensures that memory and CPUs on the virtual numa nodes never cross boundaries of host numa nodes.
+	// It is not supported on a VMI with dedicatedCPUPlacement while the CPUsWithDRA feature gate is enabled, because the
+	// host CPUs are then assigned by the DRA driver instead of by kubelet's CPU manager.
 	// +optional
 	GuestMappingPassthrough *NUMAGuestMappingPassthrough `json:"guestMappingPassthrough,omitempty"`
 }
@@ -998,6 +1000,7 @@ type VolumeSource struct {
 	// metrics. The disk content is compatible with vhostmd (https://github.com/vhostmd/vhostmd) and vm-dump-metrics.
 	DownwardMetrics *DownwardMetricsVolumeSource `json:"downwardMetrics,omitempty"`
 	// MemoryDump is attached to the virt launcher and is populated with a memory dump of the vmi
+	// Deprecated: memory dumps are attached as utility volumes of type MemoryDump.
 	MemoryDump *MemoryDumpVolumeSource `json:"memoryDump,omitempty"`
 	// ContainerPath exposes a path from the virt-launcher container to the VM via virtiofs.
 	// The path must correspond to an existing volumeMount in the compute container.
@@ -1038,6 +1041,8 @@ type PersistentVolumeClaimVolumeSource struct {
 	Hotpluggable bool `json:"hotpluggable,omitempty"`
 }
 
+// MemoryDumpVolumeSource represents a memory dump PVC in the volumes of a VMI.
+// Deprecated: memory dumps are attached as utility volumes of type MemoryDump.
 type MemoryDumpVolumeSource struct {
 	// PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace.
 	// Directly attached to the virt launcher
@@ -1084,6 +1089,10 @@ const (
 
 	// Backup represents a utility volume which will be used to collect backup output
 	Backup UtilityVolumeType = "Backup"
+
+	// SnapshotOverlay represents a utility volume which holds the copy-on-write
+	// overlays of an External mode VirtualMachineSnapshot
+	SnapshotOverlay UtilityVolumeType = "SnapshotOverlay"
 )
 
 type UtilityVolume struct {

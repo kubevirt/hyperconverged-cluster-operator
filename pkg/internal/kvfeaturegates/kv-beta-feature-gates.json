@@ -1,5 +1,9 @@
 [
   {
+    "name": "ARM64SecureBoot",
+    "state": "Alpha"
+  },
+  {
     "name": "AlignCPUs",
     "state": "Alpha"
   },
@@ -8,11 +12,11 @@
     "state": "Alpha"
   },
   {
-    "name": "ConfigurableHypervisor",
+    "name": "CPUsWithDRA",
     "state": "Alpha"
   },
   {
-    "name": "ContainerPathVolumes",
+    "name": "ConfigurableHypervisor",
     "state": "Alpha"
   },
   {
@@ -21,6 +25,14 @@
   },
   {
     "name": "CrossClusterMigrationProxy",
+    "state": "Alpha"
+  },
+  {
+    "name": "DecentralizedLiveMigration",
+    "state": "Alpha"
+  },
+  {
+    "name": "DeclarativeVMState",
     "state": "Alpha"
   },
   {
@@ -33,6 +45,10 @@
   },
   {
     "name": "ExperimentalIgnitionSupport",
+    "state": "Alpha"
+  },
+  {
+    "name": "ExternalVMSnapshot",
     "state": "Alpha"
   },
   {
@@ -60,7 +76,7 @@
     "state": "Alpha"
   },
   {
-    "name": "IncrementalBackup",
+    "name": "MDevVGPULiveMigration",
     "state": "Alpha"
   },
   {
@@ -72,15 +88,15 @@
     "state": "Alpha"
   },
   {
-    "name": "NetworkDevicesWithDRA",
-    "state": "Alpha"
-  },
-  {
     "name": "OCIExport",
     "state": "Alpha"
   },
   {
     "name": "ObjectGraph",
+    "state": "Alpha"
+  },
+  {
+    "name": "OfflineIncrementalBackup",
     "state": "Alpha"
   },
   {
@@ -104,15 +120,15 @@
     "state": "Alpha"
   },
   {
+    "name": "SCSIMultiIOThread",
+    "state": "Alpha"
+  },
+  {
     "name": "Sidecar",
     "state": "Alpha"
   },
   {
-    "name": "UtilityVolumes",
-    "state": "Alpha"
-  },
-  {
-    "name": "VGPULiveMigration",
+    "name": "TLSGroupPreferences",
     "state": "Alpha"
   },
   {
@@ -124,7 +140,7 @@
     "state": "Alpha"
   },
   {
-    "name": "DecentralizedLiveMigration",
+    "name": "ContainerPathVolumes",
     "state": "Beta"
   },
   {
@@ -141,6 +157,14 @@
   },
   {
     "name": "ImageVolume",
+    "state": "Beta"
+  },
+  {
+    "name": "IncrementalBackup",
+    "state": "Beta"
+  },
+  {
+    "name": "NetworkDevicesWithDRA",
     "state": "Beta"
   },
   {
@@ -165,6 +189,10 @@
   },
   {
     "name": "Template",
+    "state": "Beta"
+  },
+  {
+    "name": "UtilityVolumes",
     "state": "Beta"
   },
   {
