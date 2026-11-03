@@ -825,8 +825,11 @@ func hcTLSProtocolVersionToKv(profileMinVersion openshiftconfigv1.TLSProtocolVer
 }
 
 func hcTLSSecurityProfileToKv(profile *openshiftconfigv1.TLSSecurityProfile) *kubevirtcorev1.TLSConfiguration {
-	var profileCiphers []string
-	var profileMinVersion openshiftconfigv1.TLSProtocolVersion
+	var (
+		profileCiphers    []string
+		profileMinVersion openshiftconfigv1.TLSProtocolVersion
+		profileGroups     []openshiftconfigv1.TLSGroup
+	)
 
 	if profile == nil {
 		return nil
@@ -835,16 +838,28 @@ func hcTLSSecurityProfileToKv(profile *openshiftconfigv1.TLSSecurityProfile) *ku
 	if profile.Custom != nil {
 		profileCiphers = profile.Custom.Ciphers
 		profileMinVersion = profile.Custom.MinTLSVersion
-	} else if profile.Modern != nil {
-		profileMinVersion = openshiftconfigv1.TLSProfiles[profile.Type].MinTLSVersion
+		profileGroups = profile.Custom.Groups
 	} else {
-		profileCiphers = openshiftconfigv1.TLSProfiles[profile.Type].Ciphers
 		profileMinVersion = openshiftconfigv1.TLSProfiles[profile.Type].MinTLSVersion
+		profileGroups = openshiftconfigv1.TLSProfiles[profile.Type].Groups
+
+		if profile.Modern == nil {
+			profileCiphers = openshiftconfigv1.TLSProfiles[profile.Type].Ciphers
+		}
+	}
+
+	var groups []string
+	if len(profileGroups) > 0 {
+		groups = make([]string, len(profileGroups))
+		for i, group := range profileGroups {
+			groups[i] = string(group)
+		}
 	}
 
 	return &kubevirtcorev1.TLSConfiguration{
 		MinTLSVersion: hcTLSProtocolVersionToKv(profileMinVersion),
 		Ciphers:       crypto.OpenSSLToIANACipherSuites(profileCiphers),
+		Groups:        groups,
 	}
 }
 
