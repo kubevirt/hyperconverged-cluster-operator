@@ -1045,6 +1045,10 @@ const (
 	// ConditionKubevirtConsolePluginReady indicates whether the kubevirt-console-plugin
 	// deployment is fully ready (all replicas running).
 	ConditionKubevirtConsolePluginReady = "KubevirtConsolePluginReady"
+
+	// ConditionKubevirtObservabilityControllerReady indicates whether the
+	// virt-observability-controller deployment is fully ready (all replicas running).
+	ConditionKubevirtObservabilityControllerReady = "KubevirtObservabilityControllerReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

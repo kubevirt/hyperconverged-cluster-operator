@@ -10,9 +10,13 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -187,6 +191,111 @@ var _ = Describe("Observability Controller Deployment", func() {
 			Expect(args).To(ContainElement("--tls-ciphers=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384"))
 
 			Expect(args).ToNot(ContainElement(ContainSubstring("--tls-groups")))
+		})
+	})
+
+	Context("Observability controller readiness condition", func() {
+		var (
+			hco *hcov1.HyperConverged
+			req *common.HcoRequest
+		)
+
+		BeforeEach(func() {
+			hco = commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(featureGateName)
+			req = commontestutils.NewReq(hco)
+		})
+
+		It("should set condition to True when deployment is ready", func() {
+			dep := newDeployment(hco)
+			replicas := *dep.Spec.Replicas
+			dep.Generation = 1
+			dep.Status.ObservedGeneration = 1
+			dep.Status.UpdatedReplicas = replicas
+			dep.Status.ReadyReplicas = replicas
+			dep.Status.Replicas = replicas
+			cl := commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(meta.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1.ConditionKubevirtObservabilityControllerReady)).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtObservabilityControllerReady)
+			Expect(cond.Reason).To(Equal("DeploymentReady"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should set condition to False when deployment is just created", func() {
+			cl := commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtObservabilityControllerReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+		})
+
+		It("should set condition to False when deployment is not ready", func() {
+			dep := newDeployment(hco)
+			dep.Status.ReadyReplicas = 0
+			dep.Status.Replicas = *dep.Spec.Replicas
+			cl := commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtObservabilityControllerReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+		})
+
+		It("should set condition to False when deployment is not found", func() {
+			cl := commontestutils.InitClient([]client.Object{hco})
+			// Force Get to return NotFound for the Deployment so the readiness
+			// path observes a missing Deployment even after the inner handler creates it.
+			cl.InitiateGetErrors(func(key client.ObjectKey) error {
+				if key.Name == deploymentName {
+					return apierrors.NewNotFound(appsv1.Resource("deployments"), key.Name)
+				}
+				return nil
+			})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtObservabilityControllerReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotFound"))
+			Expect(cond.Message).To(Equal(deploymentName + " deployment not found"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should remove condition when shouldDeploy is false", func() {
+			hco.Spec.FeatureGates.Disable(featureGateName)
+			meta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
+				Type:   hcov1.ConditionKubevirtObservabilityControllerReady,
+				Status: metav1.ConditionTrue,
+				Reason: "DeploymentReady",
+			})
+			req = commontestutils.NewReq(hco)
+			cl := commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionKubevirtObservabilityControllerReady)
+			Expect(cond).To(BeNil())
+			Expect(req.StatusDirty).To(BeTrue())
 		})
 	})
 
