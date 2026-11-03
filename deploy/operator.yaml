@@ -123,6 +123,7 @@ spec:
         volumeMounts:
         - mountPath: /metrics.local.config/certificates
           name: metrics-cert
+          readOnly: true
       priorityClassName: system-cluster-critical
       securityContext:
         runAsNonRoot: true
@@ -224,6 +225,7 @@ spec:
         volumeMounts:
         - mountPath: /metrics.local.config/certificates
           name: metrics-cert
+          readOnly: true
         - mountPath: /apiserver.local.config/certificates
           name: apiservice-cert
       priorityClassName: system-node-critical

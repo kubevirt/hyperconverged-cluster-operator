@@ -111,6 +111,7 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 							{
 								Name:      metricsCertVolume,
 								MountPath: util.DefaultOperatorCertDir,
+								ReadOnly:  true,
 							},
 						},
 					},
@@ -504,6 +505,7 @@ func GetDeploymentSpecWebhook(params *DeploymentOperatorParams) appsv1.Deploymen
 							{
 								Name:      metricsCertVolume,
 								MountPath: util.DefaultWebhookMetricsCertDir,
+								ReadOnly:  true,
 							},
 						},
 					},
