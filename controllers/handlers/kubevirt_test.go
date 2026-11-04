@@ -4688,12 +4688,22 @@ Version: 1.2.3`)
 		// it's not possible to specify ciphers when minTLSVersion is 1.3
 		var kvModernCiphers []string = nil
 
+		kvIntermediateGroups := []string{
+			"X25519MLKEM768",
+			"X25519",
+			"secp256r1",
+			"secp384r1",
+		}
+		kvOldGroups := kvIntermediateGroups
+		kvModernGroups := kvIntermediateGroups
+
 		DescribeTable("should modify TLSSecurityProfile on Kubevirt CR according to ApiServer or HCO CR",
-			func(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile, expectedKubevirtTLSVersion kubevirtcorev1.TLSProtocolVersion, expectedKubevirtCiphers []string) {
+			func(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile, expectedKubevirtTLSVersion kubevirtcorev1.TLSProtocolVersion, expectedKubevirtCiphers, expectedGroups []string) {
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(existingResource.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS12))
 				Expect(existingResource.Spec.Configuration.TLSConfiguration.Ciphers).To(Equal(kvIntermediateCiphers))
+				Expect(existingResource.Spec.Configuration.TLSConfiguration.Groups).To(Equal(kvIntermediateGroups))
 
 				// now, modify HCO's TLSSecurityProfile
 				hco.Spec.Security.TLSSecurityProfile = hcoTLSSecurityProfile
@@ -4714,6 +4724,7 @@ Version: 1.2.3`)
 
 				Expect(foundResource.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(expectedKubevirtTLSVersion))
 				Expect(foundResource.Spec.Configuration.TLSConfiguration.Ciphers).To(Equal(expectedKubevirtCiphers))
+				Expect(foundResource.Spec.Configuration.TLSConfiguration.Groups).To(Equal(expectedGroups))
 
 				Expect(req.Conditions).To(BeEmpty())
 			},
@@ -4721,11 +4732,13 @@ Version: 1.2.3`)
 				oldTLSSecurityProfile,
 				kubevirtcorev1.VersionTLS10,
 				kvOldCiphers,
+				kvOldGroups,
 			),
 			Entry("Setting Modern TLSSecurityProfile on HCO",
 				modernTLSSecurityProfile,
 				kubevirtcorev1.VersionTLS13,
 				kvModernCiphers,
+				kvModernGroups,
 			),
 			Entry("Setting Custom TLSSecurityProfile on HCO",
 				&openshiftconfigv1.TLSSecurityProfile{
@@ -4738,6 +4751,7 @@ Version: 1.2.3`)
 								"ECDHE-RSA-AES128-SHA256",
 							},
 							MinTLSVersion: openshiftconfigv1.VersionTLS11,
+							Groups:        []openshiftconfigv1.TLSGroup{openshiftconfigv1.TLSGroupX25519, openshiftconfigv1.TLSGroupSecP256r1},
 						},
 					},
 				},
@@ -4747,6 +4761,7 @@ Version: 1.2.3`)
 					"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
 					"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
 				},
+				[]string{"X25519", "secp256r1"},
 			),
 		)
 
@@ -4761,6 +4776,7 @@ Version: 1.2.3`)
 			// now, modify Kubevirt TLSConfiguration
 			existingResource.Spec.Configuration.TLSConfiguration.MinTLSVersion = kubevirtcorev1.VersionTLS13
 			existingResource.Spec.Configuration.TLSConfiguration.Ciphers = kvModernCiphers
+			existingResource.Spec.Configuration.TLSConfiguration.Groups = []string{"X25519", "secp256r1"}
 
 			cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 			handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -4779,6 +4795,7 @@ Version: 1.2.3`)
 
 			Expect(foundResource.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS12))
 			Expect(foundResource.Spec.Configuration.TLSConfiguration.Ciphers).To(Equal(kvIntermediateCiphers))
+			Expect(foundResource.Spec.Configuration.TLSConfiguration.Groups).To(Equal(kvIntermediateGroups))
 
 			Expect(req.Conditions).To(BeEmpty())
 		})
