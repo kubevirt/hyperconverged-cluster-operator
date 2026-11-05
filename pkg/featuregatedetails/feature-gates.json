@@ -15,6 +15,11 @@
     "description": "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true or nil, the \"DeclarativeHotplugVolumes\" feature gate is enabled and the \"HotplugVolumes\" feature gate is not (default behavior). When set to false, the \"HotplugVolumes\" featuregate is enabled in KubeVirt. This feature is in Technical Preview."
   },
   {
+    "name": "deployObservabilityController",
+    "phase": "beta",
+    "description": "Publish KubeVirt metrics, alerts, and recording rules. This is enabled by default. Disable this feature gate to stop publishing them. This feature is in Tech Preview."
+  },
+  {
     "name": "rebootPolicy",
     "phase": "beta",
     "description": "RebootPolicy enables virtual machines to be recreated when they reboot from within the guest operating system. This feature is in Tech Preview."
@@ -33,11 +38,6 @@
     "name": "alignCPUs",
     "phase": "alpha",
     "description": "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview."
-  },
-  {
-    "name": "deployObservabilityController",
-    "phase": "alpha",
-    "description": "Deploy the virt-observability-controller component. When enabled, the controller exposes KubeVirt metrics and manages PrometheusRule resources independently from the KubeVirt control plane."
   },
   {
     "name": "downwardMetrics",
@@ -63,6 +63,11 @@
     "name": "objectGraph",
     "phase": "alpha",
     "description": "ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview."
+  },
+  {
+    "name": "observeVMStat",
+    "phase": "alpha",
+    "description": "When enabled, the release date of each guest device driver is added to the kubevirt_vmi_guest_device_driver_timestamp_seconds metric, so guests running outdated VirtIO drivers can be found. Note: this feature is in Developer Preview."
   },
   {
     "name": "workloadEncryptionSEV",

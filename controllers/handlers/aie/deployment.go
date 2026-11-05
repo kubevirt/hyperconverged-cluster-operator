@@ -164,7 +164,8 @@ func newAIEWebhookDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 						Name: "tls-cert",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
-								SecretName: aieWebhookTLSSecretName,
+								SecretName:  aieWebhookTLSSecretName,
+								DefaultMode: new(int32(420)),
 							},
 						},
 					},

@@ -137,10 +137,10 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 		})
 	})
 
-	When("deployObservabilityController feature gate is enabled", func() {
+	When("deployObservabilityController is at its default", func() {
 		It("should deploy observability controller resources", func(ctx context.Context) {
-			By("enabling the deployObservabilityController feature gate")
-			Expect(tests.EnableFG(ctx, cli, observabilityControllerFGName)).To(Succeed())
+			By("restoring the default feature gates")
+			tests.RestoreDefaultFeatureGates(ctx, cli)
 
 			By("checking the ServiceAccount is created")
 			Eventually(func(ctx context.Context) error {
@@ -233,7 +233,7 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 	When("deployObservabilityController feature gate is disabled", func() {
 		It("should remove observability controller resources", func(ctx context.Context) {
 			By("disabling the deployObservabilityController feature gate")
-			tests.RestoreDefaultFeatureGates(ctx, cli)
+			Expect(tests.DisableFG(ctx, cli, observabilityControllerFGName)).To(Succeed())
 
 			By("checking the Deployment is removed")
 			Eventually(func(ctx context.Context) error {
@@ -285,6 +285,47 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
 				MatchError(ContainSubstring("not found")),
 			)
+
+			By("checking the ServiceAccount is removed")
+			Eventually(func(ctx context.Context) error {
+				sa := &corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      observabilityControllerName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(sa), sa)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
+				MatchError(ContainSubstring("not found")),
+			)
+
+			By("checking the ClusterRoleBinding is removed")
+			Eventually(func(ctx context.Context) error {
+				crb := &rbacv1.ClusterRoleBinding{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: observabilityControllerCRBName,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(crb), crb)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
+				MatchError(ContainSubstring("not found")),
+			)
+
+			expectedCMName := tests.GetConfig().GuestDeviceDrivers.ExpectedConfigMap
+			if expectedCMName != "" {
+				By("checking the guest device drivers reference ConfigMap is removed")
+				Eventually(func(ctx context.Context) error {
+					cm := &corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      expectedCMName,
+							Namespace: tests.InstallNamespace,
+						},
+					}
+					return cli.Get(ctx, client.ObjectKeyFromObject(cm), cm)
+				}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
+					MatchError(ContainSubstring("not found")),
+				)
+			}
 		})
 	})
 })
@@ -306,7 +347,7 @@ var _ = Describe("Observability Controller Allowlist Configuration", Label(tests
 		Expect(err).ToNot(HaveOccurred())
 		Expect(configured).To(BeTrueBecause(`the OBSERVABILITY_CONTROLLER_IMAGE environment variable should be configured in operator deployment. Use the "!observability-controller" label filter in order to skip this test`))
 
-		By("enabling the deployObservabilityController feature gate")
+		By("ensuring the deployObservabilityController feature gate is enabled")
 		Expect(tests.EnableFG(ctx, cli, observabilityControllerFGName)).To(Succeed())
 
 		DeferCleanup(func(ctx context.Context) {

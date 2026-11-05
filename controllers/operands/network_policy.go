@@ -3,6 +3,7 @@ package operands
 import (
 	"errors"
 	"reflect"
+	"sync"
 
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,6 +13,9 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
+
+// NetworkPolicyGenerator builds the NetworkPolicy for the current HyperConverged.
+type NetworkPolicyGenerator func(*hcov1.HyperConverged) *networkingv1.NetworkPolicy
 
 func NewNetworkPolicyHandler(Client client.Client, Scheme *runtime.Scheme, required *networkingv1.NetworkPolicy) *GenericOperand {
 	return NewGenericOperand(Client, Scheme, "NetworkPolicy", newNetworkPolicyHook(required), false)
@@ -36,6 +40,48 @@ func (nph *networkPolicyHook) GetEmptyCr() client.Object {
 }
 
 func (nph *networkPolicyHook) UpdateCR(req *common.HcoRequest, cli client.Client, exists, required runtime.Object) (bool, bool, error) {
+	return updateNetworkPolicy(req, cli, exists, required)
+}
+
+type dynamicNetworkPolicyHook struct {
+	sync.Mutex
+	cache     *networkingv1.NetworkPolicy
+	generator NetworkPolicyGenerator
+}
+
+// NewDynamicNetworkPolicyHandler reconciles a NetworkPolicy that depends on the
+// current HyperConverged, for example a feature gate.
+func NewDynamicNetworkPolicyHandler(cl client.Client, scheme *runtime.Scheme, generator NetworkPolicyGenerator) *GenericOperand {
+	return NewGenericOperand(cl, scheme, "NetworkPolicy", &dynamicNetworkPolicyHook{generator: generator}, false)
+}
+
+func (h *dynamicNetworkPolicyHook) Reset() {
+	h.Lock()
+	defer h.Unlock()
+
+	h.cache = nil
+}
+
+func (h *dynamicNetworkPolicyHook) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
+	h.Lock()
+	defer h.Unlock()
+
+	if h.cache == nil {
+		h.cache = h.generator(hc)
+	}
+
+	return h.cache.DeepCopy(), nil
+}
+
+func (h *dynamicNetworkPolicyHook) GetEmptyCr() client.Object {
+	return &networkingv1.NetworkPolicy{}
+}
+
+func (h *dynamicNetworkPolicyHook) UpdateCR(req *common.HcoRequest, cli client.Client, exists, required runtime.Object) (bool, bool, error) {
+	return updateNetworkPolicy(req, cli, exists, required)
+}
+
+func updateNetworkPolicy(req *common.HcoRequest, cli client.Client, exists, required runtime.Object) (bool, bool, error) {
 	np, ok1 := required.(*networkingv1.NetworkPolicy)
 	found, ok2 := exists.(*networkingv1.NetworkPolicy)
 	if !ok1 || !ok2 {

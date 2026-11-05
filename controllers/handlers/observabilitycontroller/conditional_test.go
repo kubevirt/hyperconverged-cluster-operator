@@ -49,7 +49,7 @@ var _ = Describe("Observability Controller Handlers", func() {
 	DescribeTableSubtree("handler lifecycle",
 		func(entry handlerTestEntry) {
 			It("should create when deployObservabilityController feature gate is enabled", func() {
-				hco.Spec.FeatureGates.Enable(featureGateName)
+				hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 				cl := commontestutils.InitClient([]client.Object{hco})
 
 				handler := entry.newHandler(cl, commontestutils.GetScheme())
@@ -62,22 +62,21 @@ var _ = Describe("Observability Controller Handlers", func() {
 				Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(cr), cr)).To(Succeed())
 			})
 
-			It("should not create when deployObservabilityController feature gate is not set", func() {
+			It("should create when deployObservabilityController feature gate is not set", func() {
 				cl := commontestutils.InitClient([]client.Object{hco})
 
 				handler := entry.newHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
 
 				Expect(res.Err).ToNot(HaveOccurred())
-				Expect(res.Created).To(BeFalse())
+				Expect(res.Created).To(BeTrue())
 
 				cr := entry.existing()
-				err := cl.Get(context.Background(), client.ObjectKeyFromObject(cr), cr)
-				Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(cr), cr)).To(Succeed())
 			})
 
 			It("should delete when deployObservabilityController feature gate is disabled", func() {
-				hco.Spec.FeatureGates.Disable(featureGateName)
+				hco.Spec.FeatureGates.Disable(deployObsCntrlFGName)
 				cr := entry.existing()
 				crKey := client.ObjectKeyFromObject(cr)
 				cl := commontestutils.InitClient([]client.Object{hco, cr})
@@ -125,7 +124,7 @@ var _ = Describe("Observability Controller Handlers", func() {
 		}),
 		Entry("NetworkPolicy", handlerTestEntry{
 			newHandler: func(cl client.Client, s *runtime.Scheme) operands.Operand { return NewNetworkPolicyHandler(cl, s) },
-			existing:   func() client.Object { return newNetworkPolicy() },
+			existing:   func() client.Object { return newNetworkPolicy(commontestutils.NewHco()) },
 		}),
 	)
 })
@@ -140,7 +139,7 @@ var _ = Describe("Handler resource verification", func() {
 	BeforeEach(func() {
 		setupImageEnv()
 		hco = commontestutils.NewHco()
-		hco.Spec.FeatureGates.Enable(featureGateName)
+		hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 		req = commontestutils.NewReq(hco)
 		cl = commontestutils.InitClient([]client.Object{hco})
 	})
@@ -179,8 +178,8 @@ var _ = Describe("Handler resource verification", func() {
 		res := handler.Ensure(req)
 		Expect(res.Err).ToNot(HaveOccurred())
 
-		foundNP := newNetworkPolicy()
+		foundNP := newNetworkPolicy(hco)
 		Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(foundNP), foundNP)).To(Succeed())
-		Expect(foundNP.Spec).To(Equal(newNetworkPolicy().Spec))
+		Expect(foundNP.Spec).To(Equal(newNetworkPolicy(hco).Spec))
 	})
 })
