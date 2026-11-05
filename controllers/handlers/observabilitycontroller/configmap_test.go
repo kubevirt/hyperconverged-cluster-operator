@@ -150,7 +150,7 @@ var _ = Describe("Guest Device Drivers ConfigMap", func() {
 
 	Context("when the deployObservabilityController feature gate is enabled", func() {
 		BeforeEach(func() {
-			hco.Spec.FeatureGates.Enable(featureGateName)
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 		})
 
 		It("should create the ConfigMap with the injected content", func() {

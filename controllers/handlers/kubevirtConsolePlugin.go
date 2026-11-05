@@ -152,6 +152,7 @@ func NewKvUIPluginDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: nginxConfigMapName,
 				},
+				DefaultMode: new(int32(420)),
 			},
 		},
 	}

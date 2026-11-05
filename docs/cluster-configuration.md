@@ -409,6 +409,29 @@ spec:
 
 **Graduation Status**: Alpha
 
+### observeVMStat Feature Gate
+When enabled, the release date of each guest device driver is added to the
+`kubevirt_vmi_guest_device_driver_timestamp_seconds` metric, with one sample
+per device. Compare it with `kubevirt_guest_device_driver_latest_version_info`,
+which lists the driver versions shipped for this cluster, to find guests
+running outdated VirtIO drivers. Query either series from the metrics console.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: observeVMStat
+```
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### RebootPolicy Feature Gate
 
 When a guest VM is rebooted, the vmi pod is not terminated and new VM settings

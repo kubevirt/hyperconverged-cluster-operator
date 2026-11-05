@@ -146,6 +146,7 @@ const (
 	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
 	kvNetworkDevicesWithDRA      = "NetworkDevicesWithDRA"
 	kvMDevVGPULiveMigration      = "MDevVGPULiveMigration"
+	kvVMStatsCollector           = "VMStatsCollector"
 )
 
 var (
@@ -999,6 +1000,12 @@ func getExposedFGs(featureGates hcofg.HyperConvergedFeatureGates) []string {
 	if featureGates.IsEnabled("incrementalBackup") {
 		fgs = append(fgs, kvIncrementalBackup)
 		fgs = append(fgs, kvUtilityVolumes)
+	}
+
+	// observeVMStat does more than expose a KubeVirt gate, so the HCO name
+	// stays separate from the KubeVirt VMStatsCollector gate.
+	if featureGates.IsEnabled("observeVMStat") {
+		fgs = append(fgs, kvVMStatsCollector)
 	}
 
 	return fgs
