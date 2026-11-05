@@ -138,20 +138,12 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 						Args:  args,
 						Env: []corev1.EnvVar{
 							{
-								Name: "POD_NAMESPACE",
-								ValueFrom: &corev1.EnvVarSource{
-									FieldRef: &corev1.ObjectFieldSelector{
-										FieldPath: "metadata.namespace",
-									},
-								},
+								Name:  "POD_NAMESPACE",
+								Value: dep.Namespace,
 							},
 							{
-								Name: "POD_SERVICE_ACCOUNT",
-								ValueFrom: &corev1.EnvVarSource{
-									FieldRef: &corev1.ObjectFieldSelector{
-										FieldPath: "spec.serviceAccountName",
-									},
-								},
+								Name:  "POD_SERVICE_ACCOUNT",
+								Value: serviceAccountName,
 							},
 						},
 						Ports: []corev1.ContainerPort{
@@ -190,22 +182,30 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
-									Path: "/healthz",
-									Port: intstr.FromInt32(8081),
+									Path:   "/healthz",
+									Port:   intstr.FromInt32(8081),
+									Scheme: corev1.URISchemeHTTP,
 								},
 							},
 							InitialDelaySeconds: 15,
+							TimeoutSeconds:      1,
 							PeriodSeconds:       20,
+							SuccessThreshold:    1,
+							FailureThreshold:    3,
 						},
 						ReadinessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
-									Path: "/readyz",
-									Port: intstr.FromInt32(8081),
+									Path:   "/readyz",
+									Port:   intstr.FromInt32(8081),
+									Scheme: corev1.URISchemeHTTP,
 								},
 							},
 							InitialDelaySeconds: 5,
+							TimeoutSeconds:      1,
 							PeriodSeconds:       10,
+							SuccessThreshold:    1,
+							FailureThreshold:    3,
 						},
 						TerminationMessagePath:   corev1.TerminationMessagePathDefault,
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,

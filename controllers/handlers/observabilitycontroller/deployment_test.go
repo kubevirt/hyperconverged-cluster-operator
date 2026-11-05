@@ -84,9 +84,9 @@ var _ = Describe("Observability Controller Deployment", func() {
 
 			Expect(container.Env).To(HaveLen(2))
 			Expect(container.Env[0].Name).To(Equal("POD_NAMESPACE"))
-			Expect(container.Env[0].ValueFrom.FieldRef.FieldPath).To(Equal("metadata.namespace"))
+			Expect(container.Env[0].Value).To(Equal(dep.Namespace))
 			Expect(container.Env[1].Name).To(Equal("POD_SERVICE_ACCOUNT"))
-			Expect(container.Env[1].ValueFrom.FieldRef.FieldPath).To(Equal("spec.serviceAccountName"))
+			Expect(container.Env[1].Value).To(Equal(serviceAccountName))
 
 			Expect(container.Ports).To(HaveLen(2))
 			Expect(container.Ports[0].ContainerPort).To(Equal(int32(8443)))
@@ -305,6 +305,29 @@ var _ = Describe("Observability Controller Deployment", func() {
 	})
 
 	Context("Deployment spec drift", func() {
+		It("should not update a deployment that already has the API server defaults", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
+			req := commontestutils.NewReq(hco)
+
+			stored := newDeployment(hco)
+			probe := stored.Spec.Template.Spec.Containers[0].LivenessProbe
+			Expect(probe.TimeoutSeconds).To(Equal(int32(1)))
+			Expect(probe.SuccessThreshold).To(Equal(int32(1)))
+			Expect(probe.FailureThreshold).To(Equal(int32(3)))
+			Expect(probe.HTTPGet.Scheme).To(Equal(corev1.URISchemeHTTP))
+			Expect(stored.Spec.Template.Spec.Containers[0].ReadinessProbe.TimeoutSeconds).To(Equal(int32(1)))
+			Expect(stored.Spec.Template.Spec.Containers[0].Env[0].Value).To(Equal(stored.Namespace))
+			Expect(stored.Spec.Template.Spec.Containers[0].Env[1].Value).To(Equal(serviceAccountName))
+
+			cl := commontestutils.InitClient([]client.Object{hco, stored})
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Updated).To(BeFalse())
+		})
+
 		It("should restore fields if they are modified", func() {
 			hco := commontestutils.NewHco()
 			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
