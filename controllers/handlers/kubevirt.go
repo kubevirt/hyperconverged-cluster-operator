@@ -145,6 +145,7 @@ const (
 	kvWorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
 	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
 	kvNetworkDevicesWithDRA      = "NetworkDevicesWithDRA"
+	kvGPUsWithDRA                = "GPUsWithDRA"
 	kvMDevVGPULiveMigration      = "MDevVGPULiveMigration"
 )
 
@@ -166,6 +167,7 @@ var (
 		kvWorkloadEncryptionSEV,
 		kvWorkloadEncryptionTDX,
 		kvNetworkDevicesWithDRA,
+		kvGPUsWithDRA,
 		kvMDevVGPULiveMigration,
 	}
 )

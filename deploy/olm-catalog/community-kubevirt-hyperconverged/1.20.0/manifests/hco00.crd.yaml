@@ -2326,6 +2326,13 @@ spec:
                     Allow to expose a limited set of host metrics to guests.
                     Phase: alpha
 
+                  * gPUsWithDRA:
+                    GPUsWithDRA allows users to create VMIs with DRA provisioned GPUs
+                    specified in spec.domain.devices.gpus. This enables DRA-managed GPU
+                    resources to be attached to VMs. Note: this feature is in Developer
+                    Preview.
+                    Phase: alpha
+
                   * incrementalBackup:
                     IncrementalBackup enables changed block tracking backups and incremental
                     backups using QEMU capabilities in KubeVirt. When enabled, this also
