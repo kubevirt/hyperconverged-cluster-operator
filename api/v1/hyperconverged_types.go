@@ -107,6 +107,12 @@ type HyperConvergedSpec struct {
 	//   isolation. Note: this feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * cpusWithDRA:
+	//   CPUsWithDRA allows users to have the VM's vCPUs allocated through DRA,
+	//   coordinated with the DRA claims that provide its GPU and NIC. Note: this
+	//   feature is in Developer Preview.
+	//   Phase: alpha
+	//
 	// * deployObservabilityController:
 	//   Deploy the virt-observability-controller component. When enabled, the
 	//   controller exposes KubeVirt metrics and manages PrometheusRule resources
@@ -115,6 +121,13 @@ type HyperConvergedSpec struct {
 	//
 	// * downwardMetrics:
 	//   Allow to expose a limited set of host metrics to guests.
+	//   Phase: alpha
+	//
+	// * gpusWithDRA:
+	//   GPUsWithDRA allows users to create VMIs with DRA provisioned GPUs
+	//   specified in spec.domain.devices.gpus. This enables DRA-managed GPU
+	//   resources to be attached to VMs. Note: this feature is in Developer
+	//   Preview.
 	//   Phase: alpha
 	//
 	// * incrementalBackup:

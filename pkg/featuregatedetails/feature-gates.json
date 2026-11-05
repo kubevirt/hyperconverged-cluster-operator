@@ -35,6 +35,11 @@
     "description": "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview."
   },
   {
+    "name": "cpusWithDRA",
+    "phase": "alpha",
+    "description": "CPUsWithDRA allows users to have the VM's vCPUs allocated through DRA, coordinated with the DRA claims that provide its GPU and NIC. Note: this feature is in Developer Preview."
+  },
+  {
     "name": "deployObservabilityController",
     "phase": "alpha",
     "description": "Deploy the virt-observability-controller component. When enabled, the controller exposes KubeVirt metrics and manages PrometheusRule resources independently from the KubeVirt control plane."
@@ -43,6 +48,11 @@
     "name": "downwardMetrics",
     "phase": "alpha",
     "description": "Allow to expose a limited set of host metrics to guests."
+  },
+  {
+    "name": "gpusWithDRA",
+    "phase": "alpha",
+    "description": "GPUsWithDRA allows users to create VMIs with DRA provisioned GPUs specified in spec.domain.devices.gpus. This enables DRA-managed GPU resources to be attached to VMs. Note: this feature is in Developer Preview."
   },
   {
     "name": "incrementalBackup",
