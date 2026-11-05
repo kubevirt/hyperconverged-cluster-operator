@@ -18,6 +18,7 @@ const (
 func Register(operatorRegistry *operatorrules.Registry) error {
 	alerts := [][]promv1.Rule{
 		clusterAlerts(),
+		storageAlerts(),
 	}
 
 	runbookURLTemplate, err := getRunbookURLTemplate()
