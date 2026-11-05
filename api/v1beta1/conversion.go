@@ -32,6 +32,7 @@ type v1OnlyFields struct {
 	MultiArchEnabled               *bool                              `json:"multiArchEnabled,omitempty"`
 	FeatureGates                   hcov1fg.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 	Observability                  *hcov1.ObservabilityConfig         `json:"observability,omitempty"`
+	SMBIOS                         *hcov1.SMBIOSConfiguration         `json:"smbios,omitempty"`
 }
 
 func (fields *v1OnlyFields) isEmpty() bool {
@@ -40,7 +41,8 @@ func (fields *v1OnlyFields) isEmpty() bool {
 		fields.PersistentReservationEnabled == nil &&
 		fields.MultiArchEnabled == nil &&
 		fields.FeatureGates == nil &&
-		fields.Observability == nil
+		fields.Observability == nil &&
+		fields.SMBIOS == nil
 }
 
 // Implement the conversion.Convertible interface, to be used in the conversion webhook.
@@ -617,6 +619,10 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		dst.Spec.Observability = v1Fields.Observability.DeepCopy()
 	}
 
+	if v1Fields.SMBIOS != nil {
+		dst.Spec.Virtualization.SMBIOSConfig = v1Fields.SMBIOS.DeepCopy()
+	}
+
 	return nil
 }
 
@@ -647,6 +653,10 @@ func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
 
 	if src.Spec.Observability != nil {
 		v1Fields.Observability = src.Spec.Observability.DeepCopy()
+	}
+
+	if src.Spec.Virtualization.SMBIOSConfig != nil {
+		v1Fields.SMBIOS = src.Spec.Virtualization.SMBIOSConfig.DeepCopy()
 	}
 
 	if v1Fields.isEmpty() {

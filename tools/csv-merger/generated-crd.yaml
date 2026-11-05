@@ -3531,6 +3531,19 @@ spec:
                     - AggregateToDefault
                     - Manual
                     type: string
+                  smbios:
+                    description: SMBIOS holds the cluster-level SMBIOS configuration
+                      for virtual machines.
+                    properties:
+                      family:
+                        description: |-
+                          Family overrides the SMBIOS Type 1 family string exposed to virtual machines.
+                          Other SMBIOS values retain their cluster defaults.
+                          Some vendor drivers match hardware IDs that include the SMBIOS family; validate
+                          this value before changing it on clusters that use passthrough or GPU devices.
+                        minLength: 1
+                        type: string
+                    type: object
                   tuningPolicy:
                     description: |-
                       TuningPolicy allows configuring the mode in which the RateLimits of kubevirt are set.

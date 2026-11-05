@@ -969,6 +969,36 @@ spec:
     vmStateStorageClass: "rook-cephfs"
 ```
 
+### SMBIOS Configuration
+
+Use `spec.virtualization.smbios.family` to set the SMBIOS Type 1 family string that virtual machines report to their
+guest operating systems. This provides cluster-specific information, such as an environment identifier, without changing
+individual virtual machine specifications or adding guest-side logic.
+
+The `family` value overrides the family field in the cluster's SMBIOS deployment defaults. Other SMBIOS fields, such as
+manufacturer, product, SKU, and version, keep their existing values. The value must contain at least one character. If
+`family` is not set, HCO leaves the SMBIOS configuration unchanged.
+
+Existing virtual machines report the SMBIOS data with which they were launched. Restart a virtual machine after
+changing this field if its guest must observe the new value.
+
+> **Caution**
+>
+> Some vendor drivers match hardware identifiers that include the SMBIOS family. Validate the value before changing it
+> on clusters that use passthrough or GPU devices.
+
+Example
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  virtualization:
+    smbios:
+      family: "production-cluster"
+```
+
 ### Auto CPU limits
 
 The `spec.virtualization.autoCPULimitNamespaceLabelSelector` field allows defining a namespace label for which VM pods
