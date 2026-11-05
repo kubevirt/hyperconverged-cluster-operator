@@ -62,18 +62,17 @@ var _ = Describe("Observability Controller Handlers", func() {
 				Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(cr), cr)).To(Succeed())
 			})
 
-			It("should not create when deployObservabilityController feature gate is not set", func() {
+			It("should create when deployObservabilityController feature gate is not set", func() {
 				cl := commontestutils.InitClient([]client.Object{hco})
 
 				handler := entry.newHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
 
 				Expect(res.Err).ToNot(HaveOccurred())
-				Expect(res.Created).To(BeFalse())
+				Expect(res.Created).To(BeTrue())
 
 				cr := entry.existing()
-				err := cl.Get(context.Background(), client.ObjectKeyFromObject(cr), cr)
-				Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+				Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(cr), cr)).To(Succeed())
 			})
 
 			It("should delete when deployObservabilityController feature gate is disabled", func() {

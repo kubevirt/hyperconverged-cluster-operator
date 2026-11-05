@@ -82,6 +82,12 @@ type HyperConvergedSpec struct {
 	//   feature is in Technical Preview.
 	//   Phase: beta
 	//
+	// * deployObservabilityController:
+	//   Publish KubeVirt metrics, alerts, and recording rules. This is enabled by
+	//   default. Disable this feature gate to stop publishing them. This feature
+	//   is in Tech Preview.
+	//   Phase: beta
+	//
 	// * rebootPolicy:
 	//   RebootPolicy enables virtual machines to be recreated when they reboot
 	//   from within the guest operating system. This feature is in Tech Preview.
@@ -105,12 +111,6 @@ type HyperConvergedSpec struct {
 	//   Enable KubeVirt to request up to two additional dedicated CPUs in order to
 	//   complete the total CPU count to an even parity when using emulator thread
 	//   isolation. Note: this feature is in Developer Preview.
-	//   Phase: alpha
-	//
-	// * deployObservabilityController:
-	//   Deploy the virt-observability-controller component. When enabled, the
-	//   controller exposes KubeVirt metrics and manages PrometheusRule resources
-	//   independently from the KubeVirt control plane.
 	//   Phase: alpha
 	//
 	// * downwardMetrics:
