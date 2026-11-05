@@ -2316,6 +2316,12 @@ spec:
                     isolation. Note: this feature is in Developer Preview.
                     Phase: alpha
 
+                  * cPUsWithDRA:
+                    CPUsWithDRA allows users to have the VM's vCPUs allocated through DRA,
+                    coordinated with the DRA claims that provide its GPU and NIC. Note: this
+                    feature is in Developer Preview.
+                    Phase: alpha
+
                   * deployObservabilityController:
                     Deploy the virt-observability-controller component. When enabled, the
                     controller exposes KubeVirt metrics and manages PrometheusRule resources
