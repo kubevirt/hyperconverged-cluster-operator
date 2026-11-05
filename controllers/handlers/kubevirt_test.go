@@ -2093,6 +2093,22 @@ Version: 1.2.3`)
 						},
 						And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 					),
+					Entry("should add the VMStatsCollector feature gate if observeVMStat is enabled in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "observeVMStat", State: new(featuregates.Enabled)},
+							}
+						},
+						ContainElement(kvVMStatsCollector),
+					),
+					Entry("should not add the VMStatsCollector feature gate if observeVMStat is disabled in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "observeVMStat", State: new(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvVMStatsCollector)),
+					),
 				)
 
 				var exposedFGsCases []TableEntry

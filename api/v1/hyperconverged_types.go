@@ -163,6 +163,13 @@ type HyperConvergedSpec struct {
 	//   This feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * observeVMStat:
+	//   When enabled, the release date of each guest device driver is added to the
+	//   kubevirt_vmi_guest_device_driver_timestamp_seconds metric, so guests
+	//   running outdated VirtIO drivers can be found. Note: this feature is in
+	//   Developer Preview.
+	//   Phase: alpha
+	//
 	// * workloadEncryptionSEV:
 	//   Enable AMD SEV and SEV-SNP workload encryption for confidential VMs. Note:
 	//   this feature is in Developer Preview.

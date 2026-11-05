@@ -75,6 +75,11 @@
     "description": "ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview."
   },
   {
+    "name": "observeVMStat",
+    "phase": "alpha",
+    "description": "When enabled, the release date of each guest device driver is added to the kubevirt_vmi_guest_device_driver_timestamp_seconds metric, so guests running outdated VirtIO drivers can be found. Note: this feature is in Developer Preview."
+  },
+  {
     "name": "workloadEncryptionSEV",
     "phase": "alpha",
     "description": "Enable AMD SEV and SEV-SNP workload encryption for confidential VMs. Note: this feature is in Developer Preview."
