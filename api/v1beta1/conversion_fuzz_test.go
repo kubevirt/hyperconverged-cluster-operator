@@ -364,6 +364,12 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	}
 
 	if r.IntN(2) == 1 {
+		hc.Spec.Virtualization.SMBIOSConfig = &hcov1.SMBIOSConfiguration{
+			Family: randPtr(r, randString(r)),
+		}
+	}
+
+	if r.IntN(2) == 1 {
 		hc.Spec.Virtualization.ObsoleteCPUModels = randStringSlice(r)
 	}
 
