@@ -375,6 +375,33 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(mc.AllowWorkloadDisruption).To(HaveValue(BeFalse()))
 		})
 
+		It("should override only the SMBIOS family from the HyperConverged CR", func() {
+			hco.Spec.Virtualization.SMBIOSConfig = &hcov1.SMBIOSConfiguration{
+				Family: new("cluster family"),
+			}
+
+			expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+			cl := commontestutils.InitClient([]client.Object{})
+			handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &kubevirtcorev1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Family).To(Equal("cluster family"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Product).To(Equal("smbios product"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Manufacturer).To(Equal("smbios manufacturer"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Sku).To(Equal("1.2.3"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Version).To(Equal("1.2.3"))
+		})
+
 		It("should find if present", func() {
 			expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())

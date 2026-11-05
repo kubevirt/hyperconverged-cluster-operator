@@ -472,7 +472,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 	if err != nil {
 		return nil, err
 	}
-	config.SMBIOSConfig = smbiosConfig
+	config.SMBIOSConfig = hcoSMBIOSToKv(hc, smbiosConfig)
 
 	hcoVmOptionsToKV(hc.Spec.Virtualization.VirtualMachineOptions, config)
 
@@ -498,6 +498,22 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 	config.ConfidentialCompute = hc.Spec.Virtualization.ConfidentialCompute.DeepCopy()
 
 	return config, nil
+}
+
+func hcoSMBIOSToKv(hc *hcov1.HyperConverged, smbiosConfig *kubevirtcorev1.SMBiosConfiguration) *kubevirtcorev1.SMBiosConfiguration {
+	hcoSMBIOS := hc.Spec.Virtualization.SMBIOSConfig
+	if hcoSMBIOS == nil || hcoSMBIOS.Family == nil {
+		return smbiosConfig
+	}
+
+	if smbiosConfig == nil {
+		smbiosConfig = &kubevirtcorev1.SMBiosConfiguration{}
+	} else {
+		smbiosConfig = smbiosConfig.DeepCopy()
+	}
+
+	smbiosConfig.Family = *hcoSMBIOS.Family
+	return smbiosConfig
 }
 
 func copyHypervisors(hvs []kubevirtcorev1.HypervisorConfiguration, config *kubevirtcorev1.KubeVirtConfiguration) {

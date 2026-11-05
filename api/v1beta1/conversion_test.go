@@ -4822,6 +4822,9 @@ var _ = Describe("api/v1beta1", func() {
 					AllowedMetrics: []string{"kubevirt_vmi_memory_used_bytes"},
 				},
 			}
+			v1HC.Spec.Virtualization.SMBIOSConfig = &hcov1.SMBIOSConfiguration{
+				Family: new("Red Hat Enterprise Linux"),
+			}
 			v1beta1HC := &HyperConverged{}
 
 			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
@@ -4842,6 +4845,9 @@ var _ = Describe("api/v1beta1", func() {
 		},
 		"allowedAlerts": ["KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"],
 		"allowedRecordingRules": ["kubevirt_vmi_phase_count:sum"]
+		},
+		"smbios": {
+			"family": "Red Hat Enterprise Linux"
 	}
 }`
 			Expect(v1beta1HC.Annotations).To(HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(expectedJSONAnnotation)))
@@ -4877,6 +4883,8 @@ var _ = Describe("api/v1beta1", func() {
 			Expect(roundTripHC.Spec.Observability.AllowedRecordingRules).To(ConsistOf("kubevirt_vmi_phase_count:sum"))
 			Expect(roundTripHC.Spec.Observability.Workloads).ToNot(BeNil())
 			Expect(roundTripHC.Spec.Observability.Workloads.AllowedMetrics).To(ConsistOf("kubevirt_vmi_memory_used_bytes"))
+			Expect(roundTripHC.Spec.Virtualization.SMBIOSConfig).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Virtualization.SMBIOSConfig.Family).To(HaveValue(Equal("Red Hat Enterprise Linux")))
 		})
 	})
 })
