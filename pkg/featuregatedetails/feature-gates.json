@@ -55,6 +55,11 @@
     "description": "GPUsWithDRA allows users to create VMIs with DRA provisioned GPUs specified in spec.domain.devices.gpus. This enables DRA-managed GPU resources to be attached to VMs. Note: this feature is in Developer Preview."
   },
   {
+    "name": "hostDevicesWithDRA",
+    "phase": "alpha",
+    "description": "HostDevicesWithDRA allows users to create VMIs with DRA provisioned host devices specified in spec.domain.devices.hostDevices. This enables DRA-managed host devices to be attached to VMs. Note: this feature is in Developer Preview."
+  },
+  {
     "name": "incrementalBackup",
     "phase": "alpha",
     "description": "IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Developer Preview."

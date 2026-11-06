@@ -130,6 +130,13 @@ type HyperConvergedSpec struct {
 	//   Preview.
 	//   Phase: alpha
 	//
+	// * hostDevicesWithDRA:
+	//   HostDevicesWithDRA allows users to create VMIs with DRA provisioned host
+	//   devices specified in spec.domain.devices.hostDevices. This enables
+	//   DRA-managed host devices to be attached to VMs. Note: this feature is in
+	//   Developer Preview.
+	//   Phase: alpha
+	//
 	// * incrementalBackup:
 	//   IncrementalBackup enables changed block tracking backups and incremental
 	//   backups using QEMU capabilities in KubeVirt. When enabled, this also

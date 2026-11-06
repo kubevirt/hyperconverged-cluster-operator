@@ -298,6 +298,31 @@ spec:
 
 **Graduation Status**: Alpha
 
+### hostDevicesWithDRA Feature Gate
+Add the `hostDevicesWithDRA` feature gate in order to enable VMIs to use
+host devices provisioned through DRA (Dynamic Resource Allocation). A DRA
+driver must already be installed and configured on the cluster to provision
+the devices.
+
+When enabled, VMIs can attach DRA-provisioned host devices by setting
+`claimName` and `requestName` on `spec.domain.devices.hostDevices`.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: hostDevicesWithDRA
+```
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### workloadEncryptionSEV Feature Gate
 Add the `workloadEncryptionSEV` feature gate in order to enable AMD SEV and
 SEV-SNP workload encryption for confidential virtual machines (VMs). When
