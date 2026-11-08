@@ -4,7 +4,7 @@ set -ex
 
 (
   cd ./tools/digester
-  go build .
+  GOWORK=off go build .
 )
 
 source ./hack/config
