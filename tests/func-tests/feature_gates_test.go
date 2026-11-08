@@ -13,8 +13,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -43,7 +42,7 @@ var _ = Describe("test feature gates", Label("feature-gates"), func() {
 		)
 
 		// make sure it's alpha. If not, choose another alpha proxy FG
-		phase, exists := featuregatedetails.GetFeatureGatePhase(hcoFG)
+		phase, exists := featuregates.GetFeatureGatePhase(hcoFG)
 		Expect(exists).To(BeTrue())
 		Expect(phase).To(Equal(featuregates.PhaseAlpha))
 
@@ -84,7 +83,7 @@ var _ = Describe("test feature gates", Label("feature-gates"), func() {
 	}
 
 	It("should not allow enabling the same feature gate with different casing", func(ctx context.Context) {
-		hcoAlphaFGs := featuregatedetails.ListAlphaFeatureGates()
+		hcoAlphaFGs := featuregates.ListAlphaFeatureGates()
 		if len(hcoAlphaFGs) == 0 {
 			Skip("no Alpha feature gates found")
 		}

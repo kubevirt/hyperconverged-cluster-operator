@@ -11,11 +11,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	featuregatetypes "github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
-	featuregatetypes "github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 )
 
@@ -222,7 +221,7 @@ var _ = Describe("kubevirt_hco_feature_gate_enabled", func() {
 	It("emits a 0 or 1 series for every known configurable feature gate", func() {
 		cli := commontestutils.InitClient([]client.Object{hco})
 		results := getFeatureGateEnabledCallback(cli, commontestutils.Namespace)()
-		configurable := featuregatedetails.ListConfigurableFeatureGates()
+		configurable := featuregatetypes.ListConfigurableFeatureGates()
 
 		Expect(results).To(HaveLen(len(configurable)))
 		for _, fg := range configurable {
@@ -295,7 +294,7 @@ var _ = Describe("kubevirt_hco_feature_gate_enabled", func() {
 	})
 
 	It("registers the collector so scrapes include every configurable gate", func() {
-		configurable := featuregatedetails.ListConfigurableFeatureGates()
+		configurable := featuregatetypes.ListConfigurableFeatureGates()
 		Expect(configurable).NotTo(BeEmpty())
 		for _, fg := range configurable {
 			hco.Spec.FeatureGates.Disable(fg.Name)

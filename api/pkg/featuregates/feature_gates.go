@@ -1,57 +1,56 @@
-package featuregatedetails
+package featuregates
 
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"iter"
 	"maps"
 	"slices"
 	"strings"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 )
 
 //go:embed feature-gates.json
 var featureGateJson []byte
 
 var (
-	featureGatesDetails      map[string]featuregates.FeatureGate
-	configurableFeatureGates []featuregates.FeatureGate
+	featureGatesDetails      map[string]FeatureGate
+	configurableFeatureGates []FeatureGate
 )
 
-func GetFeatureGatePhase(fgName string) (enabled featuregates.Phase, fgExists bool) {
+func GetFeatureGatePhase(fgName string) (enabled Phase, fgExists bool) {
 	fgName = strings.ToLower(fgName)
 	fg, ok := featureGatesDetails[fgName]
 	if !ok {
-		return featuregates.PhaseUnknown, false
+		return PhaseUnknown, false
 	}
 
 	return fg.Phase, true
 }
 
 func ListBetaFeatureGates() []string {
-	return slices.Sorted(filterFGByPhase(maps.All(featureGatesDetails), featuregates.PhaseBeta))
+	return slices.Sorted(filterFGByPhase(maps.All(featureGatesDetails), PhaseBeta))
 }
 
 func ListAlphaFeatureGates() []string {
-	return slices.Sorted(filterFGByPhase(maps.All(featureGatesDetails), featuregates.PhaseAlpha))
+	return slices.Sorted(filterFGByPhase(maps.All(featureGatesDetails), PhaseAlpha))
 }
 
 // ListConfigurableFeatureGates returns every catalogued feature gate that can
 // still be configured through spec.featureGates (alpha and beta), sorted by name.
-func ListConfigurableFeatureGates() []featuregates.FeatureGate {
+func ListConfigurableFeatureGates() []FeatureGate {
 	return slices.Clone(configurableFeatureGates)
 }
 
-func buildConfigurableList() []featuregates.FeatureGate {
-	configurable := make([]featuregates.FeatureGate, 0, len(featureGatesDetails))
+func buildConfigurableList() []FeatureGate {
+	configurable := make([]FeatureGate, 0, len(featureGatesDetails))
 	for _, fg := range featureGatesDetails {
 		if fg.Phase.IsConfigurable() {
 			configurable = append(configurable, fg)
 		}
 	}
 
-	slices.SortFunc(configurable, func(a, b featuregates.FeatureGate) int {
+	slices.SortFunc(configurable, func(a, b FeatureGate) int {
 		return strings.Compare(a.Name, b.Name)
 	})
 
@@ -65,7 +64,10 @@ func init() {
 }
 
 func setup(fgJson []byte) error {
-	var fgs featuregates.FeatureGates
+	var fgs FeatureGates
+	if len(fgJson) == 0 {
+		return fmt.Errorf("the api/pkg/featuregates/feature_gates.json file is empty or missing")
+	}
 	err := json.Unmarshal(fgJson, &fgs)
 	if err != nil {
 		return err
@@ -77,8 +79,8 @@ func setup(fgJson []byte) error {
 	return nil
 }
 
-func fgsToMap(fgs iter.Seq[featuregates.FeatureGate]) iter.Seq2[string, featuregates.FeatureGate] {
-	return func(yield func(string, featuregates.FeatureGate) bool) {
+func fgsToMap(fgs iter.Seq[FeatureGate]) iter.Seq2[string, FeatureGate] {
+	return func(yield func(string, FeatureGate) bool) {
 		for fg := range fgs {
 			if !yield(strings.ToLower(fg.Name), fg) {
 				return
@@ -87,7 +89,7 @@ func fgsToMap(fgs iter.Seq[featuregates.FeatureGate]) iter.Seq2[string, featureg
 	}
 }
 
-func filterFGByPhase(fgs iter.Seq2[string, featuregates.FeatureGate], phase featuregates.Phase) iter.Seq[string] {
+func filterFGByPhase(fgs iter.Seq2[string, FeatureGate], phase Phase) iter.Seq[string] {
 	return func(yield func(string) bool) {
 		for _, fg := range fgs {
 			if fg.Phase == phase {
