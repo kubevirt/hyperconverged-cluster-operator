@@ -47,7 +47,7 @@ latest_cnao_commit=$(curl -sL "https://storage.googleapis.com/kubevirt-prow/deve
 
 # Update HCO dependencies
 go mod tidy
-go mod vendor
+go work vendor
 rm -rf kubevirt cdi cnao
 
 # Get latest kubevirt
@@ -74,12 +74,20 @@ git clone https://github.com/kubevirt/cluster-network-addons-operator.git cnao
   git checkout "${latest_cnao_commit}"
 )
 
+(
+  cd api
+  go mod edit -replace kubevirt.io/api=../kubevirt/staging/src/kubevirt.io/api
+  go mod edit -replace kubevirt.io/containerized-data-importer-api=../cdi/staging/src/kubevirt.io/containerized-data-importer-api
+  go mod edit -replace github.com/kubevirt/cluster-network-addons-operator=../cnao
+  go mod tidy
+)
+
 go mod edit -replace kubevirt.io/api=./kubevirt/staging/src/kubevirt.io/api
 go mod edit -replace kubevirt.io/containerized-data-importer-api=./cdi/staging/src/kubevirt.io/containerized-data-importer-api
 go mod edit -replace github.com/kubevirt/cluster-network-addons-operator=./cnao
 
 go mod tidy
-go mod vendor
+go work vendor
 
 go test ./api/... ./pkg/... ./controllers/... ./cmd/...
 

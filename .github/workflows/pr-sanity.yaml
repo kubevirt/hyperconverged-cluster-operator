@@ -81,6 +81,11 @@ jobs:
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
+    strategy:
+      matrix:
+        wd:
+          - .
+          - api
     steps:
       - uses: actions/checkout@v7
 
@@ -93,3 +98,4 @@ jobs:
         with:
           version: v2.12.2
           args: --timeout=5m
+          working-directory: ${{ matrix.wd }}

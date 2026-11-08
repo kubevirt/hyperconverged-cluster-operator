@@ -47,8 +47,8 @@ function main {
   echo INFO: Executing "go mod tidy"
   go mod tidy -v
 
-  echo INFO: Executing "go mod vendor"
-  go mod vendor
+  echo INFO: Executing "go work vendor"
+  go work vendor
   # if new files added to the vendor/ directory, add them to git
   if [[ -n $(git ls-files --others --exclude-standard --deleted vendor) ]]; then
     git add vendor/
@@ -276,6 +276,12 @@ function update_go_mod() {
     MODULE_PATH_LIST=${IMPORT_REPOS[$UPDATED_COMPONENT]}
     for MODULE_PATH in $(echo "${MODULE_PATH_LIST}" | tr "," "\n")
     do
+      (
+        cd api
+        go mod edit -require="${MODULE_PATH}@${UPDATED_VERSION}"
+        GOWORK=off go mod tidy
+      )
+
       go mod edit -require="${MODULE_PATH}@${UPDATED_VERSION}"
     done
   else
