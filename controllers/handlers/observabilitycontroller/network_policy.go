@@ -1,9 +1,11 @@
 package observabilitycontroller
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -15,10 +17,18 @@ import (
 const (
 	npName                = deploymentName + "-np"
 	observCtrlMetricsPort = hcoutil.MetricsPort
+
+	virtHandlerLabelKey   = "kubevirt.io"
+	virtHandlerLabelValue = "virt-handler"
+	vmstatsPort           = int32(8187)
 )
 
 func NewNetworkPolicyHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewConditionalHandler(newNetworkPolicyHandler(cli, scheme), shouldDeploy, npNameOnly)
+	return operands.NewConditionalHandler(
+		operands.NewDynamicNetworkPolicyHandler(cli, scheme, newNetworkPolicy),
+		shouldDeploy,
+		npNameOnly,
+	)
 }
 
 func npNameOnly(_ *hcov1.HyperConverged) client.Object {
@@ -30,11 +40,7 @@ func npNameOnly(_ *hcov1.HyperConverged) client.Object {
 	}
 }
 
-func newNetworkPolicyHandler(cl client.Client, schm *runtime.Scheme) *operands.GenericOperand {
-	return operands.NewNetworkPolicyHandler(cl, schm, newNetworkPolicy())
-}
-
-func newNetworkPolicy() *networkingv1.NetworkPolicy {
+func newNetworkPolicy(hc *hcov1.HyperConverged) *networkingv1.NetworkPolicy {
 	builder := networkpolicy.NewBuilder(npName,
 		hcoutil.AppComponentObservability,
 		networkpolicy.WithPodMatchSelector(map[string]string{
@@ -43,9 +49,30 @@ func newNetworkPolicy() *networkingv1.NetworkPolicy {
 		}),
 		networkpolicy.WithDNSEgress(),
 		networkpolicy.WithAPIServerEgress(),
-		// metrics:
 		networkpolicy.WithIngressToTCPPorts(nil, observCtrlMetricsPort),
 	)
+
+	if hc.Spec.FeatureGates.IsEnabled(observeVMStatFeatureGate) {
+		// virt-handler is not hostNetwork, so GetVMStats on TCP 8187 is reached
+		// with a same-namespace pod egress rule.
+		builder.WithOption(networkpolicy.WithEgress(networkingv1.NetworkPolicyEgressRule{
+			Ports: []networkingv1.NetworkPolicyPort{
+				{
+					Protocol: new(corev1.ProtocolTCP),
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: vmstatsPort},
+				},
+			},
+			To: []networkingv1.NetworkPolicyPeer{
+				{
+					PodSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							virtHandlerLabelKey: virtHandlerLabelValue,
+						},
+					},
+				},
+			},
+		}))
+	}
 
 	return builder.Build()
 }

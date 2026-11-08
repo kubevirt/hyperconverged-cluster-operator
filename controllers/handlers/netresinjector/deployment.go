@@ -244,7 +244,8 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 						Name: "tls",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
-								SecretName: tlsSecretName,
+								SecretName:  tlsSecretName,
+								DefaultMode: new(int32(420)),
 							},
 						},
 					},

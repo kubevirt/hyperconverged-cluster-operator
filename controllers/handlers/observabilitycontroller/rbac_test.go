@@ -58,7 +58,7 @@ var _ = Describe("Observability Controller ClusterRole", func() {
 	Context("ClusterRole spec drift", func() {
 		It("should restore RBAC rules if they are modified", func() {
 			hco := commontestutils.NewHco()
-			hco.Spec.FeatureGates.Enable(featureGateName)
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 			req := commontestutils.NewReq(hco)
 
 			expected := newClusterRole()
@@ -101,7 +101,7 @@ var _ = Describe("Observability Controller ClusterRoleBinding", func() {
 	Context("ClusterRoleBinding spec drift", func() {
 		It("should restore subjects and role ref if they are modified", func() {
 			hco := commontestutils.NewHco()
-			hco.Spec.FeatureGates.Enable(featureGateName)
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 			req := commontestutils.NewReq(hco)
 
 			expected := newClusterRoleBinding()
@@ -147,7 +147,7 @@ var _ = Describe("Guest Device Drivers Role", func() {
 	Context("Role spec drift", func() {
 		It("should restore RBAC rules if they are modified", func() {
 			hco := commontestutils.NewHco()
-			hco.Spec.FeatureGates.Enable(featureGateName)
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 			req := commontestutils.NewReq(hco)
 
 			expected := newGuestDeviceDriversRole()
@@ -186,7 +186,7 @@ var _ = Describe("Guest Device Drivers RoleBinding", func() {
 	Context("RoleBinding spec drift", func() {
 		It("should restore subjects and role ref if they are modified", func() {
 			hco := commontestutils.NewHco()
-			hco.Spec.FeatureGates.Enable(featureGateName)
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 			req := commontestutils.NewReq(hco)
 
 			expected := newGuestDeviceDriversRoleBinding()

@@ -82,6 +82,12 @@ type HyperConvergedSpec struct {
 	//   feature is in Technical Preview.
 	//   Phase: beta
 	//
+	// * deployObservabilityController:
+	//   Publish KubeVirt metrics, alerts, and recording rules. This is enabled by
+	//   default. Disable this feature gate to stop publishing them. This feature
+	//   is in Tech Preview.
+	//   Phase: beta
+	//
 	// * rebootPolicy:
 	//   RebootPolicy enables virtual machines to be recreated when they reboot
 	//   from within the guest operating system. This feature is in Tech Preview.
@@ -111,12 +117,6 @@ type HyperConvergedSpec struct {
 	//   CPUsWithDRA allows users to have the VM's vCPUs allocated through DRA,
 	//   coordinated with the DRA claims that provide its GPU and NIC. Note: this
 	//   feature is in Developer Preview.
-	//   Phase: alpha
-	//
-	// * deployObservabilityController:
-	//   Deploy the virt-observability-controller component. When enabled, the
-	//   controller exposes KubeVirt metrics and manages PrometheusRule resources
-	//   independently from the KubeVirt control plane.
 	//   Phase: alpha
 	//
 	// * downwardMetrics:
@@ -161,6 +161,13 @@ type HyperConvergedSpec struct {
 	//   This subresource returns a structured list of k8s objects that are related
 	//   to the specified VM or VMI, enabling better dependency tracking. Note:
 	//   This feature is in Developer Preview.
+	//   Phase: alpha
+	//
+	// * observeVMStat:
+	//   When enabled, the release date of each guest device driver is added to the
+	//   kubevirt_vmi_guest_device_driver_timestamp_seconds metric, so guests
+	//   running outdated VirtIO drivers can be found. Note: this feature is in
+	//   Developer Preview.
 	//   Phase: alpha
 	//
 	// * workloadEncryptionSEV:

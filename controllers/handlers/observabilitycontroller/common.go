@@ -14,9 +14,10 @@ const (
 	guestDeviceDriversRoleName        = "guest-device-drivers-role"
 	guestDeviceDriversRoleBindingName = "guest-device-drivers-rolebinding"
 
-	featureGateName = "deployObservabilityController"
+	deployObsCntrlFGName     = "deployObservabilityController"
+	observeVMStatFeatureGate = "observeVMStat"
 )
 
 func shouldDeploy(hc *hcov1.HyperConverged) bool {
-	return hc.Spec.FeatureGates.IsEnabled(featureGateName)
+	return hc.Spec.FeatureGates.IsEnabled(deployObsCntrlFGName)
 }

@@ -84,9 +84,9 @@ var _ = Describe("Observability Controller Deployment", func() {
 
 			Expect(container.Env).To(HaveLen(2))
 			Expect(container.Env[0].Name).To(Equal("POD_NAMESPACE"))
-			Expect(container.Env[0].ValueFrom.FieldRef.FieldPath).To(Equal("metadata.namespace"))
+			Expect(container.Env[0].Value).To(Equal(dep.Namespace))
 			Expect(container.Env[1].Name).To(Equal("POD_SERVICE_ACCOUNT"))
-			Expect(container.Env[1].ValueFrom.FieldRef.FieldPath).To(Equal("spec.serviceAccountName"))
+			Expect(container.Env[1].Value).To(Equal(serviceAccountName))
 
 			Expect(container.Ports).To(HaveLen(2))
 			Expect(container.Ports[0].ContainerPort).To(Equal(int32(8443)))
@@ -108,6 +108,11 @@ var _ = Describe("Observability Controller Deployment", func() {
 			Expect(container.Resources.Requests).To(HaveKey(corev1.ResourceCPU))
 			Expect(container.Resources.Requests).To(HaveKey(corev1.ResourceMemory))
 			Expect(container.Resources.Limits).To(HaveKey(corev1.ResourceMemory))
+
+			Expect(container.Args).ToNot(ContainElement(enableVMStatsArg))
+			Expect(container.Args).ToNot(ContainElement(vmstatsCertPathArg))
+			Expect(container.VolumeMounts).To(BeEmpty())
+			Expect(dep.Spec.Template.Spec.Volumes).To(BeEmpty())
 		})
 	})
 
@@ -202,7 +207,7 @@ var _ = Describe("Observability Controller Deployment", func() {
 
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
-			hco.Spec.FeatureGates.Enable(featureGateName)
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 			req = commontestutils.NewReq(hco)
 		})
 
@@ -280,7 +285,7 @@ var _ = Describe("Observability Controller Deployment", func() {
 		})
 
 		It("should remove condition when shouldDeploy is false", func() {
-			hco.Spec.FeatureGates.Disable(featureGateName)
+			hco.Spec.FeatureGates.Disable(deployObsCntrlFGName)
 			meta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
 				Type:   hcov1.ConditionKubevirtObservabilityControllerReady,
 				Status: metav1.ConditionTrue,
@@ -300,9 +305,32 @@ var _ = Describe("Observability Controller Deployment", func() {
 	})
 
 	Context("Deployment spec drift", func() {
+		It("should not update a deployment that already has the API server defaults", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
+			req := commontestutils.NewReq(hco)
+
+			stored := newDeployment(hco)
+			probe := stored.Spec.Template.Spec.Containers[0].LivenessProbe
+			Expect(probe.TimeoutSeconds).To(Equal(int32(1)))
+			Expect(probe.SuccessThreshold).To(Equal(int32(1)))
+			Expect(probe.FailureThreshold).To(Equal(int32(3)))
+			Expect(probe.HTTPGet.Scheme).To(Equal(corev1.URISchemeHTTP))
+			Expect(stored.Spec.Template.Spec.Containers[0].ReadinessProbe.TimeoutSeconds).To(Equal(int32(1)))
+			Expect(stored.Spec.Template.Spec.Containers[0].Env[0].Value).To(Equal(stored.Namespace))
+			Expect(stored.Spec.Template.Spec.Containers[0].Env[1].Value).To(Equal(serviceAccountName))
+
+			cl := commontestutils.InitClient([]client.Object{hco, stored})
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Updated).To(BeFalse())
+		})
+
 		It("should restore fields if they are modified", func() {
 			hco := commontestutils.NewHco()
-			hco.Spec.FeatureGates.Enable(featureGateName)
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
 			req := commontestutils.NewReq(hco)
 
 			expected := newDeployment(hco)
@@ -325,6 +353,92 @@ var _ = Describe("Observability Controller Deployment", func() {
 			for k, v := range expected.Labels {
 				Expect(reconciledDep.Labels).To(HaveKeyWithValue(k, v))
 			}
+		})
+	})
+
+	Context("VMStatsCollector", func() {
+		It("should enable vmstats and mount the virt-handler client certificate", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(observeVMStatFeatureGate)
+			dep := newDeployment(hco)
+
+			container := dep.Spec.Template.Spec.Containers[0]
+			Expect(container.Args).To(ContainElements(enableVMStatsArg, vmstatsCertPathArg))
+			Expect(container.Args).ToNot(ContainElement(ContainSubstring("--metrics-allowlist")))
+			Expect(container.Args).ToNot(ContainElement(ContainSubstring("--alerts-allowlist")))
+			Expect(container.Args).ToNot(ContainElement(ContainSubstring("--recording-rules-allowlist")))
+
+			Expect(container.VolumeMounts).To(ConsistOf(corev1.VolumeMount{
+				Name:      vmstatsCertVolumeName,
+				MountPath: vmstatsCertMountPath,
+				ReadOnly:  true,
+			}))
+			Expect(dep.Spec.Template.Spec.Volumes).To(ConsistOf(corev1.Volume{
+				Name: vmstatsCertVolumeName,
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName:  vmstatsClientCertSecret,
+						DefaultMode: new(int32(420)),
+						Optional:    new(true),
+					},
+				},
+			}))
+		})
+
+		It("should not update when the secret volume already has the API default mode", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
+			hco.Spec.FeatureGates.Enable(observeVMStatFeatureGate)
+			req := commontestutils.NewReq(hco)
+
+			stored := newDeployment(hco)
+			stored.Spec.Template.Spec.Volumes[0].Secret.DefaultMode = new(int32(420))
+			cl := commontestutils.InitClient([]client.Object{hco, stored})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Updated).To(BeFalse())
+		})
+
+		It("should restore the client certificate mount if it is removed", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
+			hco.Spec.FeatureGates.Enable(observeVMStatFeatureGate)
+			req := commontestutils.NewReq(hco)
+
+			modifiedDep := newDeployment(hco)
+			modifiedDep.Spec.Template.Spec.Containers[0].VolumeMounts = nil
+			cl := commontestutils.InitClient([]client.Object{hco, modifiedDep})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Updated).To(BeTrue())
+
+			reconciledDep := &appsv1.Deployment{}
+			Expect(cl.Get(context.Background(), client.ObjectKey{Name: res.Name, Namespace: hco.Namespace}, reconciledDep)).To(Succeed())
+			expected := newDeployment(hco)
+			Expect(reconciledDep.Spec.Template.Spec.Containers[0].VolumeMounts).To(Equal(expected.Spec.Template.Spec.Containers[0].VolumeMounts))
+			Expect(reconciledDep.Spec.Template.Spec.Volumes).To(Equal(expected.Spec.Template.Spec.Volumes))
+		})
+
+		It("should keep a configured allowlist and add no vmstats entries while those lists are empty", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(observeVMStatFeatureGate)
+			hco.Spec.Observability = &hcov1.ObservabilityConfig{
+				Workloads: &hcov1.ObservabilityWorkloadsConfig{
+					AllowedMetrics: []string{"kubevirt_vmi_memory_used_bytes"},
+				},
+				AllowedAlerts:         []string{"KubeVirtVMDown"},
+				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count:sum"},
+			}
+			args := newDeployment(hco).Spec.Template.Spec.Containers[0].Args
+			Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_vmi_memory_used_bytes"))
+			Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMDown"))
+			Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count:sum"))
 		})
 	})
 

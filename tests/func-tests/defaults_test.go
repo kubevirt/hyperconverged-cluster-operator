@@ -73,9 +73,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			"enableMultiArchBootImageImport": BeFalseBecause("the enableMultiArchBootImageImport feature gate should be disabled by default"),
 			"decentralizedLiveMigration":     BeTrueBecause("the decentralizedLiveMigration feature gate should be enabled by default"),
 			"declarativeHotplugVolumes":      BeTrueBecause("the declarativeHotplugVolumes feature gate should be enabled by default"),
+			"deployObservabilityController":  BeTrueBecause("the deployObservabilityController feature gate should be enabled by default"),
 			"objectGraph":                    BeFalseBecause("the objectGraph feature gate should be disabled by default"),
 			"incrementalBackup":              BeFalseBecause("the incrementalBackup feature gate should be disabled by default"),
 			"containerPathVolumes":           BeTrueBecause("the containerPathVolumes feature gate should be enabled by default"),
+			"observeVMStat":                  BeFalseBecause("the observeVMStat feature gate should be disabled by default"),
 		}
 
 		It("Check that featureGates defaults are behaving as expected", func(ctx context.Context) {

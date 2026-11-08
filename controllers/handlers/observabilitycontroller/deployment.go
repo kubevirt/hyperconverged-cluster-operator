@@ -21,6 +21,14 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
+const (
+	vmstatsCertMountPath    = "/etc/monitoring/clientcertificates"
+	vmstatsCertVolumeName   = "monitoring-client-cert"
+	vmstatsClientCertSecret = "kubevirt-virt-handler-monitoring-client-certs"
+	enableVMStatsArg        = "--enable-vmstats"
+	vmstatsCertPathArg      = "--vmstats-cert-path=" + vmstatsCertMountPath
+)
+
 var (
 	resourceCPURequest    = resource.MustParse("10m")
 	resourceMemoryRequest = resource.MustParse("64Mi")
@@ -80,16 +88,19 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 		}
 	}
 
-	if hc.Spec.Observability != nil {
-		if flag := observabilityAllowlistFlag("--metrics-allowlist", getMetricsAllowlist(hc)); flag != "" {
-			args = append(args, flag)
-		}
-		if flag := observabilityAllowlistFlag("--alerts-allowlist", hc.Spec.Observability.AllowedAlerts); flag != "" {
-			args = append(args, flag)
-		}
-		if flag := observabilityAllowlistFlag("--recording-rules-allowlist", hc.Spec.Observability.AllowedRecordingRules); flag != "" {
-			args = append(args, flag)
-		}
+	vmStatsEnabled := hc.Spec.FeatureGates.IsEnabled(observeVMStatFeatureGate)
+	if vmStatsEnabled {
+		args = append(args, enableVMStatsArg, vmstatsCertPathArg)
+	}
+
+	if flag := observabilityAllowlistFlag("--metrics-allowlist", getMetricsAllowlist(hc)); flag != "" {
+		args = append(args, flag)
+	}
+	if flag := observabilityAllowlistFlag("--alerts-allowlist", getAlertsAllowlist(hc)); flag != "" {
+		args = append(args, flag)
+	}
+	if flag := observabilityAllowlistFlag("--recording-rules-allowlist", getRecordingRulesAllowlist(hc)); flag != "" {
+		args = append(args, flag)
 	}
 
 	dep := NewDeploymentWithNameOnly()
@@ -127,20 +138,12 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 						Args:  args,
 						Env: []corev1.EnvVar{
 							{
-								Name: "POD_NAMESPACE",
-								ValueFrom: &corev1.EnvVarSource{
-									FieldRef: &corev1.ObjectFieldSelector{
-										FieldPath: "metadata.namespace",
-									},
-								},
+								Name:  "POD_NAMESPACE",
+								Value: dep.Namespace,
 							},
 							{
-								Name: "POD_SERVICE_ACCOUNT",
-								ValueFrom: &corev1.EnvVarSource{
-									FieldRef: &corev1.ObjectFieldSelector{
-										FieldPath: "spec.serviceAccountName",
-									},
-								},
+								Name:  "POD_SERVICE_ACCOUNT",
+								Value: serviceAccountName,
 							},
 						},
 						Ports: []corev1.ContainerPort{
@@ -179,22 +182,30 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
-									Path: "/healthz",
-									Port: intstr.FromInt32(8081),
+									Path:   "/healthz",
+									Port:   intstr.FromInt32(8081),
+									Scheme: corev1.URISchemeHTTP,
 								},
 							},
 							InitialDelaySeconds: 15,
+							TimeoutSeconds:      1,
 							PeriodSeconds:       20,
+							SuccessThreshold:    1,
+							FailureThreshold:    3,
 						},
 						ReadinessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
-									Path: "/readyz",
-									Port: intstr.FromInt32(8081),
+									Path:   "/readyz",
+									Port:   intstr.FromInt32(8081),
+									Scheme: corev1.URISchemeHTTP,
 								},
 							},
 							InitialDelaySeconds: 5,
+							TimeoutSeconds:      1,
 							PeriodSeconds:       10,
+							SuccessThreshold:    1,
+							FailureThreshold:    3,
 						},
 						TerminationMessagePath:   corev1.TerminationMessagePathDefault,
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
@@ -202,6 +213,31 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 				},
 			},
 		},
+	}
+
+	if vmStatsEnabled {
+		// The secret is created by KubeVirt in this namespace. optional lets the
+		// pod schedule before the secret exists; the controller exits until the
+		// client certificate is mounted.
+		dep.Spec.Template.Spec.Volumes = []corev1.Volume{
+			{
+				Name: vmstatsCertVolumeName,
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName:  vmstatsClientCertSecret,
+						DefaultMode: new(int32(420)),
+						Optional:    new(true),
+					},
+				},
+			},
+		}
+		dep.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      vmstatsCertVolumeName,
+				MountPath: vmstatsCertMountPath,
+				ReadOnly:  true,
+			},
+		}
 	}
 
 	return dep
@@ -225,7 +261,21 @@ func getMetricsAllowlist(hc *hcov1.HyperConverged) []string {
 	if hc.Spec.Observability == nil || hc.Spec.Observability.Workloads == nil {
 		return nil
 	}
-	return hc.Spec.Observability.Workloads.AllowedMetrics
+	return slices.Clone(hc.Spec.Observability.Workloads.AllowedMetrics)
+}
+
+func getAlertsAllowlist(hc *hcov1.HyperConverged) []string {
+	if hc.Spec.Observability == nil {
+		return nil
+	}
+	return slices.Clone(hc.Spec.Observability.AllowedAlerts)
+}
+
+func getRecordingRulesAllowlist(hc *hcov1.HyperConverged) []string {
+	if hc.Spec.Observability == nil {
+		return nil
+	}
+	return slices.Clone(hc.Spec.Observability.AllowedRecordingRules)
 }
 
 func observabilityAllowlistFlag(flagName string, values []string) string {
