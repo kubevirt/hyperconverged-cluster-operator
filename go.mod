@@ -14,6 +14,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/kubevirt/cluster-network-addons-operator v0.104.0-rc-0
+	github.com/kubevirt/hyperconverged-cluster-operator/api v1.19.0
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20260217101511-9344f1349f88
 	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.44.0
@@ -42,7 +43,6 @@ require (
 	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-helpers v0.37.2
-	k8s.io/kube-openapi v0.37.2
 	k8s.io/utils v0.0.0-20261023123148-ca04ba58ecab
 	kubevirt.io/api v1.10.0-rc.0
 	kubevirt.io/application-aware-quota v1.8.0
@@ -152,6 +152,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiserver v0.37.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
+	k8s.io/kube-openapi v0.37.2 // indirect
 	k8s.io/streaming v0.37.2 // indirect
 	sigs.k8s.io/json v0.0.0-20260909141634-11ed52e25bc5 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
@@ -188,6 +189,8 @@ exclude k8s.io/cri-api v0.0.0
 
 exclude k8s.io/csi-translation-lib v0.0.0
 
+exclude k8s.io/controller-manager v0.0.0
+
 exclude k8s.io/kube-controller-manager v0.0.0
 
 exclude k8s.io/kube-proxy v0.0.0
@@ -202,6 +205,8 @@ exclude k8s.io/metrics v0.0.0
 
 exclude k8s.io/sample-apiserver v0.0.0
 
+replace github.com/kubevirt/hyperconverged-cluster-operator/api => ./api
+
 // Pinned to v0.37.2
 replace (
 	k8s.io/api => k8s.io/api v0.37.2
@@ -214,6 +219,7 @@ replace (
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.37.2
 	k8s.io/code-generator => k8s.io/code-generator v0.37.2
 	k8s.io/component-base => k8s.io/component-base v0.37.2
+	k8s.io/controller-manager => k8s.io/controller-manager v0.37.2
 	k8s.io/cri-api => k8s.io/cri-api v0.37.2
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.37.2
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.37.2

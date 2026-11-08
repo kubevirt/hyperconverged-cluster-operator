@@ -1,3 +1,4 @@
+## workspace
 # cel.dev/expr v0.25.2
 ## explicit; go 1.23.0
 cel.dev/expr
@@ -123,6 +124,8 @@ github.com/evanphx/json-patch/v5/internal/json
 ## explicit; go 1.23
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
+# github.com/fxamacker/cbor/v2 v2.9.1
+## explicit; go 1.20
 # github.com/fxamacker/cbor/v2 v2.9.2
 ## explicit; go 1.20
 github.com/fxamacker/cbor/v2
@@ -137,6 +140,8 @@ github.com/ghodss/yaml
 github.com/go-jose/go-jose/v4
 github.com/go-jose/go-jose/v4/cipher
 github.com/go-jose/go-jose/v4/json
+# github.com/go-logr/logr v1.4.3
+## explicit; go 1.18
 # github.com/go-logr/logr v1.4.4
 ## explicit; go 1.18
 github.com/go-logr/logr
@@ -225,6 +230,8 @@ github.com/google/cel-go/common/types/traits
 github.com/google/cel-go/interpreter
 github.com/google/cel-go/parser
 github.com/google/cel-go/parser/gen
+# github.com/google/gnostic-models v0.7.0
+## explicit; go 1.22
 # github.com/google/gnostic-models v0.7.1
 ## explicit; go 1.22
 github.com/google/gnostic-models/compiler
@@ -265,6 +272,8 @@ github.com/json-iterator/go
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1
 github.com/kubevirt/cluster-network-addons-operator/pkg/names
+# github.com/kubevirt/hyperconverged-cluster-operator/api v1.19.0 => ./api
+## explicit; go 1.26.3
 # github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20260217101511-9344f1349f88
 ## explicit; go 1.20
 github.com/kubevirt/monitoring/pkg/metrics/parser
@@ -361,6 +370,8 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runtime-spec v1.2.1
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
+# github.com/openshift/api v0.0.0-20260901194050-81278704edb0 => github.com/openshift/api v0.0.0-20260901194050-81278704edb0
+## explicit; go 1.26.0
 # github.com/openshift/api v0.0.1 => github.com/openshift/api v0.0.0-20260901194050-81278704edb0
 ## explicit; go 1.26.0
 github.com/openshift/api/config/v1
@@ -728,6 +739,8 @@ k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 k8s.io/api/storagemigration/v1
 k8s.io/api/storagemigration/v1beta1
+# k8s.io/apiextensions-apiserver v0.37.0 => k8s.io/apiextensions-apiserver v0.37.2
+## explicit; go 1.26.0
 # k8s.io/apiextensions-apiserver v0.37.2 => k8s.io/apiextensions-apiserver v0.37.2
 ## explicit; go 1.26.0
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
@@ -1100,6 +1113,8 @@ k8s.io/klog/v2/internal/severity
 k8s.io/klog/v2/internal/sloghandler
 k8s.io/klog/v2/internal/verbosity
 k8s.io/klog/v2/textlogger
+# k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad => k8s.io/kube-openapi v0.0.0-20260603220949-865597e52e25
+## explicit; go 1.24.0
 # k8s.io/kube-openapi v0.37.2 => k8s.io/kube-openapi v0.0.0-20260603220949-865597e52e25
 ## explicit; go 1.24.0
 k8s.io/kube-openapi/pkg/cached
@@ -1222,6 +1237,8 @@ sigs.k8s.io/controller-tools/pkg/internal/crd
 sigs.k8s.io/controller-tools/pkg/loader
 sigs.k8s.io/controller-tools/pkg/markers
 sigs.k8s.io/controller-tools/pkg/version
+# sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730
+## explicit; go 1.23
 # sigs.k8s.io/json v0.0.0-20260909141634-11ed52e25bc5
 ## explicit; go 1.23
 sigs.k8s.io/json
@@ -1250,6 +1267,7 @@ sigs.k8s.io/yaml
 # k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.37.2
 # k8s.io/code-generator => k8s.io/code-generator v0.37.2
 # k8s.io/component-base => k8s.io/component-base v0.37.2
+# k8s.io/controller-manager => k8s.io/controller-manager v0.37.2
 # k8s.io/cri-api => k8s.io/cri-api v0.37.2
 # k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.37.2
 # k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.37.2
