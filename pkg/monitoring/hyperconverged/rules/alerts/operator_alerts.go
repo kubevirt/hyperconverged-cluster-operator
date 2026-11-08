@@ -27,6 +27,9 @@ const (
 	healthImpactAlertLabelKey  = "operator_health_impact"
 	ruleComponentAlertLabelKey = "openshift_io_alert_rule_component"
 	ruleLayerAlertLabelKey     = "openshift_io_alert_rule_layer"
+
+	virtualMachineComponentAlertLabelValue = "openshift-virtualization-virtual-machine"
+	namespaceLayerAlertLabelValue          = "namespace"
 )
 
 func operatorAlerts() []promv1.Rule {
@@ -131,8 +134,8 @@ func operatorAlerts() []promv1.Rule {
 			Labels: map[string]string{
 				severityAlertLabelKey:      "warning",
 				healthImpactAlertLabelKey:  "none",
-				ruleComponentAlertLabelKey: "openshift-virtualization-virtual-machine",
-				ruleLayerAlertLabelKey:     "namespace",
+				ruleComponentAlertLabelKey: virtualMachineComponentAlertLabelValue,
+				ruleLayerAlertLabelKey:     namespaceLayerAlertLabelValue,
 			},
 		},
 	}
