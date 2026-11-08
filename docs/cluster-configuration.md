@@ -415,29 +415,11 @@ See [Golden Images in Heterogeneous Clusters](`#golden-images-in-heterogeneous-c
 **Graduation Status**: GA
 
 ### deployObservabilityController Feature Gate
-Add the `deployObservabilityController` feature gate to deploy the
-`virt-observability-controller` as a standalone operand managed by HCO. The
-controller is responsible for managing KubeVirt core PrometheusRules and
-exposing KubeVirt-specific metrics.
+When this feature gate is enabled, KubeVirt metrics, alerts, and recording
+rules are published. This is the default.
 
-When enabled, HCO creates a ServiceAccount, ClusterRole, ClusterRoleBinding,
-and Deployment for the observability controller in the HCO namespace. The
-controller's TLS configuration (minimum TLS version and cipher suites) is
-inherited from the `spec.security.tlsSecurityProfile` setting.
-
-```yaml
-apiVersion: hco.kubevirt.io/v1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  featureGates:
-  - name: deployObservabilityController
-```
-
-To disable the controller after it has been enabled, set the feature gate
-state to `Disabled`. HCO will remove all resources associated with the
-observability controller:
+When this feature gate is disabled, those metrics, alerts, and recording
+rules stop being published.
 
 ```yaml
 spec:
@@ -446,11 +428,11 @@ spec:
     state: Disabled
 ```
 
-**Note**: This feature is in Developer Preview.
+**Note**: This feature is in Tech Preview.
 
-**Default**: `Disabled`
+**Default**: `Enabled`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
 ### observeVMStat Feature Gate
 When enabled, the release date of each guest device driver is added to the
@@ -1904,9 +1886,10 @@ spec:
 ```
 
 ## Observability Configurations
-The `spec.observability` section allows filtering which metrics, alerts, and
-recording rules the observability controller exposes. This section is only
-relevant when the `deployObservabilityController` feature gate is enabled.
+The `spec.observability` section filters which metrics, alerts, and recording
+rules are published. It has no effect when the
+[`deployObservabilityController` feature gate](#deployobservabilitycontroller-feature-gate)
+is disabled.
 
 Each allowlist field accepts:
 - Not set or empty — allow all items

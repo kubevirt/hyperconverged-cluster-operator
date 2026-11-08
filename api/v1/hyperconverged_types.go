@@ -82,6 +82,12 @@ type HyperConvergedSpec struct {
 	//   feature is in Technical Preview.
 	//   Phase: beta
 	//
+	// * deployObservabilityController:
+	//   Publish KubeVirt metrics, alerts, and recording rules. This is enabled by
+	//   default. Disable this feature gate to stop publishing them. This feature
+	//   is in Tech Preview.
+	//   Phase: beta
+	//
 	// * rebootPolicy:
 	//   RebootPolicy enables virtual machines to be recreated when they reboot
 	//   from within the guest operating system. This feature is in Tech Preview.
@@ -111,12 +117,6 @@ type HyperConvergedSpec struct {
 	//   CPUsWithDRA allows users to have the VM's vCPUs allocated through DRA,
 	//   coordinated with the DRA claims that provide its GPU and NIC. Note: this
 	//   feature is in Developer Preview.
-	//   Phase: alpha
-	//
-	// * deployObservabilityController:
-	//   Deploy the virt-observability-controller component. When enabled, the
-	//   controller exposes KubeVirt metrics and manages PrometheusRule resources
-	//   independently from the KubeVirt control plane.
 	//   Phase: alpha
 	//
 	// * downwardMetrics:
