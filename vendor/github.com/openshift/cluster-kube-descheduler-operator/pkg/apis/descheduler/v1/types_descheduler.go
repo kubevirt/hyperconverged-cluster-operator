@@ -127,6 +127,21 @@ type ProfileCustomizations struct {
 	// devDeviationThresholds enables dynamic thresholds based on average resource utilization
 	// +kubebuilder:validation:Enum=Low;Medium;High;AsymmetricLow;AsymmetricMedium;AsymmetricHigh;""
 	DevDeviationThresholds *DeviationThresholdsType `json:"devDeviationThresholds,omitempty"`
+
+	// devMigrationCooldown configures the base migration cooldown for the KubevirtMigrationAware plugin.
+	// Only applicable for the KubeVirtRelieveAndMigrate profile.
+	// +kubebuilder:validation:Format=duration
+	DevMigrationCooldown *metav1.Duration `json:"devMigrationCooldown,omitempty"`
+
+	// devMaxMigrationCooldown configures the maximum migration cooldown for the KubevirtMigrationAware plugin.
+	// Only applicable for the KubeVirtRelieveAndMigrate profile.
+	// +kubebuilder:validation:Format=duration
+	DevMaxMigrationCooldown *metav1.Duration `json:"devMaxMigrationCooldown,omitempty"`
+
+	// devMigrationHistoryWindow configures the migration history window for the KubevirtMigrationAware plugin.
+	// Only applicable for the KubeVirtRelieveAndMigrate profile.
+	// +kubebuilder:validation:Format=duration
+	DevMigrationHistoryWindow *metav1.Duration `json:"devMigrationHistoryWindow,omitempty"`
 }
 
 type LowNodeUtilizationThresholdsType string

@@ -25,12 +25,38 @@ func (a *Audience) UnmarshalJSON(text []byte) error {
 	}
 	switch aud := i.(type) {
 	case []any:
-		*a = make([]string, len(aud))
-		for i, audience := range aud {
-			(*a)[i] = audience.(string)
+		audiences, err := gu.AssertInterfaces[string](aud)
+		if err != nil {
+			return fmt.Errorf("oidc aud: %w", err)
 		}
+		*a = audiences
 	case string:
 		*a = []string{aud}
+	}
+	return nil
+}
+
+type AuthenticationMethodsReferences []string
+
+func (a *AuthenticationMethodsReferences) UnmarshalJSON(data []byte) error {
+	var dst any
+	if err := json.Unmarshal(data, &dst); err != nil {
+		return fmt.Errorf("oidc amr: %w", err)
+	}
+
+	switch v := dst.(type) {
+	case nil:
+		*a = nil
+	case string:
+		*a = AuthenticationMethodsReferences{v}
+	case []any:
+		refs, err := gu.AssertInterfaces[string](v)
+		if err != nil {
+			return fmt.Errorf("oidc amr: %w", err)
+		}
+		*a = AuthenticationMethodsReferences(refs)
+	default:
+		return fmt.Errorf("oidc amr: unsupported type: %T", v)
 	}
 	return nil
 }
@@ -115,9 +141,17 @@ func ParseLocales(locales []string) Locales {
 	return out
 }
 
+func (l Locales) String() string {
+	tags := make([]string, len(l))
+	for i, tag := range l {
+		tags[i] = tag.String()
+	}
+	return strings.Join(tags, " ")
+}
+
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
-// It decodes an unquoted space seperated string into Locales.
-// Undefined language tags in the input are ignored and ommited from
+// It decodes an unquoted space separated string into Locales.
+// Undefined language tags in the input are ignored and omitted from
 // the resulting Locales.
 func (l *Locales) UnmarshalText(text []byte) error {
 	*l = ParseLocales(
@@ -127,8 +161,8 @@ func (l *Locales) UnmarshalText(text []byte) error {
 }
 
 // UnmarshalJSON implements the [json.Unmarshaler] interface.
-// It decodes a json array or a space seperated string into Locales.
-// Undefined language tags in the input are ignored and ommited from
+// It decodes a json array or a space separated string into Locales.
+// Undefined language tags in the input are ignored and omitted from
 // the resulting Locales.
 func (l *Locales) UnmarshalJSON(data []byte) error {
 	var dst any
@@ -136,8 +170,8 @@ func (l *Locales) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("oidc locales: %w", err)
 	}
 
-	// We catch the posibility of a space seperated string here,
-	// because UnmarshalText might have been implicetely called
+	// We catch the possibility of a space separated string here,
+	// because UnmarshalText might have been implicitly called
 	// by the json library before we added UnmarshalJSON.
 	switch v := dst.(type) {
 	case nil:
@@ -188,12 +222,49 @@ func (s SpaceDelimitedArray) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SpaceDelimitedArray) UnmarshalJSON(data []byte) error {
-	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
+	var dst any
+	if err := json.Unmarshal(data, &dst); err != nil {
 		return err
 	}
-	*s = strings.Split(str, " ")
-	return nil
+
+	switch v := dst.(type) {
+	case string:
+		*s = strings.Split(v, " ")
+		return nil
+	case nil:
+		// Same as an empty string.
+		*s = SpaceDelimitedArray{""}
+		return nil
+	case []any:
+		// Compatibility with Cloudflare Access, which sends the scope claim of
+		// access tokens as an array instead of a space delimited string (RFC 9068):
+		// https://github.com/zitadel/oidc/issues/991
+		// Other arrays are rejected like any other type.
+		if values, ok := spaceDelimitedValues(v); ok {
+			*s = values
+			return nil
+		}
+	}
+	// Return the same error as decoding into a string.
+	var str string
+	return json.Unmarshal(data, &str)
+}
+
+// spaceDelimitedValues returns the values of an array that can be written as a
+// space delimited string: at least one value, each a non-empty string without spaces.
+func spaceDelimitedValues(arr []any) (SpaceDelimitedArray, bool) {
+	if len(arr) == 0 {
+		return nil, false
+	}
+	values := make(SpaceDelimitedArray, len(arr))
+	for i, a := range arr {
+		value, ok := a.(string)
+		if !ok || value == "" || strings.Contains(value, " ") {
+			return nil, false
+		}
+		values[i] = value
+	}
+	return values, true
 }
 
 func (s *SpaceDelimitedArray) Scan(src any) error {
@@ -230,6 +301,9 @@ func NewEncoder() *schema.Encoder {
 	e := schema.NewEncoder()
 	e.RegisterEncoder(SpaceDelimitedArray{}, func(value reflect.Value) string {
 		return value.Interface().(SpaceDelimitedArray).String()
+	})
+	e.RegisterEncoder(Locales{}, func(value reflect.Value) string {
+		return value.Interface().(Locales).String()
 	})
 	return e
 }

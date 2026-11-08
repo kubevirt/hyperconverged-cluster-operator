@@ -206,6 +206,21 @@ func (in *ProfileCustomizations) DeepCopyInto(out *ProfileCustomizations) {
 		*out = new(DeviationThresholdsType)
 		**out = **in
 	}
+	if in.DevMigrationCooldown != nil {
+		in, out := &in.DevMigrationCooldown, &out.DevMigrationCooldown
+		*out = new(metav1.Duration)
+		**out = **in
+	}
+	if in.DevMaxMigrationCooldown != nil {
+		in, out := &in.DevMaxMigrationCooldown, &out.DevMaxMigrationCooldown
+		*out = new(metav1.Duration)
+		**out = **in
+	}
+	if in.DevMigrationHistoryWindow != nil {
+		in, out := &in.DevMigrationHistoryWindow, &out.DevMigrationHistoryWindow
+		*out = new(metav1.Duration)
+		**out = **in
+	}
 	return
 }
 
