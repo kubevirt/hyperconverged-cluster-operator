@@ -43,7 +43,7 @@ sanity: generate gogenerate generate-crd generate-crd-for-csv go-fix generate-do
 	go version
 	go fmt ./...
 	go mod tidy -v
-	go mod vendor
+	go work vendor
 	make build-manifests
 	git add -N vendor
 	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh

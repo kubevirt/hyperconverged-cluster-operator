@@ -47,8 +47,8 @@ function main {
   echo INFO: Executing "go mod tidy"
   go mod tidy -v
 
-  echo INFO: Executing "go mod vendor"
-  go mod vendor
+  echo INFO: Executing "go work vendor"
+  go work vendor
   # if new files added to the vendor/ directory, add them to git
   if [[ -n $(git ls-files --others --exclude-standard --deleted vendor) ]]; then
     git add vendor/
