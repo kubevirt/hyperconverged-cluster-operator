@@ -23,8 +23,13 @@ const (
 	dictWithNoArchAnnotationAlert    = "HCOGoldenImageWithNoArchitectureAnnotation"
 	multiArchBootImagesDisabledAlert = "HCOMultiArchGoldenImagesDisabled"
 
-	severityAlertLabelKey     = "severity"
-	healthImpactAlertLabelKey = "operator_health_impact"
+	severityAlertLabelKey      = "severity"
+	healthImpactAlertLabelKey  = "operator_health_impact"
+	ruleComponentAlertLabelKey = "openshift_io_alert_rule_component"
+	ruleLayerAlertLabelKey     = "openshift_io_alert_rule_layer"
+
+	virtualMachineComponentAlertLabelValue = "openshift-virtualization-virtual-machine"
+	namespaceLayerAlertLabelValue          = "namespace"
 )
 
 func operatorAlerts() []promv1.Rule {
@@ -127,8 +132,10 @@ func operatorAlerts() []promv1.Rule {
 				"description": "Virtual Machine '{{ $labels.name }}' in namespace '{{ $labels.namespace }}' is using machine type '{{ $labels.machine_type }}', which is deprecated. Current status: '{{ $labels.status_group }}'.",
 			},
 			Labels: map[string]string{
-				severityAlertLabelKey:     "warning",
-				healthImpactAlertLabelKey: "none",
+				severityAlertLabelKey:      "warning",
+				healthImpactAlertLabelKey:  "none",
+				ruleComponentAlertLabelKey: virtualMachineComponentAlertLabelValue,
+				ruleLayerAlertLabelKey:     namespaceLayerAlertLabelValue,
 			},
 		},
 	}
