@@ -281,6 +281,8 @@ Product: smbios product
 Manufacturer: smbios manufacturer
 Sku: 1.2.3
 Version: 1.2.3`)).To(Succeed())
+			smbiosOnce = &sync.Once{}
+			smbiosCfg = nil
 
 			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
 			Expect(os.Setenv(arm64MachineTypeEnvName, "virt")).To(Succeed())
@@ -293,6 +295,7 @@ Version: 1.2.3`)).To(Succeed())
 				mandatoryKvFeatureGates = slices.Clone(origMandatoryKvFeatureGates)
 				// reset smbios once
 				smbiosOnce = &sync.Once{}
+				smbiosCfg = nil
 
 				Expect(os.Unsetenv(smbiosEnvName)).To(Succeed())
 				Expect(os.Unsetenv(machineTypeEnvName)).To(Succeed())
@@ -373,6 +376,48 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(*mc.AllowAutoConverge).To(BeFalse())
 			Expect(*mc.AllowPostCopy).To(BeFalse())
 			Expect(mc.AllowWorkloadDisruption).To(HaveValue(BeFalse()))
+		})
+
+		It("should override only the SMBIOS family from the HyperConverged CR", func() {
+			hco.Spec.Virtualization.SMBIOSConfig = &hcov1.SMBIOSConfiguration{
+				Family: new("cluster family"),
+			}
+
+			expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+			cl := commontestutils.InitClient([]client.Object{})
+			handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &kubevirtcorev1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Family).To(Equal("cluster family"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Product).To(Equal("smbios product"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Manufacturer).To(Equal("smbios manufacturer"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Sku).To(Equal("1.2.3"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Version).To(Equal("1.2.3"))
+		})
+
+		It("should create SMBIOS configuration from the HyperConverged CR without a deployment default", func() {
+			Expect(os.Unsetenv(smbiosEnvName)).To(Succeed())
+			smbiosOnce = &sync.Once{}
+			hco.Spec.Virtualization.SMBIOSConfig = &hcov1.SMBIOSConfiguration{
+				Family: new("cluster family"),
+			}
+
+			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(kv.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
+			Expect(kv.Spec.Configuration.SMBIOSConfig.Family).To(Equal("cluster family"))
+			Expect(kv.Spec.Configuration.SMBIOSConfig.Product).To(BeEmpty())
 		})
 
 		It("should find if present", func() {

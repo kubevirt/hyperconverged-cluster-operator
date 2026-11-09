@@ -473,7 +473,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 		ArchitectureConfiguration:          getArchConfiguration(),
 	}
 
-	smbiosConfig, err := getSMBConfig()
+	smbiosConfig, err := getSMBConfig(hc)
 	if err != nil {
 		return nil, err
 	}
@@ -1225,7 +1225,7 @@ var (
 	smbiosOnce = &sync.Once{}
 )
 
-func getSMBConfig() (*kubevirtcorev1.SMBiosConfiguration, error) {
+func getSMBConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.SMBiosConfiguration, error) {
 	var err error
 	smbiosOnce.Do(func() {
 		smbiosConfig := strings.TrimSpace(os.Getenv(smbiosEnvName))
@@ -1240,5 +1240,18 @@ func getSMBConfig() (*kubevirtcorev1.SMBiosConfiguration, error) {
 		}
 	})
 
-	return smbiosCfg, err
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := smbiosCfg.DeepCopy()
+
+	if hcoSMBIOS := hc.Spec.Virtualization.SMBIOSConfig; hcoSMBIOS != nil && hcoSMBIOS.Family != nil {
+		if cfg == nil {
+			cfg = &kubevirtcorev1.SMBiosConfiguration{}
+		}
+		cfg.Family = *hcoSMBIOS.Family
+	}
+
+	return cfg, nil
 }

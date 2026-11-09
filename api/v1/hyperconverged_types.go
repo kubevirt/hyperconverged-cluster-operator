@@ -391,6 +391,21 @@ type VirtualizationConfig struct {
 	// This setting does not apply to VMIs with dedicated CPUs.
 	// +optional
 	AutoCPULimitNamespaceLabelSelector *metav1.LabelSelector `json:"autoCPULimitNamespaceLabelSelector,omitempty"`
+
+	// SMBIOS holds the cluster-level SMBIOS configuration for virtual machines.
+	// +optional
+	SMBIOSConfig *SMBIOSConfiguration `json:"smbios,omitempty"`
+}
+
+// SMBIOSConfiguration holds the cluster-level SMBIOS configuration for virtual machines.
+type SMBIOSConfiguration struct {
+	// Family overrides the SMBIOS Type 1 family string exposed to virtual machines.
+	// Other SMBIOS values retain their cluster defaults.
+	// Some vendor drivers match hardware IDs that include the SMBIOS family; validate
+	// this value before changing it on clusters that use passthrough or GPU devices.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Family *string `json:"family,omitempty"`
 }
 
 // StorageConfig contains all the storage configurations

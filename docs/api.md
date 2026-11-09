@@ -33,6 +33,7 @@ This Document documents the `v1` API version's types introduced by the hyperconv
 * [PciHostDevice](#pcihostdevice)
 * [PermittedHostDevices](#permittedhostdevices)
 * [PersistentReservationConfiguration](#persistentreservationconfiguration)
+* [SMBIOSConfiguration](#smbiosconfiguration)
 * [SecurityConfig](#securityconfig)
 * [StorageConfig](#storageconfig)
 * [StorageImportConfig](#storageimportconfig)
@@ -390,6 +391,16 @@ PersistentReservationConfiguration holds the configuration for SCSI persistent r
 
 [Back to TOC](#table-of-contents)
 
+## SMBIOSConfiguration
+
+SMBIOSConfiguration holds the cluster-level SMBIOS configuration for virtual machines.
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| family | Family overrides the SMBIOS Type 1 family string exposed to virtual machines. Other SMBIOS values retain their cluster defaults. Some vendor drivers match hardware IDs that include the SMBIOS family; validate this value before changing it on clusters that use passthrough or GPU devices. | *string |  | false |
+
+[Back to TOC](#table-of-contents)
+
 ## SecurityConfig
 
 SecurityConfig contains all the security configurations
@@ -497,6 +508,7 @@ VirtualizationConfig contains all the virtualization configurations
 | confidentialCompute | ConfidentialCompute configures cluster-level confidential computing settings, such as TDX attestation via QGS (Quote Generation Service). | *v1.ConfidentialComputeConfiguration |  | false |
 | vmiCPUAllocationRatio | VmiCPUAllocationRatio defines, for each requested virtual CPU, how much physical CPU to request per VMI from the hosting node. The value is in fraction of a CPU thread (or core on non-hyperthreaded nodes). VMI POD CPU request = number of vCPUs * 1/vmiCPUAllocationRatio For example, a value of 1 means 1 physical CPU thread per VMI CPU thread. A value of 100 would be 1% of a physical thread allocated for each requested VMI thread. This option has no effect on VMIs that request dedicated CPUs. Defaults to 10 | *int | 10 | false |
 | autoCPULimitNamespaceLabelSelector | When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside namespaces that match the label selector. The CPU limit will equal the number of requested vCPUs. This setting does not apply to VMIs with dedicated CPUs. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#labelselector-v1-meta) |  | false |
+| smbios | SMBIOS holds the cluster-level SMBIOS configuration for virtual machines. | *[SMBIOSConfiguration](#smbiosconfiguration) |  | false |
 
 [Back to TOC](#table-of-contents)
 
