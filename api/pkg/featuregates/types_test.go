@@ -2,18 +2,12 @@ package featuregates_test
 
 import (
 	"encoding/json"
-	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 )
-
-func TestFeatureGate(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "FeatureGate Suite")
-}
 
 var _ = Describe("FeatureGate", func() {
 	Context("Phase - json", func() {

@@ -13,9 +13,9 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcofg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
 )
 
 // FuzzV1beta1ToV1RoundTrip verifies that converting a v1beta1 HyperConverged CR to v1 and back does not lose or
@@ -301,8 +301,8 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 }
 
 var (
-	alphaFGs = featuregatedetails.ListAlphaFeatureGates()
-	betaFGs  = featuregatedetails.ListBetaFeatureGates()
+	alphaFGs = featuregates.ListAlphaFeatureGates()
+	betaFGs  = featuregates.ListBetaFeatureGates()
 )
 
 // randomV1HC creates a HyperConverged v1 CR with randomly populated fields.
