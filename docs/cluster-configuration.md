@@ -255,49 +255,6 @@ spec:
 
 **Graduation Status**: Alpha
 
-### gpusWithDRA Feature Gate
-Add the `gpusWithDRA` feature gate in order to enable DRA (Dynamic Resource
-Allocation) provisioning of GPUs for virtual machines. When enabled, VMIs can
-specify DRA-managed GPU resources in `spec.domain.devices.gpus`, so GPUs
-provisioned by DRA can be attached to VMs.
-
-```yaml
-apiVersion: hco.kubevirt.io/v1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  featureGates:
-  - name: gpusWithDRA
-```
-
-**Note**: this feature is in Developer Preview.
-
-**Default**: `Disabled`
-
-**Graduation Status**: Alpha
-
-### cpusWithDRA Feature Gate
-Add the `cpusWithDRA` feature gate in order to have the VM's vCPUs allocated
-through DRA (Dynamic Resource Allocation), coordinated with the DRA claims
-that provide its GPU and NIC.
-
-```yaml
-apiVersion: hco.kubevirt.io/v1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  featureGates:
-  - name: cpusWithDRA
-```
-
-**Note**: this feature is in Developer Preview.
-
-**Default**: `Disabled`
-
-**Graduation Status**: Alpha
-
 ### workloadEncryptionSEV Feature Gate
 Add the `workloadEncryptionSEV` feature gate in order to enable AMD SEV and
 SEV-SNP workload encryption for confidential virtual machines (VMs). When
