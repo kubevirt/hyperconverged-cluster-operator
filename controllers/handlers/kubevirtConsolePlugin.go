@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
 	_ "embed"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -51,10 +53,13 @@ const (
 	kvUIPluginServingCertPath = "/var/serving-cert"
 	kvUIProxyServingCertPath  = "/app/cert"
 	nginxConfigMapName        = "nginx-conf"
+	nginxConfigFileName       = "nginx.conf"
+	nginxConfigFilePath       = "/etc/nginx/" + nginxConfigFileName
 	kvUIUserSettingsCMName    = "kubevirt-user-settings"
 	kvUIFeaturesCMName        = "kubevirt-ui-features"
 	kvUIConfigReaderRoleName  = "kubevirt-ui-config-reader"
 	kvUIConfigReaderRBName    = "kubevirt-ui-config-reader-rolebinding"
+	kvUICMHashLabelName       = "hco.kubevirt.io/ui-nginx-hash"
 )
 
 const ( // managed data fields
@@ -128,6 +133,10 @@ func NewKvUIPluginDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	deployment := getKvUIDeployment(hc, kvUIPluginDeploymentName, kvUIPluginImage,
 		kvUIPluginServingCertName, kvUIPluginServingCertPath, hcoutil.UIPluginServerPort, hcoutil.AppComponentUIPlugin)
 
+	hash := ngHash.getCMHash(hc)
+	deployment.Labels[kvUICMHashLabelName] = hash
+	deployment.Spec.Template.Labels[kvUICMHashLabelName] = hash
+
 	// The nginx entrypoint, the /usr/libexec/s2i/run script, calls the generate_container_user that writes to the root
 	// file system. We can't set the ReadOnlyRootFilesystem field for this container.
 	// TODO: remove this when the image is fixed.
@@ -135,8 +144,8 @@ func NewKvUIPluginDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 
 	nginxVolumeMount := corev1.VolumeMount{
 		Name:      nginxConfigMapName,
-		MountPath: "/etc/nginx/nginx.conf",
-		SubPath:   "nginx.conf",
+		MountPath: nginxConfigFilePath,
+		SubPath:   nginxConfigFileName,
 		ReadOnly:  true,
 	}
 
@@ -153,6 +162,13 @@ func NewKvUIPluginDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 					Name: nginxConfigMapName,
 				},
 				DefaultMode: new(int32(420)),
+				Items: []corev1.KeyToPath{
+					{
+						Key:  ngHash.getCMKeyName(hc),
+						Path: nginxConfigFileName,
+					},
+				},
+				Optional: new(false),
 			},
 		},
 	}
@@ -212,7 +228,7 @@ func getKvUIDeployment(hc *hcov1.HyperConverged, deploymentName string, image st
 		Spec: appsv1.DeploymentSpec{
 			Replicas: new(replicas),
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: maps.Clone(labels),
 			},
 			Strategy: appsv1.DeploymentStrategy{
 				Type: appsv1.RollingUpdateDeploymentStrategyType,
@@ -376,7 +392,7 @@ type nginxConfTemplateData struct {
 	SSLECDHCurve string
 }
 
-func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
+func getNginxConfTemplateData(hc *hcov1.HyperConverged) nginxConfTemplateData {
 	ciphers, minTLS := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.Security.TLSSecurityProfile)
 	data := nginxConfTemplateData{
 		Port:         hcoutil.UIPluginServerPort,
@@ -395,12 +411,70 @@ func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
 		data.SSLECDHCurve = strings.Join(groupStrs, ":")
 	}
 
+	return data
+}
+
+func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
+	data := getNginxConfTemplateData(hc)
+
 	var out bytes.Buffer
 	if err := nginxConfTmpl.Execute(&out, data); err != nil {
 		return "", fmt.Errorf("failed rendering embedded nginx.conf template: %w", err)
 	}
 
 	return out.String(), nil
+}
+
+type nginxConfigHash struct {
+	sync.Mutex
+	hash      string
+	cmKeyName string
+}
+
+var ngHash = &nginxConfigHash{}
+
+func (h *nginxConfigHash) reset() {
+	h.Lock()
+	defer h.Unlock()
+
+	h.cmKeyName = ""
+	h.hash = ""
+}
+
+func (h *nginxConfigHash) getCMHash(hc *hcov1.HyperConverged) string {
+	h.Lock()
+	defer h.Unlock()
+
+	if h.hash != "" {
+		return h.hash
+	}
+
+	h.updateHash(hc)
+
+	return h.hash
+}
+
+func (h *nginxConfigHash) updateHash(hc *hcov1.HyperConverged) {
+	nginxConf, err := getNginxConfig(hc)
+	if err != nil {
+		nginxConf = fmt.Sprintf("%+v", getNginxConfTemplateData(hc))
+	}
+
+	h.hash = fmt.Sprintf("%x", sha256.Sum224([]byte(nginxConf)))
+	h.cmKeyName = "nginx.conf." + h.hash
+}
+
+func (h *nginxConfigHash) getCMKeyName(hc *hcov1.HyperConverged) string {
+	h.Lock()
+	defer h.Unlock()
+
+	if h.cmKeyName != "" {
+		return h.cmKeyName
+	}
+
+	h.updateHash(hc)
+
+	return h.cmKeyName
 }
 
 func NewKVUINginxCM(hc *hcov1.HyperConverged) (*corev1.ConfigMap, error) {
@@ -416,7 +490,7 @@ func NewKVUINginxCM(hc *hcov1.HyperConverged) (*corev1.ConfigMap, error) {
 			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Data: map[string]string{
-			"nginx.conf": nginxConf,
+			ngHash.getCMKeyName(hc): nginxConf,
 		},
 	}, nil
 }
@@ -633,7 +707,10 @@ func (h consoleHandler) Ensure(req *common.HcoRequest) *operands.EnsureResult {
 	}
 }
 
-func (consoleHandler) Reset() { /* no implementation */ }
+func (consoleHandler) Reset() {
+	// this is the only place we can add this:
+	ngHash.reset()
+}
 
 func NewConsoleHandler(Client client.Client) operands.Operand {
 	h := &consoleHandler{

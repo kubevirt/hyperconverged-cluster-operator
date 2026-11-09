@@ -40,6 +40,17 @@ const (
 	tlsDialTimeout  = 3 * time.Second
 	sspReadyTimeout = 4 * time.Minute
 	sspReadyPolling = 5 * time.Second
+
+	consolePluginRolloutTimeout = 5 * time.Minute
+	consolePluginRolloutPolling = 10 * time.Second
+
+	// The console-plugin pods are identified by their component label; the selector is
+	// known (set by the operator), so there is no need to read it from the Deployment.
+	consolePluginPodLabelSelector = hcoutil.AppLabelComponent + "=" + string(hcoutil.AppComponentUIPlugin)
+
+	kvUICMHashLabelName = "hco.kubevirt.io/ui-nginx-hash"
+
+	uiPluginDeploymentName = string(hcoutil.AppComponentUIPlugin)
 )
 
 var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
@@ -110,27 +121,49 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 		})
 
 		AfterAll(func(ctx context.Context) {
-			GinkgoLogr.Info("restoring TLS configuration")
-
 			hc, err := tests.GetHCO(ctx, cli)
 			Expect(err).NotTo(HaveOccurred())
-			if hc.Spec.Security.TLSSecurityProfile != nil {
-				removePatch := fmt.Appendf(nil, `[{"op": "remove", "path": %q}]`, tlsPath)
-				tests.PatchHCO(ctx, cli, removePatch)
 
-				expected, found := intermediateTLSResults.get(x509Alg)
-				if !found {
-					GinkgoLogr.Info("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg)
-				} else {
-					verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileIntermediateType, expected, clientCert)
-				}
+			shouldCheckUIConsolePods := isOpenshift && hc.Spec.Security.TLSSecurityProfile != nil
+			var consolePluginOldPods sets.Set[types.UID]
+			var origHash string
+			if shouldCheckUIConsolePods {
+				// we don't know if the UI plugin deployment is ready, and if it is, if it because
+				// it was already completed the rollout, or didn't even start.
+				// To be sure, we will delete all the pod, to force them to be re-created. Then we can be sure
+				// the deployment is really ready.
+				forceConsolePluginDeployReady(ctx, k8sCli)
+
+				desired := waitForConsolePluginDeployReady(ctx, k8sCli)
+				origHash, err = getUIPluginHash(ctx, k8sCli)
+
+				Eventually(func(g Gomega, ctx context.Context) {
+					consolePluginOldPods, err = consolePluginPodUIDsByHash(ctx, k8sCli, origHash)
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(consolePluginOldPods).To(HaveLen(int(desired)))
+				}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).
+					WithContext(ctx).Should(Succeed())
+			}
+
+			By("Restoring TLS configuration")
+			tests.RestoreDefaults(ctx, cli)
+
+			expected, found := intermediateTLSResults.get(x509Alg)
+			if !found {
+				GinkgoLogr.Info("expected intermediate TLS result but found none; X509 public key algorithm = %v", x509Alg)
+			} else {
+				verifyStandardProfile(ctx, webhookAddr, openshiftconfigv1.TLSProfileIntermediateType, expected, clientCert)
+			}
+
+			// Wait for the console-plugin rollout triggered by the restore to complete,
+			// so the suite doesn't leave it mid-rollout for later tests.
+			if shouldCheckUIConsolePods {
+				waitForConsolePluginRolloutComplete(ctx, k8sCli, consolePluginOldPods, origHash)
 			}
 
 			if stopPF != nil {
 				stopPF()
 			}
-
-			tests.RestoreDefaults(ctx, cli)
 		})
 
 		AfterEach(func(ctx context.Context) {
@@ -223,7 +256,137 @@ var _ = Describe("TLS Security Profile", Label("tls"), Serial, Ordered, func() {
 		Entry("Check HCO webhook's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-webhook", hcoutil.WebhookMetricServiceName, hcoutil.WebhookMetricsSecretName),
 		Entry("Check HCO operator's metrics port (8443)", Label("tls-monitoring"), int(hcoutil.MetricsPort), "hyperconverged-cluster-operator", hcoutil.OperatorMetricServiceName, hcoutil.OperatorMetricsSecretName),
 	)
+
+	It("should recreate the console-plugin pods when the TLS profile changes", Label(tests.OpenshiftLabel), func(ctx context.Context) {
+		cli = tests.GetControllerRuntimeClient()
+		k8sCli = tests.GetK8sClientSet()
+		origHash, err := getUIPluginHash(ctx, k8sCli)
+		Expect(err).ToNot(HaveOccurred())
+
+		DeferCleanup(func(ctx context.Context) {
+			oldPods, err := consolePluginPodUIDs(ctx, k8sCli)
+			Expect(err).ToNot(HaveOccurred())
+			beforeCleaupHash, err := getUIPluginHash(ctx, k8sCli)
+			Expect(err).ToNot(HaveOccurred())
+
+			tests.RestoreDefaults(ctx, cli)
+			waitForConsolePluginRolloutComplete(ctx, k8sCli, oldPods, beforeCleaupHash)
+		})
+
+		oldPods, err := consolePluginPodUIDs(ctx, k8sCli)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(oldPods).ToNot(BeEmpty())
+
+		patch := fmt.Appendf(nil, `[{"op": "replace", "path": %q, "value": {"custom": {"minTLSVersion": "VersionTLS12", "ciphers": ["ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384"], "groups": ["secp256r1", "secp384r1"]}, "type": "Custom"}}]`, tlsPath)
+		tests.PatchHCO(ctx, cli, patch)
+
+		waitForConsolePluginRolloutComplete(ctx, k8sCli, oldPods, origHash)
+	})
 })
+
+// waitForConsolePluginRolloutComplete waits until the console-plugin rollout triggered by
+// a TLS config change has fully completed: the Deployment is settled and ready, and its
+// pods have been replaced (none shared with previousPods). Tying readiness to pod
+// replacement avoids observing the still-ready pre-rollout Deployment.
+func waitForConsolePluginRolloutComplete(ctx context.Context, k8sCli *kubernetes.Clientset, previousPods sets.Set[types.UID], origHash string) {
+	GinkgoHelper()
+
+	By("Waiting for the console plugin rollout to complete")
+	GinkgoLogr.Info("Waiting for the console plugin rollout to complete", "original-hash", origHash)
+
+	desired := waitForConsolePluginDeployReady(ctx, k8sCli)
+	var newHash string
+	Eventually(func(g Gomega, gctx context.Context) {
+		hash, err := getUIPluginHash(ctx, k8sCli)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(hash).ToNot(BeEmpty())
+		g.Expect(hash).ToNot(Equal(origHash))
+		newHash = hash
+	}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
+
+	GinkgoLogr.Info("Waiting for the console plugin rollout to complete", "original-hash", origHash, "new-hash", newHash)
+
+	Eventually(func(g Gomega, gctx context.Context) {
+		currentPods, err := consolePluginPodUIDsByHash(gctx, k8sCli, newHash)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(currentPods).To(HaveLen(int(desired)))
+		g.Expect(currentPods.Intersection(previousPods).Len()).To(Equal(0), "console-plugin pods were not recreated after the TLS config change")
+	}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
+}
+
+func waitForConsolePluginDeployReady(ctx context.Context, k8sCli *kubernetes.Clientset) int32 {
+	GinkgoHelper()
+
+	By("waiting for the UI plugin deployment to be ready")
+	var desired int32
+	Eventually(func(g Gomega, gctx context.Context) {
+		deployment, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(gctx, uiPluginDeploymentName, metav1.GetOptions{})
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(deployment.Spec.Replicas).To(HaveValue(BeNumerically(">", 0)))
+		desired = *deployment.Spec.Replicas
+
+		g.Expect(deployment.Status.ObservedGeneration).To(BeNumerically(">=", deployment.Generation))
+		g.Expect(deployment.Status.UpdatedReplicas).To(Equal(desired))
+		g.Expect(deployment.Status.ReadyReplicas).To(Equal(desired))
+		g.Expect(deployment.Status.AvailableReplicas).To(Equal(desired))
+	}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
+
+	return desired
+}
+
+func forceConsolePluginDeployReady(ctx context.Context, k8sCli *kubernetes.Clientset) {
+	GinkgoHelper()
+
+	By("Getting UI Plugin deployment's Generation")
+	var origGeneration int64
+	Eventually(func(g Gomega, gctx context.Context) {
+		deployment, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(gctx, uiPluginDeploymentName, metav1.GetOptions{})
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(deployment.Spec.Replicas).To(HaveValue(BeNumerically(">", 0)))
+		origGeneration = deployment.Generation
+	}).WithContext(ctx).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
+
+	GinkgoLogr.Info("Current UI Plugin deployment generation is " + strconv.FormatInt(origGeneration, 10))
+
+	By("Forcing update of the UI Plugin deployment; setting replicas = 0")
+	Eventually(func(gctx context.Context) error {
+		_, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Patch(gctx, uiPluginDeploymentName, types.JSONPatchType, []byte(`[{"op": "replace", "path": "/spec/replicas", "value": 0}]`), metav1.PatchOptions{})
+		return err
+	}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
+
+	By("Waiting for the UI pluging deployment to be ready again")
+	var newGeneration int64
+	Eventually(func(g Gomega, gctx context.Context) {
+		deployment, err := k8sCli.AppsV1().Deployments(tests.InstallNamespace).Get(gctx, uiPluginDeploymentName, metav1.GetOptions{})
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(deployment.Generation).To(BeNumerically(">", origGeneration))
+		g.Expect(deployment.Status.ObservedGeneration).To(Equal(deployment.Generation))
+
+		g.Expect(deployment.Spec.Replicas).To(HaveValue(BeNumerically(">", 0)))
+		desired := *deployment.Spec.Replicas
+		g.Expect(deployment.Status.UpdatedReplicas).To(Equal(desired))
+		g.Expect(deployment.Status.ReadyReplicas).To(Equal(desired))
+		g.Expect(deployment.Status.AvailableReplicas).To(Equal(desired))
+		newGeneration = deployment.Generation
+	}).WithTimeout(consolePluginRolloutTimeout).WithPolling(consolePluginRolloutPolling).WithContext(ctx).Should(Succeed())
+	GinkgoLogr.Info("UI Plugin deployment generation after update is " + strconv.FormatInt(newGeneration, 10))
+}
+
+func consolePluginPodUIDs(ctx context.Context, k8sCli *kubernetes.Clientset) (sets.Set[types.UID], error) {
+	pods, err := k8sCli.CoreV1().Pods(tests.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: consolePluginPodLabelSelector})
+	if err != nil {
+		return nil, err
+	}
+
+	uids := sets.New[types.UID]()
+	for _, pod := range pods.Items {
+		if pod.DeletionTimestamp == nil {
+			uids.Insert(pod.UID)
+		}
+	}
+	return uids, nil
+}
 
 func isTLSVersionAccepted(ctx context.Context, addr string, version uint16, clientCert *tls.Certificate) (bool, error) {
 	// Verify TCP connectivity first to distinguish transport errors from TLS rejections
@@ -559,4 +722,29 @@ func getPromCert(ctx context.Context, cli client.Client) (*tls.Certificate, erro
 	}
 
 	return &promCerts, nil
+}
+
+func getUIPluginHash(ctx context.Context, k8scli *kubernetes.Clientset) (string, error) {
+	dep, err := k8scli.AppsV1().Deployments(tests.InstallNamespace).Get(ctx, string(hcoutil.AppComponentUIPlugin), metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get the %v Deployment; %v", hcoutil.AppComponentUIPlugin, err.Error())
+	}
+
+	return dep.Labels[kvUICMHashLabelName], nil
+}
+
+func consolePluginPodUIDsByHash(ctx context.Context, k8sCli *kubernetes.Clientset, hash string) (sets.Set[types.UID], error) {
+	labelSelector := consolePluginPodLabelSelector + "," + kvUICMHashLabelName + "=" + hash
+	pods, err := k8sCli.CoreV1().Pods(tests.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+	if err != nil {
+		return nil, err
+	}
+
+	uids := sets.New[types.UID]()
+	for _, pod := range pods.Items {
+		if pod.DeletionTimestamp == nil {
+			uids.Insert(pod.UID)
+		}
+	}
+	return uids, nil
 }
