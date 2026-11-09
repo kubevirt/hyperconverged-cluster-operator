@@ -53,7 +53,7 @@ jobs:
           IMAGE_TAG=${CSV_VERSION} make build-push-multi-arch-images
       - name: Build Digester
         run: |
-          (cd tools/digester && go build .)
+          (cd tools/digester && GOWORK=off go build .)
       - name: Build Manifests for version ${{ env.CSV_VERSION }}
         env:
           CSV_VERSION: ${{ env.CSV_VERSION }}
