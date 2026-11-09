@@ -3,6 +3,13 @@ This document describes the tests that are part of the HyperConverged Cluster Op
 this document as part of test contribution.
 
 ## Unit Tests
+
+DM-multipath alert scenarios in `hack/prom-rule-ci/observability-prom-rules-tests.yaml`
+cover healthy and missing metrics, zero paths, threshold boundaries, hold durations,
+recovery, total path loss, suspension, node/device isolation, job filtering,
+and explicit namespace labels.
+Run them with the existing observability alert tests using `make prom-rules-verify`.
+
 Any change to the source code must be covered by unit tests. The HCO repository uses the
 [ginkgo testing framework](https://onsi.github.io/ginkgo/) (together with the [gomega matcher/assertion library](https://onsi.github.io/gomega/)) to implement the unit tests.
 
