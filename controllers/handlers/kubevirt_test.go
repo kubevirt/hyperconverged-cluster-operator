@@ -2019,7 +2019,7 @@ Version: 1.2.3`)
 
 			Context("test feature gates in NewKubeVirt", func() {
 				var fgDisabledByDefault []gomegatypes.GomegaMatcher
-				optionalFG := append(slices.Clone(kvExposedAlphaFGs), kvIncrementalBackup, kvUtilityVolumes)
+				optionalFG := append(slices.Clone(kvExposedAlphaFGs), kvIncrementalBackup, kvUtilityVolumes, kvCPUsWithDRA, kvGPUsWithDRA, kvHostDevicesWithDRA)
 				for _, alphaFG := range optionalFG {
 					fgDisabledByDefault = append(fgDisabledByDefault, Not(ContainElement(alphaFG)))
 				}
@@ -2188,7 +2188,93 @@ Version: 1.2.3`)
 				DescribeTable("featureGates in NewKubeVirt, that are exposed in the HyperConverged CR", validateFGs, exposedFGsCases)
 			})
 
+			DescribeTable("compute device DRA feature gates in NewKubeVirt",
+				func(gates featuregates.HyperConvergedFeatureGates, computeEnabled, networkEnabled bool) {
+					hco.Spec.FeatureGates = gates
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					devConfig := kv.Spec.Configuration.DeveloperConfiguration
+					Expect(devConfig).ToNot(BeNil())
+					for _, gate := range []string{kvCPUsWithDRA, kvGPUsWithDRA, kvHostDevicesWithDRA} {
+						Expect(slices.Contains(devConfig.FeatureGates, gate)).To(Equal(computeEnabled), gate)
+					}
+					for _, gate := range []string{kvGPUsWithDRA, kvHostDevicesWithDRA} {
+						Expect(slices.Contains(devConfig.DisabledFeatureGates, gate)).To(Equal(!computeEnabled), gate)
+					}
+					Expect(slices.Contains(devConfig.FeatureGates, kvNetworkDevicesWithDRA)).To(Equal(networkEnabled))
+				},
+				Entry("disabled by default", nil, false, false),
+				Entry("enabled with the state omitted", featuregates.HyperConvergedFeatureGates{
+					{Name: "computeDevicesWithDRA"},
+				}, true, false),
+				Entry("explicitly enabled", featuregates.HyperConvergedFeatureGates{
+					{Name: "computeDevicesWithDRA", State: new(featuregates.Enabled)},
+				}, true, false),
+				Entry("explicitly disabled", featuregates.HyperConvergedFeatureGates{
+					{Name: "computeDevicesWithDRA", State: new(featuregates.Disabled)},
+				}, false, false),
+				Entry("individual compute gates are unsupported", featuregates.HyperConvergedFeatureGates{
+					{Name: "cpusWithDRA"},
+					{Name: "gpusWithDRA"},
+					{Name: "hostDevicesWithDRA"},
+				}, false, false),
+				Entry("network DRA does not enable compute DRA", featuregates.HyperConvergedFeatureGates{
+					{Name: "networkDevicesWithDRA"},
+				}, false, true),
+				Entry("compute and network DRA can be enabled together", featuregates.HyperConvergedFeatureGates{
+					{Name: "computeDevicesWithDRA"},
+					{Name: "networkDevicesWithDRA"},
+				}, true, true),
+				Entry("disabling compute DRA preserves network DRA", featuregates.HyperConvergedFeatureGates{
+					{Name: "computeDevicesWithDRA", State: new(featuregates.Disabled)},
+					{Name: "networkDevicesWithDRA"},
+				}, false, true),
+			)
+
 			Context("test feature gates in KV handler", func() {
+				DescribeTable("should reconcile all compute DRA gates when the HCO gate changes",
+					func(disableGate func(*hcov1.HyperConverged)) {
+						existingResource, err := NewKubeVirt(hco)
+						Expect(err).ToNot(HaveOccurred())
+						cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+						handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
+
+						hco.Spec.FeatureGates.Enable("computeDevicesWithDRA")
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Updated).To(BeTrue())
+
+						foundResource := &kubevirtcorev1.KubeVirt{}
+						key := client.ObjectKeyFromObject(existingResource)
+						Expect(cl.Get(context.Background(), key, foundResource)).To(Succeed())
+						devConfig := foundResource.Spec.Configuration.DeveloperConfiguration
+						Expect(devConfig).ToNot(BeNil())
+						Expect(devConfig.FeatureGates).To(ContainElements(kvCPUsWithDRA, kvGPUsWithDRA, kvHostDevicesWithDRA))
+						for _, gate := range []string{kvGPUsWithDRA, kvHostDevicesWithDRA} {
+							Expect(devConfig.DisabledFeatureGates).ToNot(ContainElement(gate))
+						}
+
+						disableGate(hco)
+						handler.Reset()
+						res = handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Updated).To(BeTrue())
+						Expect(cl.Get(context.Background(), key, foundResource)).To(Succeed())
+						devConfig = foundResource.Spec.Configuration.DeveloperConfiguration
+						Expect(devConfig).ToNot(BeNil())
+						for _, gate := range []string{kvCPUsWithDRA, kvGPUsWithDRA, kvHostDevicesWithDRA} {
+							Expect(devConfig.FeatureGates).ToNot(ContainElement(gate))
+						}
+						Expect(devConfig.DisabledFeatureGates).To(ContainElements(kvGPUsWithDRA, kvHostDevicesWithDRA))
+					},
+					Entry("explicitly disabled", func(hc *hcov1.HyperConverged) {
+						hc.Spec.FeatureGates.Disable("computeDevicesWithDRA")
+					}),
+					Entry("removed", func(hc *hcov1.HyperConverged) {
+						hc.Spec.FeatureGates = nil
+					}),
+				)
+
 				It("should add feature gates if they are set to true", func() {
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())

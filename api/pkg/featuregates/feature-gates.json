@@ -40,6 +40,11 @@
     "description": "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview."
   },
   {
+    "name": "computeDevicesWithDRA",
+    "phase": "alpha",
+    "description": "ComputeDevicesWithDRA enables DRA (Dynamic Resource Allocation) for VM CPUs, GPUs and host devices by enabling the CPUsWithDRA, GPUsWithDRA and HostDevicesWithDRA KubeVirt feature gates together. DRA drivers must already be installed and configured to provision these resources. Network devices require the separate networkDevicesWithDRA feature gate. Note: this feature is in Developer Preview."
+  },
+  {
     "name": "downwardMetrics",
     "phase": "alpha",
     "description": "Allow to expose a limited set of host metrics to guests."

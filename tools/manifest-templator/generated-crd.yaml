@@ -2322,6 +2322,15 @@ spec:
                     isolation. Note: this feature is in Developer Preview.
                     Phase: alpha
 
+                  * computeDevicesWithDRA:
+                    ComputeDevicesWithDRA enables DRA (Dynamic Resource Allocation) for VM
+                    CPUs, GPUs and host devices by enabling the CPUsWithDRA, GPUsWithDRA and
+                    HostDevicesWithDRA KubeVirt feature gates together. DRA drivers must
+                    already be installed and configured to provision these resources. Network
+                    devices require the separate networkDevicesWithDRA feature gate. Note:
+                    this feature is in Developer Preview.
+                    Phase: alpha
+
                   * downwardMetrics:
                     Allow to expose a limited set of host metrics to guests.
                     Phase: alpha

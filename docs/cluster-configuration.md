@@ -255,6 +255,48 @@ spec:
 
 **Graduation Status**: Alpha
 
+### computeDevicesWithDRA Feature Gate
+Add the `computeDevicesWithDRA` feature gate to enable DRA (Dynamic Resource
+Allocation) for virtual machine CPUs, GPUs and host devices. HCO enables the
+`CPUsWithDRA`, `GPUsWithDRA` and `HostDevicesWithDRA` KubeVirt feature gates
+together. DRA drivers must already be installed and configured on the cluster
+to provision the resources.
+
+When enabled, VM vCPUs can be allocated through DRA and coordinated with other
+DRA resource claims. VMIs can also attach DRA-provisioned GPUs through
+`spec.domain.devices.gpus` and host devices through
+`spec.domain.devices.hostDevices`.
+
+For each DRA GPU or host device, set `claimName` to the name of a matching
+VMI `spec.resourceClaims` entry that references a `resourceClaimName` or
+`resourceClaimTemplateName`. Set `requestName` to the request name in that
+claim or template's `spec.devices.requests` list.
+
+Add this entry to the existing `spec.featureGates` list, preserving any other
+feature gates:
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: computeDevicesWithDRA
+```
+
+To disable all three KubeVirt gates, remove the `computeDevicesWithDRA` entry
+or set its `state` to `Disabled`.
+
+DRA for network devices is controlled separately by the
+[`networkDevicesWithDRA` feature gate](#networkdeviceswithdra-feature-gate).
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### workloadEncryptionSEV Feature Gate
 Add the `workloadEncryptionSEV` feature gate in order to enable AMD SEV and
 SEV-SNP workload encryption for confidential virtual machines (VMs). When
