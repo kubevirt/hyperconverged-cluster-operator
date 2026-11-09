@@ -1,3 +1,4 @@
+## workspace
 # cel.dev/expr v0.25.1
 ## explicit; go 1.23.0
 cel.dev/expr
@@ -263,6 +264,8 @@ github.com/json-iterator/go
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1
 github.com/kubevirt/cluster-network-addons-operator/pkg/names
+# github.com/kubevirt/hyperconverged-cluster-operator/api v1.19.0 => ./api
+## explicit; go 1.26.3
 # github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20260217101511-9344f1349f88
 ## explicit; go 1.20
 github.com/kubevirt/monitoring/pkg/metrics/parser
