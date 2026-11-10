@@ -97,6 +97,9 @@ const (
 
 	// Allow assigning host devices to virtual machines
 	kvHostDevicesGate = "HostDevices"
+
+	// Allow setting of the TLS groups field in KubeVirt CR
+	kvTLSGroupPreferences = "TLSGroupPreferences"
 )
 
 // KubeVirt architecture dependant feature gates.
@@ -111,6 +114,7 @@ var (
 		kvCPUManagerGate,
 		kvSnapshotGate,
 		kvHostDevicesGate,
+		kvTLSGroupPreferences,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
