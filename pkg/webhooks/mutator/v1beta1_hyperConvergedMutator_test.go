@@ -277,8 +277,9 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 				},
 			}
 
+			//nolint:staticcheck
 			cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
-				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
+				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"},
 				NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 					{
 						NodeSelector: map[string]string{
@@ -404,6 +405,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			)
 		})
 
+		//nolint:staticcheck
 		DescribeTable("Check mediatedDevicesTypes -> mediatedDeviceTypes transition", func(ctx context.Context, initialMDConfiguration *v1beta1.MediatedDevicesConfiguration, patches []jsonpatch.JsonPatchOperation) {
 			cr.Spec.MediatedDevicesConfiguration = initialMDConfiguration
 
@@ -766,8 +768,9 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 				},
 			}
 
+			//nolint:staticcheck
 			cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
-				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
+				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"},
 				NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 					{
 						NodeSelector: map[string]string{
@@ -929,6 +932,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 				},
 				nil,
 			),
+			//nolint:staticcheck
 			Entry("should set the mediatedDeviceTypes if using only deprecated ones",
 				&v1beta1.MediatedDevicesConfiguration{
 					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"},
@@ -969,6 +973,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 					},
 				},
 			),
+			//nolint:staticcheck
 			Entry("should set the mediatedDeviceTypes only when needed if using a mix of the two",
 				&v1beta1.MediatedDevicesConfiguration{
 					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"},

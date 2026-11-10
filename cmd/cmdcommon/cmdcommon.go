@@ -87,11 +87,7 @@ func (h HcCmdHelper) RegisterPPROFServer(mgr manager.Manager) error {
 
 	s := &http.Server{Addr: pprofAddr, Handler: mux}
 	return mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
-		errCh := make(chan error)
-		defer func() {
-			// drain errCh for GC
-			<-errCh
-		}()
+		errCh := make(chan error, 1)
 
 		go func() {
 			// start http Server

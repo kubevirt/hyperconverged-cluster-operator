@@ -102,6 +102,7 @@ const (
 	invalidSspAnnotation = `[{"op": "wrongOp", "path": "/spec/templateValidator/replicas", "value": 5}]`
 )
 
+//nolint:staticcheck
 var _ = Describe("v1beta1 webhooks validator", func() {
 	getFakeClient := func(hco *v1beta1.HyperConverged) *commontestutils.HcoTestClient {
 		v1hc := &hcov1.HyperConverged{}
@@ -818,7 +819,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 		Context("validate tuning policy", func() {
 			It("should return warning for deprecated highBurst tuning policy", func(ctx context.Context) {
-				cr.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile //nolint SA1019
+				cr.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile
 				warnings, err := wh.ValidateCreate(ctx, GinkgoLogr, dryRun, cr)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(warnings).To(HaveLen(1))
@@ -1623,7 +1624,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		Context("validate tuning policy on update", func() {
 			It("should return warning for deprecated highBurst tuning policy", func(ctx context.Context) {
 				newHCO := hco.DeepCopy()
-				newHCO.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile //nolint SA1019
+				newHCO.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile
 				warnings, err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHCO, hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(warnings).To(HaveLen(1))
