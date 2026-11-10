@@ -213,6 +213,7 @@ var _ = Describe("HyperconvergedController", func() {
 					"DownwardMetrics",
 					"DecentralizedLiveMigration",
 					"Template",
+					"TLSGroupPreferences",
 					"RebootPolicy",
 					"VSOCK",
 				}
