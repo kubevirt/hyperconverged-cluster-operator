@@ -7,9 +7,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 )
 
 const (
@@ -54,7 +53,7 @@ func getFeatureGateEnabledCallback(cli client.Client, operatorNamespace string) 
 			return []operatormetrics.CollectorResult{}
 		}
 
-		return featureGateEnabledSamples(featuregatedetails.ListConfigurableFeatureGates(), hc.Spec.FeatureGates.IsEnabled)
+		return featureGateEnabledSamples(featuregates.ListConfigurableFeatureGates(), hc.Spec.FeatureGates.IsEnabled)
 	}
 }
 

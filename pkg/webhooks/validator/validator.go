@@ -27,12 +27,11 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1fg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -377,7 +376,7 @@ func (wh *WebhookHandler) validateDeprecatedFeatureGates(fgMap, oldFgMap map[str
 	var warnings []string
 
 	for fgName, enabled := range fgMap {
-		phase, exists := featuregatedetails.GetFeatureGatePhase(fgName)
+		phase, exists := featuregates.GetFeatureGatePhase(fgName)
 		if !exists {
 			warnings = append(warnings, fmt.Sprintf(fgv1Unknown, fgName))
 			continue

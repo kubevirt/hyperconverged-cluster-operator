@@ -31,16 +31,16 @@ jobs:
         if: ${{ env.NEW_PR }}
         working-directory: tools/digester
         run: |
-          go get -v -t -d ./...
+          GOWORK=off go get -v -t ./...
           if [ -f Gopkg.toml ]; then
               curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
               dep ensure
           fi
 
-      - name: Build the degister app
+      - name: Build the digester app
         if: ${{ env.NEW_PR }}
         working-directory: tools/digester
-        run: go build -v .
+        run: GOWORK=off go build -v .
 
       - name: Run the degister app to update the digests
         if: ${{ env.NEW_PR }}

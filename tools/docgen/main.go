@@ -38,7 +38,7 @@ import (
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/semver"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 )
 
 var (

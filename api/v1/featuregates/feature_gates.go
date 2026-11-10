@@ -7,8 +7,7 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 )
 
 type State string
@@ -104,7 +103,7 @@ func (fgs *HyperConvergedFeatureGates) set(name string, enabled State) {
 //     alpha and deprecated feature gates are disabled by default
 //     beta feature gates are enabled by default
 func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
-	phase, fgExist := featuregatedetails.GetFeatureGatePhase(name)
+	phase, fgExist := featuregates.GetFeatureGatePhase(name)
 	if !fgExist { // unsupported feature gate, even if it is in the featureGate list
 		return false
 	}

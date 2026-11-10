@@ -16,14 +16,14 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 )
 
 //go:embed featuregates_list.gotmplt
 var templateContent []byte
 
 const (
-	featureGatesDetailsFile = "pkg/featuregatedetails/feature-gates.json"
+	featureGatesDetailsFile = "api/pkg/featuregates/feature-gates.json"
 	apiSrcFileName          = "api/v1/hyperconverged_types.go"
 
 	maxLineLength = 75
