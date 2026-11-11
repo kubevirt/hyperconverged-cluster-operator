@@ -193,6 +193,16 @@ type TLSProfileSpec struct {
 	// NOTE: currently the highest minTLSVersion allowed is VersionTLS12
 	//
 	MinTLSVersion TLSProtocolVersion `json:"minTLSVersion"`
+	// groups defines the set of allowed TLS supported groups (elliptic
+	// curves and hybrid post-quantum key exchange groups) on all TLS
+	// server endpoints. Group names follow the IANA TLS Supported
+	// Groups registry (e.g. X25519, secp256r1, X25519MLKEM768). Unrecognised
+	// names are silently ignored at TLS setup time, so an older component
+	// tolerates group names added in a newer release. When empty, Go's
+	// default curve preferences apply.
+	// +optional
+	// +listType=atomic
+	Groups []string `json:"groups,omitempty"`
 }
 
 // TLSProtocolVersion is a way to specify the protocol version used for TLS connections.
@@ -214,6 +224,20 @@ const (
 	VersionTLS12 TLSProtocolVersion = "VersionTLS12"
 	// VersionTLS13 is version 1.3 of the TLS security protocol.
 	VersionTLS13 TLSProtocolVersion = "VersionTLS13"
+)
+
+// TLS supported group name constants using IANA TLS Supported Groups
+// registry names. These are convenience constants for use with
+// TLSProfileSpec.Groups; the field is an open string set and is
+// not restricted to these values.
+const (
+	TLSGroupX25519             = "X25519"
+	TLSGroupSecp256r1          = "secp256r1"
+	TLSGroupSecp384r1          = "secp384r1"
+	TLSGroupSecp521r1          = "secp521r1"
+	TLSGroupX25519MLKEM768     = "X25519MLKEM768"
+	TLSGroupSecP256r1MLKEM768  = "SecP256r1MLKEM768"
+	TLSGroupSecP384r1MLKEM1024 = "SecP384r1MLKEM1024"
 )
 
 // TLSProfiles Contains a map of TLSProfileType names to TLSProfileSpec.
