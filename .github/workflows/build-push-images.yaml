@@ -51,7 +51,7 @@ jobs:
           IMAGE_TAG=${IMAGE_TAG} make build-push-multi-arch-images
       - name: Build Digester
         run: |
-          (cd tools/digester && go build .)
+          (cd tools/digester && GOWORK=off go build .)
       - name: Build Manifests with unique CSV semver
         env:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}

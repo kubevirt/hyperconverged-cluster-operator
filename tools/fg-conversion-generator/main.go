@@ -13,8 +13,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 )
 
 //go:embed conversion.go.tmpl
@@ -111,7 +110,7 @@ func extractConversionFields(st *ast.StructType) []conversionField {
 			continue
 		}
 
-		phase, exists := featuregatedetails.GetFeatureGatePhase(jsonName)
+		phase, exists := featuregates.GetFeatureGatePhase(jsonName)
 		if !exists {
 			continue
 		}

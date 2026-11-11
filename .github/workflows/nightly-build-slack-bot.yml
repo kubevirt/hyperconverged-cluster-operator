@@ -22,7 +22,7 @@ jobs:
         go-version-file: ./automation/hco-nightly-reporter/go.mod
 
     - name: Build
-      run: go build -v .
+      run: GOWORK=off go build -v .
 
     - name: run
       env:

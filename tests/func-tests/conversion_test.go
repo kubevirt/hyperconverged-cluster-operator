@@ -14,10 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	featuregates2 "github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
@@ -70,8 +70,8 @@ var _ = Describe("check v1 <=> v1beta1 API conversion", Label("CONVERSION"), fun
 	})
 
 	It("should allow set fields in HyperConverged v1beta1", func(ctx context.Context) {
-		betaFG := getV1beta1FeatureGate(featuregatedetails.ListBetaFeatureGates)
-		alphaFG := getV1beta1FeatureGate(featuregatedetails.ListAlphaFeatureGates)
+		betaFG := getV1beta1FeatureGate(featuregates2.ListBetaFeatureGates)
+		alphaFG := getV1beta1FeatureGate(featuregates2.ListAlphaFeatureGates)
 
 		var patchFGs []string
 

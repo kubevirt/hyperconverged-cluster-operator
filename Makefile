@@ -43,7 +43,7 @@ sanity: generate gogenerate generate-crd generate-crd-for-csv go-fix generate-do
 	go version
 	go fmt ./...
 	go mod tidy -v
-	go mod vendor
+	go work vendor
 	make build-manifests
 	git add -N vendor
 	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh
@@ -76,8 +76,8 @@ generate-feature-gates: sort-feature-gates
 	./_out/fg-v1-comments
 
 sort-feature-gates:
-	jq 'sort_by((if .phase == "beta" then 0 elif .phase == "alpha" then 1 else 2 end), .name)' pkg/featuregatedetails/feature-gates.json > pkg/featuregatedetails/feature-gates.temp
-	mv pkg/featuregatedetails/feature-gates.temp pkg/featuregatedetails/feature-gates.json
+	jq 'sort_by((if .phase == "beta" then 0 elif .phase == "alpha" then 1 else 2 end), .name)' api/pkg/featuregates/feature-gates.json > api/pkg/featuregates/feature-gates.temp
+	mv api/pkg/featuregates/feature-gates.temp api/pkg/featuregates/feature-gates.json
 
 build-crd-creator: # this should run from a builder image. and so it assumes that everything is pre generated
 	go build -ldflags="${LDFLAGS}" -o _out/crd-creator ./tools/crd-creator
@@ -267,7 +267,7 @@ generate: generate-feature-gates
 	./hack/generate.sh
 
 generate-doc: build-docgen
-	_out/docgen --in=./api/v1/hyperconverged_types.go --feature-gates=pkg/featuregatedetails/feature-gates.json > docs/api.md
+	_out/docgen --in=./api/v1/hyperconverged_types.go --feature-gates=api/pkg/featuregates/feature-gates.json > docs/api.md
 	_out/docgen --in=./api/v1beta1/hyperconverged_types.go > docs/api-v1beta1.md
 	_out/metricsdocs > docs/metrics.md
 

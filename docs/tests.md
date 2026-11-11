@@ -59,7 +59,7 @@ The `make sanity` command performs the following:
 * auto generates the [API document](./api.md).
 * validates that there is no usage of offensive language
 * formats the golang source code (`go fmt ./...`)
-* handles dependencies (`go mod tidy` and `go mod vendor`)
+* handles dependencies (`go mod tidy` and `go work vendor`)
 * build all HCO kubernetes manifest files
 * check for changes - if one of the above caused a change in the local git repository, the script will fail. In this
   case review the changes and if needed, commit them and run again the `make sanity` command.

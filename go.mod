@@ -14,6 +14,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/kubevirt/cluster-network-addons-operator v0.103.0
+	github.com/kubevirt/hyperconverged-cluster-operator/api v1.19.0
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20260217101511-9344f1349f88
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.40.0
@@ -41,7 +42,6 @@ require (
 	k8s.io/apimachinery v0.36.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-helpers v0.34.3
-	k8s.io/kube-openapi v0.36.2
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
 	kubevirt.io/api v1.9.1
 	kubevirt.io/application-aware-quota v1.8.0
@@ -152,6 +152,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiserver v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
+	k8s.io/kube-openapi v0.36.2 // indirect
 	k8s.io/streaming v0.36.2 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
@@ -236,3 +237,5 @@ replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9
 replace bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260325070019-86893981287e
+
+replace github.com/kubevirt/hyperconverged-cluster-operator/api => ./api

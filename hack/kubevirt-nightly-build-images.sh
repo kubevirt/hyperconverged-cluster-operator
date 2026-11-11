@@ -25,8 +25,15 @@ LATEST_KUBEVIRT=$(curl -L https://storage.googleapis.com/kubevirt-prow/devel/nig
 LATEST_KUBEVIRT_IMAGE=$(curl -L https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/${LATEST_KUBEVIRT}/kubevirt-operator.yaml | grep 'OPERATOR_IMAGE' -A1 | tail -n 1 | sed 's/.*value: //g')
 LATEST_KUBEVIRT_COMMIT=$(curl -L https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/${LATEST_KUBEVIRT}/commit)
 go mod edit -require kubevirt.io/kubevirt@${LATEST_KUBEVIRT_COMMIT}
+(
+  cd api
+  go mod edit -require kubevirt.io/kubevirt@${LATEST_KUBEVIRT_COMMIT}
+  go mod tidy
+)
+
 go mod tidy
-go mod vendor
+go work sync
+go work vendor
 KUBEVIRT_IMAGE=${LATEST_KUBEVIRT_IMAGE} make build-manifests
 
 container_id=$(podman ps | grep kubevirtci | cut -d ' ' -f 1)

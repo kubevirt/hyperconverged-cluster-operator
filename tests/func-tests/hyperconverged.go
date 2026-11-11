@@ -14,11 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	fgs "github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
-	fgs "github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -191,7 +190,7 @@ func EnableFG(ctx context.Context, cli client.Client, fgName string) error {
 	})
 
 	var patch []byte
-	switch phase, _ := featuregatedetails.GetFeatureGatePhase(fgName); phase {
+	switch phase, _ := fgs.GetFeatureGatePhase(fgName); phase {
 	case fgs.PhaseUnknown:
 		return fmt.Errorf("unknown feature gate %q", fgName)
 
@@ -237,7 +236,7 @@ func DisableFG(ctx context.Context, cli client.Client, fgName string) error {
 	})
 
 	var patch []byte
-	switch phase, _ := featuregatedetails.GetFeatureGatePhase(fgName); phase {
+	switch phase, _ := fgs.GetFeatureGatePhase(fgName); phase {
 	case fgs.PhaseUnknown:
 		return fmt.Errorf("unknown feature gate %q", fgName)
 
