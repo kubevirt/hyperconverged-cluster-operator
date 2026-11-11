@@ -834,6 +834,8 @@ Version: 1.2.3`)
 				parallelMigrationsPerCluster      = uint32(18)
 				progressTimeout                   = int64(5000)
 				network                           = "testNetwork"
+				crossClusterNetwork               = "crossClusterNetwork"
+				datapath                          = "Proxy"
 			)
 
 			hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = new(bandwidthPerMigration)
@@ -842,6 +844,8 @@ Version: 1.2.3`)
 			hco.Spec.Virtualization.LiveMigrationConfig.ParallelMigrationsPerCluster = new(parallelMigrationsPerCluster)
 			hco.Spec.Virtualization.LiveMigrationConfig.ProgressTimeout = new(progressTimeout)
 			hco.Spec.Virtualization.LiveMigrationConfig.Network = new(network)
+			hco.Spec.Virtualization.LiveMigrationConfig.CrossClusterNetwork = new(crossClusterNetwork)
+			hco.Spec.Virtualization.LiveMigrationConfig.DecentralizedLiveMigrationDatapath = new(datapath)
 			hco.Spec.Virtualization.LiveMigrationConfig.AllowAutoConverge = new(true)
 			hco.Spec.Virtualization.LiveMigrationConfig.AllowPostCopy = new(true)
 			hco.Spec.Virtualization.LiveMigrationConfig.AllowWorkloadDisruption = new(true)
@@ -869,9 +873,13 @@ Version: 1.2.3`)
 			Expect(mc.ParallelMigrationsPerCluster).To(HaveValue(Equal(parallelMigrationsPerCluster)))
 			Expect(mc.ProgressTimeout).To(HaveValue(Equal(progressTimeout)))
 			Expect(mc.Network).To(HaveValue(Equal(network)))
+			Expect(mc.CrossClusterNetwork).To(HaveValue(Equal(crossClusterNetwork)))
+			Expect(mc.DecentralizedLiveMigrationDatapath).To(HaveValue(Equal(kubevirtcorev1.DecentralizedLiveMigrationDatapathProxy)))
 			Expect(mc.AllowAutoConverge).To(HaveValue(BeTrue()))
 			Expect(mc.AllowPostCopy).To(HaveValue(BeTrue()))
 			Expect(mc.AllowWorkloadDisruption).To(HaveValue(BeTrue()))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).
+				To(ContainElement(kvCrossClusterMigrationProxy))
 
 			// ObjectReference should have been updated
 			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
@@ -2153,6 +2161,47 @@ Version: 1.2.3`)
 							}
 						},
 						Not(ContainElement(kvVMStatsCollector)),
+					),
+					Entry("should add CrossClusterMigrationProxy when decentralizedLiveMigrationDatapath is Proxy",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.Virtualization.LiveMigrationConfig.DecentralizedLiveMigrationDatapath = new("Proxy")
+						},
+						ContainElement(kvCrossClusterMigrationProxy),
+					),
+					Entry("should not add CrossClusterMigrationProxy when decentralizedLiveMigrationDatapath is Direct",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.Virtualization.LiveMigrationConfig.DecentralizedLiveMigrationDatapath = new("Direct")
+						},
+						Not(ContainElement(kvCrossClusterMigrationProxy)),
+					),
+					Entry("should enable CrossClusterMigrationProxy only once when Proxy datapath and FG are both set",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "crossClusterMigrationProxy", State: new(featuregates.Enabled)},
+							}
+							hc.Spec.Virtualization.LiveMigrationConfig.DecentralizedLiveMigrationDatapath = new("Proxy")
+						},
+						And(
+							ContainElement(kvCrossClusterMigrationProxy),
+							WithTransform(func(fgs []string) int {
+								n := 0
+								for _, fg := range fgs {
+									if fg == kvCrossClusterMigrationProxy {
+										n++
+									}
+								}
+								return n
+							}, Equal(1)),
+						),
+					),
+					Entry("should still enable CrossClusterMigrationProxy when Proxy datapath overrides an explicitly Disabled FG",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "crossClusterMigrationProxy", State: new(featuregates.Disabled)},
+							}
+							hc.Spec.Virtualization.LiveMigrationConfig.DecentralizedLiveMigrationDatapath = new("Proxy")
+						},
+						ContainElement(kvCrossClusterMigrationProxy),
 					),
 				)
 
@@ -4509,18 +4558,22 @@ Version: 1.2.3`)
 			parallelOutboundMigrationsPerNode = uint32(100)
 			progressTimeout                   = int64(100)
 			network                           = "testNetwork"
+			crossClusterNetwork               = "crossClusterNetwork"
+			datapath                          = "Proxy"
 		)
 		It("should create valid KV LM config from a valid HC LM config", func() {
 			lmc := hcov1.LiveMigrationConfigurations{
-				BandwidthPerMigration:             new(bandwidthPerMigration),
-				CompletionTimeoutPerGiB:           new(completionTimeoutPerGiB),
-				ParallelMigrationsPerCluster:      new(parallelMigrationsPerCluster),
-				ParallelOutboundMigrationsPerNode: new(parallelOutboundMigrationsPerNode),
-				ProgressTimeout:                   new(progressTimeout),
-				Network:                           new(network),
-				AllowAutoConverge:                 new(true),
-				AllowPostCopy:                     new(true),
-				AllowWorkloadDisruption:           new(true),
+				BandwidthPerMigration:              new(bandwidthPerMigration),
+				CompletionTimeoutPerGiB:            new(completionTimeoutPerGiB),
+				ParallelMigrationsPerCluster:       new(parallelMigrationsPerCluster),
+				ParallelOutboundMigrationsPerNode:  new(parallelOutboundMigrationsPerNode),
+				ProgressTimeout:                    new(progressTimeout),
+				Network:                            new(network),
+				CrossClusterNetwork:                new(crossClusterNetwork),
+				DecentralizedLiveMigrationDatapath: new(datapath),
+				AllowAutoConverge:                  new(true),
+				AllowPostCopy:                      new(true),
+				AllowWorkloadDisruption:            new(true),
 			}
 			mc, err := hcLiveMigrationToKv(lmc)
 			Expect(err).ToNot(HaveOccurred())
@@ -4531,6 +4584,8 @@ Version: 1.2.3`)
 			Expect(mc.ParallelOutboundMigrationsPerNode).To(HaveValue(Equal(parallelOutboundMigrationsPerNode)))
 			Expect(mc.ProgressTimeout).To(HaveValue(Equal(progressTimeout)))
 			Expect(mc.Network).To(HaveValue(Equal(network)))
+			Expect(mc.CrossClusterNetwork).To(HaveValue(Equal(crossClusterNetwork)))
+			Expect(mc.DecentralizedLiveMigrationDatapath).To(HaveValue(Equal(kubevirtcorev1.DecentralizedLiveMigrationDatapathProxy)))
 			Expect(mc.AllowAutoConverge).To(HaveValue(BeTrue()))
 			Expect(mc.AllowPostCopy).To(HaveValue(BeTrue()))
 			Expect(mc.AllowWorkloadDisruption).To(HaveValue(BeTrue()))
@@ -4547,6 +4602,8 @@ Version: 1.2.3`)
 			Expect(mc.ParallelOutboundMigrationsPerNode).To(BeNil())
 			Expect(mc.ProgressTimeout).To(BeNil())
 			Expect(mc.Network).To(BeNil())
+			Expect(mc.CrossClusterNetwork).To(BeNil())
+			Expect(mc.DecentralizedLiveMigrationDatapath).To(BeNil())
 			Expect(mc.AllowAutoConverge).To(BeNil())
 			Expect(mc.AllowPostCopy).To(BeNil())
 			Expect(mc.AllowWorkloadDisruption).To(BeNil())

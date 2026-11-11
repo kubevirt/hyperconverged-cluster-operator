@@ -45,6 +45,11 @@
     "description": "CPUsWithDRA allows users to have the VM's vCPUs allocated through DRA, coordinated with the DRA claims that provide its GPU and NIC. Note: this feature is in Developer Preview."
   },
   {
+    "name": "crossClusterMigrationProxy",
+    "phase": "alpha",
+    "description": "CrossClusterMigrationProxy enables the synchronization-controller proxy datapath for decentralized live migration. When enabled, live-migration traffic can be proxied through synchronization controllers (set liveMigrationConfig.decentralizedLiveMigrationDatapath to Proxy). Setting decentralizedLiveMigrationDatapath to Proxy also enables this feature gate. Note: this feature is in Developer Preview."
+  },
+  {
     "name": "downwardMetrics",
     "phase": "alpha",
     "description": "Allow to expose a limited set of host metrics to guests."
