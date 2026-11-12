@@ -857,18 +857,10 @@ func hcTLSSecurityProfileToKv(profile *openshiftconfigv1.TLSSecurityProfile) *ku
 		}
 	}
 
-	var groups []string
-	if len(profileGroups) > 0 {
-		groups = make([]string, len(profileGroups))
-		for i, group := range profileGroups {
-			groups[i] = string(group)
-		}
-	}
-
 	return &kubevirtcorev1.TLSConfiguration{
 		MinTLSVersion: hcTLSProtocolVersionToKv(profileMinVersion),
 		Ciphers:       crypto.OpenSSLToIANACipherSuites(profileCiphers),
-		Groups:        groups,
+		Groups:        tlsGroupsToStrings(profileGroups),
 	}
 }
 
