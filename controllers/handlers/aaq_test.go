@@ -234,6 +234,50 @@ var _ = Describe("AAQ tests", func() {
 
 				Expect(req.Conditions).To(BeEmpty())
 			})
+
+			It("should set custom TLSSecurityProfile in AAQ, if configured in HCO", func(ctx context.Context) {
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS13,
+							Ciphers: []string{
+								"TLS_CHACHA20_POLY1305_SHA256",
+								"ECDHE-ECDSA-AES128-GCM-SHA256",
+								"ECDHE-RSA-AES128-GCM-SHA256",
+								"ECDHE-ECDSA-AES256-GCM-SHA384",
+								"ECDHE-RSA-AES256-GCM-SHA384",
+								"ECDHE-ECDSA-CHACHA20-POLY1305",
+							},
+							Groups: []openshiftconfigv1.TLSGroup{
+								openshiftconfigv1.TLSGroupX25519MLKEM768,
+								openshiftconfigv1.TLSGroupSecP256r1,
+							},
+						},
+					},
+				}
+
+				aaq, err := NewAAQ(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(aaq).ToNot(BeNil())
+
+				Expect(aaq.Spec.TLSSecurityProfile).ToNot(BeNil())
+				Expect(aaq.Spec.TLSSecurityProfile.Type).To(Equal(aaqv1alpha1.TLSProfileCustomType))
+				Expect(aaq.Spec.TLSSecurityProfile.Custom).ToNot(BeNil())
+				Expect(aaq.Spec.TLSSecurityProfile.Custom.MinTLSVersion).To(Equal(aaqv1alpha1.VersionTLS13))
+				Expect(aaq.Spec.TLSSecurityProfile.Custom.Ciphers).To(ConsistOf(
+					"TLS_CHACHA20_POLY1305_SHA256",
+					"ECDHE-ECDSA-AES128-GCM-SHA256",
+					"ECDHE-RSA-AES128-GCM-SHA256",
+					"ECDHE-ECDSA-AES256-GCM-SHA384",
+					"ECDHE-RSA-AES256-GCM-SHA384",
+					"ECDHE-ECDSA-CHACHA20-POLY1305",
+				))
+				Expect(aaq.Spec.TLSSecurityProfile.Custom.Groups).To(ConsistOf(
+					aaqv1alpha1.TLSGroupX25519MLKEM768,
+					aaqv1alpha1.TLSGroupSecp256r1,
+				))
+			})
 		})
 	})
 
