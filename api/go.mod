@@ -9,7 +9,7 @@ require (
 	github.com/openshift/api v0.0.1
 	k8s.io/api v0.36.3
 	k8s.io/apimachinery v0.36.3
-	k8s.io/kube-openapi v0.36.2
+	k8s.io/kube-openapi v0.0.0-20260603220949-865597e52e25
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
 	kubevirt.io/api v1.9.1
 	kubevirt.io/application-aware-quota v1.8.0
@@ -73,5 +73,4 @@ exclude (
 replace (
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20260325070019-86893981287e
 	k8s.io/client-go => k8s.io/client-go v0.36.2
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20260603220949-865597e52e25
 )
