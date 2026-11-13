@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -43,20 +44,22 @@ const (
 )
 
 type WebhookHandler struct {
-	logger      logr.Logger
-	cli         client.Client
-	namespace   string
-	isOpenshift bool
-	decoder     admission.Decoder
+	logger       logr.Logger
+	cli          client.Client
+	namespace    string
+	isOpenshift  bool
+	decoder      admission.Decoder
+	aieAvailable bool
 }
 
 func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshift bool) *WebhookHandler {
 	return &WebhookHandler{
-		logger:      logger.WithName(validatorV1Name),
-		cli:         cli,
-		namespace:   namespace,
-		isOpenshift: isOpenshift,
-		decoder:     decoder,
+		logger:       logger.WithName(validatorV1Name),
+		cli:          cli,
+		namespace:    namespace,
+		isOpenshift:  isOpenshift,
+		decoder:      decoder,
+		aieAvailable: strings.TrimSpace(os.Getenv(hcoutil.AIELauncherImageEnvV)) != "",
 	}
 }
 
@@ -210,6 +213,10 @@ func (wh *WebhookHandler) validateCreateHyperConverged(hc *hcov1.HyperConverged)
 		warnings = append(warnings, warn...)
 	}
 
+	if err != nil {
+		return warnings, err
+	}
+	err = validateNVIDIAAIE(hc, nil, wh.aieAvailable)
 	return warnings, err
 }
 
@@ -225,6 +232,10 @@ func (wh *WebhookHandler) validateUpdateHyperConverged(hc, oldHC *hcov1.HyperCon
 		warnings = append(warnings, warn...)
 	}
 
+	if err != nil {
+		return warnings, err
+	}
+	err = validateNVIDIAAIE(hc, oldHC, wh.aieAvailable)
 	return warnings, err
 }
 

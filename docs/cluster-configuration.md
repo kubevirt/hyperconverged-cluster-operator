@@ -2607,3 +2607,44 @@ spec:
     devEnableEvictionsInBackground: true
 ```
 should be merged in its configuration.
+
+## nvidiaAIE Feature Gate
+
+Enable `nvidiaAIE` to use the NVIDIA Accelerated Infrastructure Enablement
+(AIE) launcher and its required KubeVirt hardware configuration:
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+    - name: nvidiaAIE
+      state: Enabled
+```
+
+This setting selects the NVIDIA AIE launcher for every newly created VM launcher
+Pod across workload namespaces. Enable it only when all workloads should use
+that launcher. Existing running Pods retain their image until recreated.
+Configure required node selectors and affinity on the VM specification.
+
+Enabling this integration also enables the KubeVirt `GraceIOVirtualization`,
+`IOMMUFD`, and `PCINUMAAwareTopology` feature gates. GPU provisioning and host
+preparation remain prerequisites. An installation without the AIE launcher image
+rejects attempts to enable this feature.
+
+Set the gate's state to `Disabled` to stop selecting the NVIDIA launcher for new
+Pods. Existing running Pods retain their image until recreated.
+
+The former `hco.kubevirt.io/deployAIE` annotation is ignored. When upgrading,
+replace it with the `nvidiaAIE` feature gate in the v1 API to enable AIE.
+
+On upgrade, the old AIE webhook configuration and
+`kubevirt-aie-launcher-config` ConfigMap are removed. Transfer any required
+placement constraints from the old rules to VM specifications before upgrading.
+Launcher image selection may be briefly interrupted during the upgrade.
+
+**Graduation Status**: Alpha (Developer Preview).
+
+**Default**: `Disabled`.

@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
-    createdAt: "2026-11-23 13:15:11"
+    createdAt: "2026-11-24 10:29:25"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4655,10 +4655,10 @@ spec:
                   value: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:34480ff54b63481bcd356cbf41854b84ed37489950a99d3857400c563af9658d
                 - name: NETWORK_RESOURCES_INJECTOR_IMAGE
                   value: ghcr.io/k8snetworkplumbingwg/network-resources-injector@sha256:737225a33c418899667707a6e79668bb1a64c6b993bf7486074c5b8085d4ab7d
-                - name: AIE_WEBHOOK_IMAGE
-                  value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
                 - name: OBSERVABILITY_CONTROLLER_IMAGE
                   value: quay.io/kubevirt/virt-observability-controller@sha256:df397e39415b42cd28c014c99299e040eec1cce94abca8a1fb355388b82f5d34
+                - name: AIE_LAUNCHER_IMAGE
+                  value: quay.io/kubevirt/kubevirt-aie/virt-launcher@sha256:877f0661a4572e81d93c320751a4d2332e62163a2bc7467a1e91f9dc1a55a091
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -4756,6 +4756,8 @@ spec:
                       fieldPath: metadata.name
                 - name: HCO_KV_IO_VERSION
                   value: 1.20.0
+                - name: AIE_LAUNCHER_IMAGE
+                  value: quay.io/kubevirt/kubevirt-aie/virt-launcher@sha256:877f0661a4572e81d93c320751a4d2332e62163a2bc7467a1e91f9dc1a55a091
                 image: quay.io/kubevirt/hyperconverged-cluster-webhook:1.20.0-unstable
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -6762,6 +6764,8 @@ spec:
     name: aaq-operator
   - image: quay.io/kubevirt/aaq-server@sha256:b76bffa500a0589dd8d0d1a887452731cef9e66d96c398f29d0baeb42f1a6d2e
     name: aaq-server
+  - image: quay.io/kubevirt/kubevirt-aie/virt-launcher@sha256:877f0661a4572e81d93c320751a4d2332e62163a2bc7467a1e91f9dc1a55a091
+    name: aie-virt-launcher
   - image: quay.io/kubevirt/bridge-marker@sha256:f9611ec10bb4aec44b0ec19f9b9d748a36255c089a1f59bc76e5fc37acc0fed2
     name: bridge-marker
   - image: quay.io/kubevirt/cdi-apiserver@sha256:98b71040e0e8de9397b57b4998641d4d3ea248fc300253b23085838990c4d241
@@ -6804,8 +6808,6 @@ spec:
     name: ipam-controller
   - image: quay.io/kubevirt/kubemacpool@sha256:22b6f29367fc5f4ff2a1fbc18f3a5db1e9b090208bf21c6962c36b6053100f79
     name: kubemacpool
-  - image: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
-    name: kubevirt-aie-webhook
   - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:34480ff54b63481bcd356cbf41854b84ed37489950a99d3857400c563af9658d
     name: kubevirt-apiserver-proxy
   - image: quay.io/openshift-virtualization/kubevirt-metrics-exporter@sha256:cf98c8cbaa0cc4d11b17c50a48b852d80345567471fa773d6f5a2506e9640dd1

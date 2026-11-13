@@ -3,6 +3,7 @@ package operands
 import (
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -57,20 +58,24 @@ func (ch *ConditionalHandler) Reset() {
 }
 
 func (ch *ConditionalHandler) ensureDeleted(req *common.HcoRequest) *EnsureResult {
-	cr := ch.getCRWithName(req.Instance)
+	return EnsureObjectDeleted(req, ch.operand.Client, ch.operand.Scheme, ch.getCRWithName(req.Instance))
+}
+
+// EnsureObjectDeleted removes a managed resource and its related-object reference.
+func EnsureObjectDeleted(req *common.HcoRequest, cli client.Client, scheme *runtime.Scheme, cr client.Object) *EnsureResult {
 	res := NewEnsureResult(req.Instance)
 	res.SetName(cr.GetName())
 
 	// hcoutil.EnsureDeleted does check that the CR exists before removing it. But it also writes a log message each
 	// time it happens, i.e. for every reconcile loop. Assuming the client cache is up-to-date, we can safely get it here
 	// with no meaningful performance cost.
-	err := ch.operand.Get(req.Ctx, client.ObjectKeyFromObject(cr), cr)
+	err := cli.Get(req.Ctx, client.ObjectKeyFromObject(cr), cr)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return res.Error(err)
 		}
 	} else {
-		deleted, err := hcoutil.EnsureDeleted(req.Ctx, ch.operand.Client, cr, req.Instance.Name, req.Logger, false, false, true)
+		deleted, err := hcoutil.EnsureDeleted(req.Ctx, cli, cr, req.Instance.Name, req.Logger, false, false, true)
 		if err != nil {
 			return res.Error(err)
 		}
@@ -80,7 +85,7 @@ func (ch *ConditionalHandler) ensureDeleted(req *common.HcoRequest) *EnsureResul
 		}
 	}
 
-	objectRef, err := reference.GetReference(ch.operand.Scheme, cr)
+	objectRef, err := reference.GetReference(scheme, cr)
 	if err != nil {
 		return res.Error(err)
 	}
