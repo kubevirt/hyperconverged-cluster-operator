@@ -60,13 +60,9 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewAAQHandler(client, scheme),
 		handlers.NewMigControllerHandler(client, scheme),
 		handlers.NewVMFileRestoreHandler(client, scheme),
-		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
-		aie.NewAIEWebhookServiceHandler(client, scheme),
-		aie.NewAIEWebhookDeploymentHandler(client, scheme),
-		aie.NewAIEWebhookConfigMapHandler(client, scheme),
-		aie.NewAIEWebhookClusterRoleHandler(client, scheme),
-		aie.NewAIEWebhookClusterRoleBindingHandler(client, scheme),
-		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
+		aie.NewLauncherPolicyHandler(client, scheme),
+		aie.NewLauncherBindingHandler(client, scheme),
+		aie.NewLegacyWebhookCleaner(client, scheme),
 		netresinjector.NewClusterRoleHandler(client, scheme),
 		netresinjector.NewClusterRoleBindingHandler(client, scheme),
 		netresinjector.NewServiceAccountHandler(client, scheme),
@@ -258,6 +254,10 @@ func (h *OperandHandler) handleUpdatedOperand(req *common.HcoRequest, res *opera
 }
 
 func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
+	// Uninstall can be the first reconciliation after an upgrade.
+	if result := aie.NewLegacyWebhookCleaner(h.client, h.client.Scheme()).Ensure(req); result.Err != nil {
+		return result.Err
+	}
 	tCtx, cancel := context.WithTimeout(req.Ctx, deleteTimeOut)
 	defer cancel()
 

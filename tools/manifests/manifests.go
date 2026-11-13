@@ -39,7 +39,7 @@ type DeploymentOperatorParams struct {
 	KVUIPluginImage               string
 	KVUIProxyImage                string
 	NetworkResourcesInjectorImage string
-	AIEWebhookImage               string
+	AIELauncherImage              string
 	ObservabilityControllerImage  string
 	ImagePullPolicy               string
 	ConversionContainer           string
@@ -293,8 +293,8 @@ func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 			Value: params.NetworkResourcesInjectorImage,
 		},
 		{
-			Name:  util.AIEWebhookImageEnvV,
-			Value: params.AIEWebhookImage,
+			Name:  util.AIELauncherImageEnvV,
+			Value: params.AIELauncherImage,
 		},
 		{
 			Name:  util.ObservabilityControllerImageEnvV,

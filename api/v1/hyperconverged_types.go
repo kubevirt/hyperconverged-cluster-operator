@@ -1097,10 +1097,6 @@ const (
 	// virt-observability-controller deployment is fully ready (all replicas running).
 	ConditionKubevirtObservabilityControllerReady = "KubevirtObservabilityControllerReady"
 
-	// ConditionKubevirtAieWebhookReady indicates whether the kubevirt-aie-webhook
-	// deployment is fully ready (all replicas running).
-	ConditionKubevirtAieWebhookReady = "KubevirtAieWebhookReady"
-
 	// ConditionKubevirtApiserverProxyReady indicates whether the kubevirt-apiserver-proxy
 	// deployment is fully ready (all replicas running).
 	ConditionKubevirtApiserverProxyReady = "KubevirtApiserverProxyReady"

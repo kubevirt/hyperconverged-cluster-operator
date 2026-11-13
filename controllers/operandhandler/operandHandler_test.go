@@ -30,6 +30,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	observabilitycontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/observabilitycontroller"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -73,6 +74,30 @@ var _ = Describe("Test operandHandler", func() {
 		BeforeEach(func() {
 			hcoNamespace = commontestutils.NewHcoNamespace()
 
+		})
+
+		It("removes enabled AIE policies during normal uninstall", func() {
+			original, present := os.LookupEnv(hcoutil.AIELauncherImageEnvV)
+			Expect(os.Setenv(hcoutil.AIELauncherImageEnvV, "registry.example/virt-launcher-4-nv:test")).To(Succeed())
+			DeferCleanup(func() {
+				if present {
+					Expect(os.Setenv(hcoutil.AIELauncherImageEnvV, original)).To(Succeed())
+				} else {
+					Expect(os.Unsetenv(hcoutil.AIELauncherImageEnvV)).To(Succeed())
+				}
+			})
+			hco := commontestutils.NewHco()
+			hco.Annotations = map[string]string{aie.DeployAIEAnnotation: "true"}
+			ci := commontestutils.ClusterInfoMock{}
+			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
+			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, commontestutils.NewEventEmitterMock())
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, dirtest.New())
+			req := commontestutils.NewReq(hco)
+			Expect(handler.Ensure(req)).To(Succeed())
+			Expect(cli.Get(req.Ctx, client.ObjectKey{Name: "kubevirt-aie-launcher"}, &admissionregistrationv1.MutatingAdmissionPolicy{})).To(Succeed())
+			Expect(handler.EnsureDeleted(req)).To(Succeed())
+			Expect(cli.Get(req.Ctx, client.ObjectKey{Name: "kubevirt-aie-launcher"}, &admissionregistrationv1.MutatingAdmissionPolicy{})).To(MatchError(apierrors.IsNotFound, "not found"))
+			Expect(cli.Get(req.Ctx, client.ObjectKey{Name: "kubevirt-aie-launcher-binding"}, &admissionregistrationv1.MutatingAdmissionPolicyBinding{})).To(MatchError(apierrors.IsNotFound, "not found"))
 		})
 
 		It("includes VMExport admission operands in normal uninstall cleanup", func() {

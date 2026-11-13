@@ -78,7 +78,7 @@ binary to accept a new flag (e.g. `--tls-groups`).
 
 | Component | Handler file | CLI args used |
 |---|---|---|
-| AIE webhook | `controllers/handlers/aie/deployment.go` | `--tls-min-version`, `--tls-cipher-suites` |
+| AIE launcher selection | HCO-managed MutatingAdmissionPolicy | No webhook TLS endpoint |
 | Network Resources Injector | `controllers/handlers/netresinjector/deployment.go` | `-tls-min-version`, `-tls-cipher-suites` |
 | KV UI Proxy | `controllers/handlers/kubevirtConsolePlugin.go` | `--tls-cipher-suites`, `--tls-min-version` |
 | Observability Controller | `controllers/handlers/observabilitycontroller/deployment.go` | `--tls-security-profile`, `--tls-min-version`, `--tls-cipher-suites` |
