@@ -82,8 +82,7 @@ spec:
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: NETWORK_RESOURCES_INJECTOR_IMAGE
           value: ghcr.io/k8snetworkplumbingwg/network-resources-injector@sha256:737225a33c418899667707a6e79668bb1a64c6b993bf7486074c5b8085d4ab7d
-        - name: AIE_WEBHOOK_IMAGE
-          value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
+        - name: AIE_LAUNCHER_IMAGE
         - name: OBSERVABILITY_CONTROLLER_IMAGE
           value: quay.io/kubevirt/virt-observability-controller@sha256:04d7dab991297d2486e890f6ec8f4fac9745e1a68f28013fc5ec85f33abafb7d
         image: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable

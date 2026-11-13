@@ -6,15 +6,10 @@ import (
 )
 
 const (
-	aieWebhookName               = "kubevirt-aie-webhook"
-	aieWebhookServiceAccountName = "kubevirt-aie-webhook"
-	aieWebhookClusterRoleName    = "kubevirt-aie-webhook"
-	aieWebhookTLSSecretName      = "kubevirt-aie-webhook-tls"
-	aieWebhookCertMountPath      = "/tmp/k8s-webhook-server/serving-certs"
-	aieWebhookConfigMapName      = "kubevirt-aie-launcher-config"
-	appComponent                 = hcoutil.AppComponentAIEWebhook
-
-	DeployAIEAnnotation = hcoutil.HCOAnnotationPrefix + "deployAIE"
+	policyName                    = "kubevirt-aie-launcher"
+	bindingName                   = policyName + "-binding"
+	alternativeLauncherAnnotation = "kubevirt.io/alternative-launcher-image"
+	DeployAIEAnnotation           = hcoutil.HCOAnnotationPrefix + "deployAIE"
 )
 
 func shouldDeployAIE(hc *hcov1.HyperConverged) bool {

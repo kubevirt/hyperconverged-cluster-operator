@@ -2493,3 +2493,28 @@ spec:
     devEnableEvictionsInBackground: true
 ```
 should be merged in its configuration.
+
+## The hco.kubevirt.io/deployAIE annotation
+
+Set `hco.kubevirt.io/deployAIE: "true"` on the HyperConverged CR to use the
+bundle-provided NVIDIA launcher image for every newly created virt-launcher Pod.
+HCO installs a MutatingAdmissionPolicy and binding; no AIE webhook server or
+TLS configuration is required. Existing running VMs retain their launcher image
+until their Pods are recreated. Removing the annotation disables this selection.
+
+This setting applies across workload namespaces, without per-VM rules. Enable it
+only on an installation whose workloads should all use the NVIDIA launcher.
+The bundle must provide the launcher image before AIE can be enabled.
+
+The policy preserves VM-configured node selectors, affinity, sidecars and
+resources. Configure placement on the VM itself. IOMMUFD allocation remains
+provided by KubeVirt and requires the relevant KubeVirt configuration.
+
+Upgrading removes the retired AIE webhook resources and the
+`kubevirt-aie-launcher-config` ConfigMap. Its old image-selection and placement
+rules are no longer used; transfer any required placement constraints to the VM
+specification before upgrading.
+
+**Graduation Status**: Developer Preview.
+
+**Default**: disabled (annotation absent).

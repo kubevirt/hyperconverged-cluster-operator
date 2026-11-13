@@ -39,6 +39,9 @@ TOOLS=${PROJECT_ROOT}/_out
 # update image digests
 "${PROJECT_ROOT}"/automation/digester/update_images.sh
 source "${PROJECT_ROOT}"/deploy/images.env
+if [[ -n "${AIE_LAUNCHER_IMAGE:-}" ]]; then
+  DIGEST_LIST="${DIGEST_LIST},${AIE_LAUNCHER_IMAGE}"
+fi
 
 HCO_OPERATOR_IMAGE=${HCO_OPERATOR_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:${CSV_VERSION}-unstable}
 HCO_WEBHOOK_IMAGE=${HCO_WEBHOOK_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-webhook:${CSV_VERSION}-unstable}
@@ -373,7 +376,7 @@ ${TOOLS}/manifest-templator \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
-  --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
+  --aie-launcher-image-name="${AIE_LAUNCHER_IMAGE:-}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}"
 
 if [[ "${UNIQUE}" == "true"  ]]; then
@@ -438,7 +441,7 @@ ${TOOLS}/csv-merger \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
-  --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
+  --aie-launcher-image-name="${AIE_LAUNCHER_IMAGE:-}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
   --dump-services \
   ${NETWORK_POLICIES_PARAMS} \

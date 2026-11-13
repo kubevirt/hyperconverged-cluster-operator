@@ -329,9 +329,6 @@ func main() {
 	err = collectors.SetupCollectors(mgr.GetClient(), operatorNamespace)
 	cmdHelper.ExitOnError(err, "failed to setup metrics controllers: %v")
 
-	err = checkAIEWebhookImageEnvExists()
-	cmdHelper.ExitOnError(err, "failed to retrieve AIE webhook image env var")
-
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 
@@ -563,14 +560,6 @@ func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
 	}
 
 	return err
-}
-
-func checkAIEWebhookImageEnvExists() error {
-	if _, exists := os.LookupEnv(hcoutil.AIEWebhookImageEnvV); !exists {
-		return fmt.Errorf("%s env var not found", hcoutil.AIEWebhookImageEnvV)
-	}
-
-	return nil
 }
 
 func getCertDir() string {

@@ -18,6 +18,7 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -170,6 +171,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 	// When a new object got added here, it has also to be added to the custom cache
 	// managed by getNewManagerCache()
 	secondaryResources := []client.Object{
+		&admissionv1.MutatingAdmissionPolicy{},
+		&admissionv1.MutatingAdmissionPolicyBinding{},
 		&kubevirtcorev1.KubeVirt{},
 		&cdiv1beta1.CDI{},
 		&networkaddonsv1.NetworkAddonsConfig{},
