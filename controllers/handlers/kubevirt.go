@@ -149,8 +149,9 @@ const (
 	kvWorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
 	kvWorkloadEncryptionTDX      = "WorkloadEncryptionTDX"
 	kvNetworkDevicesWithDRA      = "NetworkDevicesWithDRA"
-	kvGPUsWithDRA                = "GPUsWithDRA"
 	kvCPUsWithDRA                = "CPUsWithDRA"
+	kvGPUsWithDRA                = "GPUsWithDRA"
+	kvHostDevicesWithDRA         = "HostDevicesWithDRA"
 	kvMDevVGPULiveMigration      = "MDevVGPULiveMigration"
 	kvVMStatsCollector           = "VMStatsCollector"
 )
@@ -173,8 +174,6 @@ var (
 		kvWorkloadEncryptionSEV,
 		kvWorkloadEncryptionTDX,
 		kvNetworkDevicesWithDRA,
-		kvGPUsWithDRA,
-		kvCPUsWithDRA,
 		kvMDevVGPULiveMigration,
 	}
 )
@@ -1000,6 +999,11 @@ func getExposedFGs(featureGates hcofg.HyperConvergedFeatureGates) []string {
 	if featureGates.IsEnabled("incrementalBackup") {
 		fgs = append(fgs, kvIncrementalBackup)
 		fgs = append(fgs, kvUtilityVolumes)
+	}
+
+	// Compute devices share one HCO gate that enables all three KubeVirt DRA gates.
+	if featureGates.IsEnabled("computeDevicesWithDRA") {
+		fgs = append(fgs, kvCPUsWithDRA, kvGPUsWithDRA, kvHostDevicesWithDRA)
 	}
 
 	// observeVMStat does more than expose a KubeVirt gate, so the HCO name

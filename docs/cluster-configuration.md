@@ -255,11 +255,25 @@ spec:
 
 **Graduation Status**: Alpha
 
-### gpusWithDRA Feature Gate
-Add the `gpusWithDRA` feature gate in order to enable DRA (Dynamic Resource
-Allocation) provisioning of GPUs for virtual machines. When enabled, VMIs can
-specify DRA-managed GPU resources in `spec.domain.devices.gpus`, so GPUs
-provisioned by DRA can be attached to VMs.
+### computeDevicesWithDRA Feature Gate
+Add the `computeDevicesWithDRA` feature gate to enable DRA (Dynamic Resource
+Allocation) for virtual machine CPUs, GPUs and host devices. HCO enables the
+`CPUsWithDRA`, `GPUsWithDRA` and `HostDevicesWithDRA` KubeVirt feature gates
+together. DRA drivers must already be installed and configured on the cluster
+to provision the resources.
+
+When enabled, VM vCPUs can be allocated through DRA and coordinated with other
+DRA resource claims. VMIs can also attach DRA-provisioned GPUs through
+`spec.domain.devices.gpus` and host devices through
+`spec.domain.devices.hostDevices`.
+
+For each DRA GPU or host device, set `claimName` to the name of a matching
+VMI `spec.resourceClaims` entry that references a `resourceClaimName` or
+`resourceClaimTemplateName`. Set `requestName` to the request name in that
+claim or template's `spec.devices.requests` list.
+
+Add this entry to the existing `spec.featureGates` list, preserving any other
+feature gates:
 
 ```yaml
 apiVersion: hco.kubevirt.io/v1
@@ -268,29 +282,14 @@ metadata:
   name: kubevirt-hyperconverged
 spec:
   featureGates:
-  - name: gpusWithDRA
+  - name: computeDevicesWithDRA
 ```
 
-**Note**: this feature is in Developer Preview.
+To disable all three KubeVirt gates, remove the `computeDevicesWithDRA` entry
+or set its `state` to `Disabled`.
 
-**Default**: `Disabled`
-
-**Graduation Status**: Alpha
-
-### cpusWithDRA Feature Gate
-Add the `cpusWithDRA` feature gate in order to have the VM's vCPUs allocated
-through DRA (Dynamic Resource Allocation), coordinated with the DRA claims
-that provide its GPU and NIC.
-
-```yaml
-apiVersion: hco.kubevirt.io/v1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  featureGates:
-  - name: cpusWithDRA
-```
+DRA for network devices is controlled separately by the
+[`networkDevicesWithDRA` feature gate](#networkdeviceswithdra-feature-gate).
 
 **Note**: this feature is in Developer Preview.
 
