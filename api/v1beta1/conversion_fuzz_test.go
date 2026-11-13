@@ -85,6 +85,25 @@ func FuzzV1ToV1beta1RoundTrip(f *testing.F) {
 	})
 }
 
+// TestNVIDIAAIEFeatureGateRoundTrip covers the v1-only gate without changing the
+// frozen v1beta1 feature-gate schema. Its explicit state must survive conversion through v1beta1.
+func TestNVIDIAAIEFeatureGateRoundTrip(t *testing.T) {
+	for _, state := range []hcofg.State{hcofg.Enabled, hcofg.Disabled} {
+		t.Run(string(state), func(t *testing.T) {
+			g := NewWithT(t)
+			original := &hcov1.HyperConverged{}
+			original.Spec.FeatureGates = hcofg.HyperConvergedFeatureGates{{Name: "nvidiaAIE", State: new(state)}}
+			intermediate := &HyperConverged{}
+			g.Expect(intermediate.ConvertFrom(original)).To(Succeed())
+			restored := &hcov1.HyperConverged{}
+			g.Expect(intermediate.ConvertTo(restored)).To(Succeed())
+			enabled, found := restored.Spec.FeatureGates.IsExplicitlyEnabled("nvidiaAIE")
+			g.Expect(found).To(BeTrue())
+			g.Expect(enabled).To(Equal(state == hcofg.Enabled))
+		})
+	}
+}
+
 // randomV1beta1HC creates a HyperConverged v1beta1 CR with randomly populated fields.
 func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 	hc := &HyperConverged{

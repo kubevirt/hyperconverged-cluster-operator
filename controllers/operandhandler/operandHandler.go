@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -60,13 +61,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewAAQHandler(client, scheme),
 		handlers.NewMigControllerHandler(client, scheme),
 		handlers.NewVMFileRestoreHandler(client, scheme),
-		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
-		aie.NewAIEWebhookServiceHandler(client, scheme),
-		aie.NewAIEWebhookDeploymentHandler(client, scheme),
-		aie.NewAIEWebhookConfigMapHandler(client, scheme),
-		aie.NewAIEWebhookClusterRoleHandler(client, scheme),
-		aie.NewAIEWebhookClusterRoleBindingHandler(client, scheme),
-		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
 		netresinjector.NewClusterRoleHandler(client, scheme),
 		netresinjector.NewClusterRoleBindingHandler(client, scheme),
 		netresinjector.NewServiceAccountHandler(client, scheme),
@@ -74,6 +68,12 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		netresinjector.NewDeploymentHandler(client, scheme),
 		netresinjector.NewPDBHandler(client, scheme),
 		netresinjector.NewMutatingWebhookConfigurationHandler(client, scheme),
+	}
+
+	if image := strings.TrimSpace(os.Getenv(hcoutil.AIELauncherImageEnvV)); image != "" {
+		operandList = append(operandList, aie.NewLauncherPolicyHandler(client, scheme, image), aie.NewLauncherBindingHandler(client, scheme))
+	} else {
+		logger.Info("NVIDIA AIE is unavailable because the launcher image is not configured", "environmentVariable", hcoutil.AIELauncherImageEnvV)
 	}
 
 	observabilityDeployed := false

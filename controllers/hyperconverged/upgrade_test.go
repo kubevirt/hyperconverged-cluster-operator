@@ -14,6 +14,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
@@ -1127,6 +1128,53 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(saToNotBeRemoved), foundSA)).To(Succeed())
 			Expect(cl.Get(ctx, client.ObjectKeyFromObject(sccToNotBeRemoved), foundSCC)).To(Succeed())
 		})
+
+		DescribeTable("removes retired AIE resources and their status references on upgrades before 1.20.0", func(ctx context.Context, enabled bool, sourceVersion string, removed bool) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, sourceVersion)
+			if enabled {
+				expected.hco.Spec.FeatureGates.Enable(featuregates.NVIDIAAIE)
+			}
+			metadata := metav1.ObjectMeta{Name: "kubevirt-aie-webhook", Namespace: expected.hco.Namespace}
+			clusterMetadata := metav1.ObjectMeta{Name: metadata.Name}
+			legacy := []client.Object{
+				&admissionv1.MutatingWebhookConfiguration{ObjectMeta: clusterMetadata},
+				&appsv1.Deployment{ObjectMeta: metadata},
+				&corev1.Service{ObjectMeta: metadata},
+				&corev1.ServiceAccount{ObjectMeta: metadata},
+				&rbacv1.ClusterRoleBinding{ObjectMeta: clusterMetadata},
+				&rbacv1.ClusterRole{ObjectMeta: clusterMetadata},
+				&v1.NetworkPolicy{ObjectMeta: metadata},
+				&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: metadata.Name + "-tls", Namespace: metadata.Namespace}},
+				&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "kubevirt-aie-launcher-config", Namespace: metadata.Namespace}},
+			}
+			var refs []corev1.ObjectReference
+			for _, object := range legacy {
+				ref, err := reference.GetReference(commontestutils.GetScheme(), object)
+				Expect(err).NotTo(HaveOccurred())
+				refs = append(refs, *ref)
+				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, *ref)).To(Succeed())
+			}
+			apimetav1.SetStatusCondition(&expected.hco.Status.Conditions, metav1.Condition{Type: "KubevirtAieWebhookReady", Status: metav1.ConditionTrue, Reason: "OldDeploymentReady"})
+			keep := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "keep-user-config", Namespace: metadata.Namespace}, Data: map[string]string{"keep": "yes"}}
+			cl := commontestutils.InitClient(append(append(resources, legacy...), keep))
+			found, reconciler, _ := doReconcile(cl, expected.hco, nil)
+			found, _, _ = doReconcile(cl, found, reconciler)
+			for _, object := range legacy {
+				err := cl.Get(ctx, client.ObjectKeyFromObject(object), object)
+				if removed {
+					Expect(err).To(MatchError(apierrors.IsNotFound, "not found"))
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
+			}
+			if removed {
+				for _, ref := range refs {
+					Expect(found.Status.RelatedObjects).NotTo(ContainElement(ref))
+				}
+				Expect(apimetav1.FindStatusCondition(found.Status.Conditions, "KubevirtAieWebhookReady")).To(BeNil())
+			}
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(keep), &corev1.ConfigMap{})).To(Succeed())
+		}, Entry("AIE disabled", false, "1.19.99", true), Entry("AIE enabled", true, "1.19.99", true), Entry("source version is already 1.20.0", false, "1.20.0", false))
 
 		It("should remove iommufd-device-plugin objects when upgrading from < 1.19.0", func(ctx context.Context) {
 			iommufdRelatedObjects := []corev1.ObjectReference{
