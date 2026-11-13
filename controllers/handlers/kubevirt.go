@@ -152,6 +152,7 @@ const (
 	kvGPUsWithDRA                = "GPUsWithDRA"
 	kvCPUsWithDRA                = "CPUsWithDRA"
 	kvMDevVGPULiveMigration      = "MDevVGPULiveMigration"
+	kvCrossClusterMigrationProxy = "CrossClusterMigrationProxy"
 	kvVMStatsCollector           = "VMStatsCollector"
 )
 
@@ -176,6 +177,7 @@ var (
 		kvGPUsWithDRA,
 		kvCPUsWithDRA,
 		kvMDevVGPULiveMigration,
+		kvCrossClusterMigrationProxy,
 	}
 )
 
@@ -801,16 +803,23 @@ func hcLiveMigrationToKv(lm hcov1.LiveMigrationConfigurations) (*kubevirtcorev1.
 		bandwidthPerMigration = &bandwidthPerMigrationObject
 	}
 
+	var datapath *kubevirtcorev1.DecentralizedLiveMigrationDatapath
+	if lm.DecentralizedLiveMigrationDatapath != nil {
+		datapath = new(kubevirtcorev1.DecentralizedLiveMigrationDatapath(*lm.DecentralizedLiveMigrationDatapath))
+	}
+
 	return &kubevirtcorev1.MigrationConfiguration{
-		BandwidthPerMigration:             bandwidthPerMigration,
-		CompletionTimeoutPerGiB:           lm.CompletionTimeoutPerGiB,
-		ParallelOutboundMigrationsPerNode: lm.ParallelOutboundMigrationsPerNode,
-		ParallelMigrationsPerCluster:      lm.ParallelMigrationsPerCluster,
-		ProgressTimeout:                   lm.ProgressTimeout,
-		Network:                           lm.Network,
-		AllowAutoConverge:                 lm.AllowAutoConverge,
-		AllowPostCopy:                     lm.AllowPostCopy,
-		AllowWorkloadDisruption:           lm.AllowWorkloadDisruption,
+		BandwidthPerMigration:              bandwidthPerMigration,
+		CompletionTimeoutPerGiB:            lm.CompletionTimeoutPerGiB,
+		ParallelOutboundMigrationsPerNode:  lm.ParallelOutboundMigrationsPerNode,
+		ParallelMigrationsPerCluster:       lm.ParallelMigrationsPerCluster,
+		ProgressTimeout:                    lm.ProgressTimeout,
+		Network:                            lm.Network,
+		CrossClusterNetwork:                lm.CrossClusterNetwork,
+		DecentralizedLiveMigrationDatapath: datapath,
+		AllowAutoConverge:                  lm.AllowAutoConverge,
+		AllowPostCopy:                      lm.AllowPostCopy,
+		AllowWorkloadDisruption:            lm.AllowWorkloadDisruption,
 	}, nil
 }
 
@@ -1155,9 +1164,16 @@ func getMandatoryKvFeatureGates(isKVMEmulation bool) []string {
 // get list of feature gates or KV FG list
 func getKvFeatureGateList(hc *hcov1.HyperConverged) []string {
 	checks := getFeatureGateChecks(hc)
-	res := make([]string, 0, len(checks)+len(mandatoryKvFeatureGates))
+	res := make([]string, 0, len(checks)+len(mandatoryKvFeatureGates)+1)
 	res = append(res, mandatoryKvFeatureGates...)
 	res = append(res, checks...)
+
+	// Proxy datapath requires CrossClusterMigrationProxy.
+	if lm := hc.Spec.Virtualization.LiveMigrationConfig; lm.DecentralizedLiveMigrationDatapath != nil &&
+		*lm.DecentralizedLiveMigrationDatapath == string(kubevirtcorev1.DecentralizedLiveMigrationDatapathProxy) &&
+		!slices.Contains(res, kvCrossClusterMigrationProxy) {
+		res = append(res, kvCrossClusterMigrationProxy)
+	}
 
 	slices.Sort(res)
 
