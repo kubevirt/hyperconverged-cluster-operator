@@ -22,6 +22,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	netresinjector "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/netresinjector"
 	observabilitycontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/observabilitycontroller"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/virtimport"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -145,7 +146,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		operandList = append(operandList, handlers.NewCsvHandler(client))
 	}
 
-	return &OperandHandler{
+	oh := &OperandHandler{
 		client:                client,
 		objects:               cleanupObjects,
 		cleanupObjects:        cleanupObjects,
@@ -153,6 +154,14 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		eventEmitter:          eventEmitter,
 		observabilityDeployed: observabilityDeployed,
 	}
+
+	if virtimport.Configured() {
+		// The bundle can't be invalid here, RegisterReconciler fails the startup then.
+		ops, _ := virtimport.NewOperands(client, scheme)
+		oh.operands = append(oh.operands, ops...)
+	}
+
+	return oh
 }
 
 // FirstUseInitiation is a lazy init function

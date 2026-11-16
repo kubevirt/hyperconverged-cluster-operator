@@ -436,6 +436,14 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 			&admissionregistrationv1.MutatingWebhookConfiguration{}: {
 				Label: labelSelector,
 			},
+			&networkingv1.NetworkPolicy{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
+			&corev1.Secret{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
 		},
 	}
 
@@ -445,14 +453,6 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 			Field: namespaceSelector,
 		},
 		&monitoringv1.PrometheusRule{}: {
-			Label: labelSelector,
-			Field: namespaceSelector,
-		},
-		&networkingv1.NetworkPolicy{}: {
-			Label: labelSelector,
-			Field: namespaceSelector,
-		},
-		&corev1.Secret{}: {
 			Label: labelSelector,
 			Field: namespaceSelector,
 		},

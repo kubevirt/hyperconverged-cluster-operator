@@ -162,6 +162,7 @@ const (
 	AppComponentNetResInjector     AppComponent = "virt-network-resources-injector"
 	AppComponentObservability      AppComponent = "virt-observability-controller"
 	AppComponentFileRestore        AppComponent = "vm-file-restore"
+	AppComponentVirtImport         AppComponent = "virt-import"
 )
 
 // The authoritative client CA used to verify metrics scrapers lives in the
@@ -172,4 +173,8 @@ const (
 	ClientCAConfigMapNamespace = "kube-system"
 	ClientCAConfigMapName      = "extension-apiserver-authentication"
 	ClientCAConfigMapKey       = "client-ca-file"
+
+	// PrometheusK8sCN is the Common Name of the client certificate presented by
+	// the in-cluster Prometheus (prometheus-k8s) when it scrapes metrics.
+	PrometheusK8sCN = "system:serviceaccount:openshift-monitoring:prometheus-k8s"
 )

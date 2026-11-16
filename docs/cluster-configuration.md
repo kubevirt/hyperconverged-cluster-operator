@@ -543,6 +543,73 @@ spec:
 
 **Graduation Status**: Beta
 
+### deployVirtImport Feature Gate
+Add the `deployVirtImport` feature gate to import VirtualMachines and
+VirtualMachineTemplates from OCI artifacts in a container registry, e.g. a
+VirtualMachine exported on another cluster and pushed to a registry. The import
+is provided by [virt-import](https://github.com/kubevirt/virt-import).
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: deployVirtImport
+```
+
+Once the `VirtImportReady` condition of the HyperConverged is `True`, import an
+artifact by creating a `VirtualMachineImport` in the namespace the
+VirtualMachine or VirtualMachineTemplate should be created in:
+
+```yaml
+apiVersion: import.kubevirt.io/v1alpha1
+kind: VirtualMachineImport
+metadata:
+  name: my-import
+  namespace: default
+spec:
+  source:
+    registry:
+      url: docker://registry.example.com/vms/fedora:v1
+      secretRef: registry-credentials # optional, credentials for the registry
+  targetName: fedora-vm # optional, defaults to the VirtualMachineImport name
+```
+
+virt-import creates a DataVolume for each disk of the artifact and then the
+VirtualMachine or VirtualMachineTemplate, depending on the artifact type.
+Creating a `VirtualMachineImport` requires permission to create DataVolumes,
+VirtualMachines and VirtualMachineTemplates in its namespace. The `admin`,
+`edit` and `view` ClusterRoles include access to `VirtualMachineImports`. See
+the [virt-import documentation](https://github.com/kubevirt/virt-import) for all
+options.
+
+When the cluster has Prometheus (prometheus-operator) installed, HCO also
+deploys a ServiceMonitor, so the cluster Prometheus scrapes the virt-import
+controller metrics.
+
+To disable virt-import after it has been enabled, set the feature gate state to
+`Disabled`:
+
+```yaml
+spec:
+  featureGates:
+  - name: deployVirtImport
+    state: Disabled
+```
+
+Disabling the feature gate stops virt-import. `VirtualMachineImports` are kept,
+and imports in progress resume when the feature gate is enabled again. While it
+is disabled, a deleted `VirtualMachineImport` stays terminating until virt-import
+runs again.
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### RebootPolicy Feature Gate
 
 When a guest VM is rebooted, the vmi pod is not terminated and new VM settings

@@ -53,6 +53,7 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/virtimport"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operandhandler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -61,6 +62,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	pkgvirtimport "github.com/kubevirt/hyperconverged-cluster-operator/pkg/virtimport"
 )
 
 var (
@@ -111,6 +113,12 @@ func RegisterReconciler(mgr manager.Manager,
 	ingressEventCh <-chan event.GenericEvent,
 	nodeEventChannel <-chan event.GenericEvent,
 	apiServerEventCh <-chan event.GenericEvent) error {
+
+	if virtimport.Configured() {
+		if _, err := pkgvirtimport.GetBundle(); err != nil {
+			return fmt.Errorf("invalid virt-import bundle: %w", err)
+		}
+	}
 
 	return add(mgr, newReconciler(mgr, ci, upgradeableCond), ci, ingressEventCh, nodeEventChannel, apiServerEventCh)
 }
@@ -190,13 +198,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&policyv1.PodDisruptionBudget{},
+		&admissionv1.ValidatingAdmissionPolicy{},
+		&admissionv1.ValidatingAdmissionPolicyBinding{},
+		&networkingv1.NetworkPolicy{},
+		&corev1.Secret{},
 	}
 	if ci.IsMonitoringAvailable() {
 		secondaryResources = append(secondaryResources, []client.Object{
 			&monitoringv1.ServiceMonitor{},
 			&monitoringv1.PrometheusRule{},
-			&networkingv1.NetworkPolicy{},
-			&corev1.Secret{},
 		}...)
 	}
 	if ci.IsOpenshift() {
@@ -1144,6 +1154,10 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 
 	removeOldQuickStartGuides(req, r.client, r.operandHandler.GetQuickStartNames())
 	removeOldImageStream(req, r.client, r.operandHandler.GetImageStreamNames())
+
+	if err = virtimport.RemoveStaleObjects(req, r.client); err != nil {
+		return upgradePatched, err
+	}
 
 	if err = removeOldNetworkPolicies(req, r.client); err != nil {
 		return upgradePatched, err
