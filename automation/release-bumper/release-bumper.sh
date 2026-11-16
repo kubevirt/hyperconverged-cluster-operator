@@ -56,6 +56,8 @@ function main {
 
   update_kv_json_file
 
+  update_virt_import_bundle
+
   echo INFO: Executing "build-manifests.sh"...
   make build-manifests
 }
@@ -288,6 +290,15 @@ function update_go_mod() {
     echo "No need to update go.mod for ${UPDATED_COMPONENT}"
   fi
 
+}
+
+function update_virt_import_bundle() {
+  if [[ "$(cat updated_component.txt)" != "VIRT_IMPORT" ]]; then
+    return
+  fi
+
+  echo INFO: Updating the virt-import bundle...
+  ./hack/update-virt-import-bundle.sh
 }
 
 function update_kv_json_file() {
