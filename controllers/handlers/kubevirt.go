@@ -177,7 +177,6 @@ var (
 		kvGPUsWithDRA,
 		kvCPUsWithDRA,
 		kvMDevVGPULiveMigration,
-		kvCrossClusterMigrationProxy,
 	}
 )
 
@@ -1052,7 +1051,21 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 		fgs = append(fgs, kvOptOutRoleAggregation)
 	}
 
+	if shouldAddCrossClusterMigrationProxyFG(hc) {
+		fgs = append(fgs, kvCrossClusterMigrationProxy)
+	}
+
 	return fgs
+}
+
+func shouldAddCrossClusterMigrationProxyFG(hc *hcov1.HyperConverged) bool {
+	if hc.Spec.FeatureGates.IsEnabled(kvCrossClusterMigrationProxy) {
+		return true
+	}
+
+	lm := hc.Spec.Virtualization.LiveMigrationConfig
+	return lm.DecentralizedLiveMigrationDatapath != nil &&
+		*lm.DecentralizedLiveMigrationDatapath == string(kubevirtcorev1.DecentralizedLiveMigrationDatapathProxy)
 }
 
 // ***********  KubeVirt Priority Class  ************
@@ -1172,16 +1185,9 @@ func getMandatoryKvFeatureGates(isKVMEmulation bool) []string {
 // get list of feature gates or KV FG list
 func getKvFeatureGateList(hc *hcov1.HyperConverged) []string {
 	checks := getFeatureGateChecks(hc)
-	res := make([]string, 0, len(checks)+len(mandatoryKvFeatureGates)+1)
+	res := make([]string, 0, len(checks)+len(mandatoryKvFeatureGates))
 	res = append(res, mandatoryKvFeatureGates...)
 	res = append(res, checks...)
-
-	// Proxy datapath requires CrossClusterMigrationProxy.
-	if lm := hc.Spec.Virtualization.LiveMigrationConfig; lm.DecentralizedLiveMigrationDatapath != nil &&
-		*lm.DecentralizedLiveMigrationDatapath == string(kubevirtcorev1.DecentralizedLiveMigrationDatapathProxy) &&
-		!slices.Contains(res, kvCrossClusterMigrationProxy) {
-		res = append(res, kvCrossClusterMigrationProxy)
-	}
 
 	slices.Sort(res)
 

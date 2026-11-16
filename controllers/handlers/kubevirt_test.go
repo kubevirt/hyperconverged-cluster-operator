@@ -2027,7 +2027,7 @@ Version: 1.2.3`)
 
 			Context("test feature gates in NewKubeVirt", func() {
 				var fgDisabledByDefault []gomegatypes.GomegaMatcher
-				optionalFG := append(slices.Clone(kvExposedAlphaFGs), kvIncrementalBackup, kvUtilityVolumes)
+				optionalFG := append(slices.Clone(kvExposedAlphaFGs), kvIncrementalBackup, kvUtilityVolumes, kvCrossClusterMigrationProxy)
 				for _, alphaFG := range optionalFG {
 					fgDisabledByDefault = append(fgDisabledByDefault, Not(ContainElement(alphaFG)))
 				}
@@ -2162,6 +2162,22 @@ Version: 1.2.3`)
 						},
 						Not(ContainElement(kvVMStatsCollector)),
 					),
+					Entry("should add CrossClusterMigrationProxy when the feature gate is enabled",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "crossClusterMigrationProxy", State: new(featuregates.Enabled)},
+							}
+						},
+						ContainElement(kvCrossClusterMigrationProxy),
+					),
+					Entry("should not add CrossClusterMigrationProxy when the feature gate is disabled",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "crossClusterMigrationProxy", State: new(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvCrossClusterMigrationProxy)),
+					),
 					Entry("should add CrossClusterMigrationProxy when decentralizedLiveMigrationDatapath is Proxy",
 						func(hc *hcov1.HyperConverged) {
 							hc.Spec.Virtualization.LiveMigrationConfig.DecentralizedLiveMigrationDatapath = new("Proxy")
@@ -2173,26 +2189,6 @@ Version: 1.2.3`)
 							hc.Spec.Virtualization.LiveMigrationConfig.DecentralizedLiveMigrationDatapath = new("Direct")
 						},
 						Not(ContainElement(kvCrossClusterMigrationProxy)),
-					),
-					Entry("should enable CrossClusterMigrationProxy only once when Proxy datapath and FG are both set",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "crossClusterMigrationProxy", State: new(featuregates.Enabled)},
-							}
-							hc.Spec.Virtualization.LiveMigrationConfig.DecentralizedLiveMigrationDatapath = new("Proxy")
-						},
-						And(
-							ContainElement(kvCrossClusterMigrationProxy),
-							WithTransform(func(fgs []string) int {
-								n := 0
-								for _, fg := range fgs {
-									if fg == kvCrossClusterMigrationProxy {
-										n++
-									}
-								}
-								return n
-							}, Equal(1)),
-						),
 					),
 					Entry("should still enable CrossClusterMigrationProxy when Proxy datapath overrides an explicitly Disabled FG",
 						func(hc *hcov1.HyperConverged) {
