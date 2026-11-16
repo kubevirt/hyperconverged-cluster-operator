@@ -56,6 +56,8 @@ function main {
 
   update_kv_json_file
 
+  update_virt_import_bundle
+
   echo INFO: Executing "build-manifests.sh"...
   make build-manifests
 }
@@ -100,6 +102,7 @@ function get_current_versions {
     ["CSI_SNAPSHOT"]=""
     ["CSI_SIG_STORAGE"]=""
     ["OBSERVABILITY_CONTROLLER"]=""
+    ["VIRT_IMPORT"]=""
   )
 
   for component in "${!CURRENT_VERSIONS[@]}"; do
@@ -130,6 +133,7 @@ function get_updated_versions {
     ["CSI_SNAPSHOT"]="kubernetes-csi/external-snapshotter"
     ["CSI_SIG_STORAGE"]="kubernetes-csi/external-provisioner"
     ["OBSERVABILITY_CONTROLLER"]="kubevirt/kubevirt-observability-controller"
+    ["VIRT_IMPORT"]="kubevirt/virt-import"
   )
 
   IMPORT_REPOS=(
@@ -287,6 +291,15 @@ function update_go_mod() {
     echo "No need to update go.mod for ${UPDATED_COMPONENT}"
   fi
 
+}
+
+function update_virt_import_bundle() {
+  if [[ "$(cat updated_component.txt)" != "VIRT_IMPORT" ]]; then
+    return
+  fi
+
+  echo INFO: Updating the virt-import bundle...
+  ./hack/update-virt-import-bundle.sh
 }
 
 function update_kv_json_file() {

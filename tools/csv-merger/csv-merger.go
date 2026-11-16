@@ -42,6 +42,9 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	virtimportapi "kubevirt.io/virt-import-api/core"
+	virtimportv1alpha1 "kubevirt.io/virt-import-api/core/v1alpha1"
+
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -607,6 +610,13 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 							},
 						},
 						StatusDescriptors: []csvv1alpha1.StatusDescriptor{},
+					},
+					{
+						Name:        virtimportapi.PluralResourceName + "." + virtimportapi.GroupName,
+						Version:     virtimportv1alpha1.GroupVersion.Version,
+						Kind:        "VirtualMachineImport",
+						DisplayName: "VirtualMachineImport",
+						Description: "Imports a VirtualMachine or VirtualMachineTemplate from an OCI artifact",
 					},
 				},
 				Required: []csvv1alpha1.CRDDescription{},

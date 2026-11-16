@@ -308,6 +308,8 @@ $keywords
 EOM
 
 cat "${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml" | "${TOOLS}/manifest-splitter" --operator-name="hco"
+# The virt-import CRD is pre-deployed like all other CRDs, HCO deploys the rest of the bundle at runtime.
+"${TOOLS}/manifest-splitter" --operator-name="virt-import" < "${PROJECT_ROOT}/pkg/virtimport/data/install-hco.yaml"
 
 popd
 
