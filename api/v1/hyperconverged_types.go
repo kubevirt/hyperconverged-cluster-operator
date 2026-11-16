@@ -134,6 +134,13 @@ type HyperConvergedSpec struct {
 	//   gate. Note: this feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * deployVirtImport:
+	//   Deploy the virt-import component, which provides the VirtualMachineImport
+	//   API to import VirtualMachines and VirtualMachineTemplates from OCI
+	//   artifacts. Disabling the feature gate removes the component, including its
+	//   CRD and all VirtualMachineImports.
+	//   Phase: alpha
+	//
 	// * downwardMetrics:
 	//   Allow to expose a limited set of host metrics to guests.
 	//   Phase: alpha
