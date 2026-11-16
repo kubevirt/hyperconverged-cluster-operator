@@ -21,36 +21,38 @@ The coverage of the unit test is not perfect, because the HCO repository contain
 code that is hard to test. However, the coverage must not be decreased. 
 
 ### Running Unit Tests Manually
-Before running the test, make sure to set the `KUBEVIRT_CLIENT_GO_SCHEME_REGISTRATION_VERSION` environment variable to `v1`.
+The easiest way to run the unit tests is by running
+```
+make test-unit
+```
 
 It is possible to run the unit tests using the `go test` command. To run all the unit test, run this command:
 ```commandline
-KUBEVIRT_CLIENT_GO_SCHEME_REGISTRATION_VERSION=v1 go test ./pkg/...
+go test ./api/... ./pkg/... ./controllers/... ./cmd/...
 ```
 It's possible to run the unit tests for a specific package, for example, the `operands` package, run:
 ```commandline
-KUBEVIRT_CLIENT_GO_SCHEME_REGISTRATION_VERSION=v1 go test ./controllers/operands/
+go test ./controllers/operands/
 ```
 This is also the way to run unit tests from an IDE. Then it is pretty simple to use the IDE debug tools.
 
-However, it is recommended to use the `ginkgo` tool itself get better output and additional options. It is still required 
-to set the `KUBEVIRT_CLIENT_GO_SCHEME_REGISTRATION_VERSION` environment variable. The `./hack/ginkgo.sh` script is a 
-ginkgo wrapper that adds this environment variable and pass all the command line parameters to the `ginkgo` tool.
+However, it is recommended to use the `ginkgo` tool itself get better output and additional options. `ginkgo` is defined as a golang tool in this repository, and so
+no installation is required, but only running `go tool ginkgo`.
 
 Full documentation of using the `ginkgo` tool may be found in the [ginkgo website](https://onsi.github.io/ginkgo/#the-ginkgo-cli), But 
 here are some useful ways to run the unit tests:
 
 Running all the unit tests:
 ```commandline
-./hack/ginkgo.sh -r pkg/
+go tool ginkgo -r pkg/
 ```
 Running unit tests for a specific package; e.g. the `webhook` package:
 ```commandline
-./hack/ginkgo.sh -r pkg/webhooks/
+go tool ginkgo -r pkg/webhooks/
 ```
 Running the unit tests with a verbose output (in this example, running only the `controller` package):
 ```commandline
-./hack/ginkgo.sh -r -v controllers/hyperconverged/
+go tool ginkgo -r -v controllers/hyperconverged/
 ```
 
 ## Sanity Checks

@@ -246,6 +246,7 @@ replace bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-201207
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260901194050-81278704edb0
 
 tool (
+	github.com/onsi/ginkgo/v2/ginkgo
 	k8s.io/code-generator/cmd/conversion-gen
 	k8s.io/code-generator/cmd/deepcopy-gen
 	k8s.io/code-generator/cmd/defaulter-gen

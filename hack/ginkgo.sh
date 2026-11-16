@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-KUBEVIRT_CLIENT_GO_SCHEME_REGISTRATION_VERSION=v1 ginkgo $@
