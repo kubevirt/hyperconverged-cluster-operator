@@ -1154,6 +1154,10 @@ const (
 	// ConditionKubevirtApiserverProxyReady indicates whether the kubevirt-apiserver-proxy
 	// deployment is fully ready (all replicas running).
 	ConditionKubevirtApiserverProxyReady = "KubevirtApiserverProxyReady"
+
+	// ConditionVirtImportReady indicates whether the virt-import controller
+	// deployment is fully ready (all replicas running).
+	ConditionVirtImportReady = "VirtImportReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
