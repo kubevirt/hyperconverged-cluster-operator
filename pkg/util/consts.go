@@ -36,6 +36,8 @@ const (
 	VirtioWinImageEnvV                      = "VIRTIOWIN_CONTAINER"
 	AIELauncherImageEnvV                    = "AIE_LAUNCHER_IMAGE"
 	ObservabilityControllerImageEnvV        = "OBSERVABILITY_CONTROLLER_IMAGE"
+	VirtImportControllerImageEnvV           = "VIRT_IMPORT_CONTROLLER_IMAGE"
+	VirtImportFetcherImageEnvV              = "VIRT_IMPORT_FETCHER_IMAGE"
 	DeployNetworkPoliciesEnvV               = "DEPLOY_NETWORK_POLICIES"
 	VirtIOWinDataFileEnvV                   = "DEPLOY_VIRT_IO_WIN_DATA_FILE"
 	VirtIODownloadDir                       = "virtio-win"

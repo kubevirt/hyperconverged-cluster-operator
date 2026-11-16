@@ -140,6 +140,7 @@ function get_updated_versions {
     ["AAQ"]="kubevirt.io/application-aware-quota"
     ["MIGRATION_OPERATOR"]="kubevirt.io/kubevirt-migration-operator"
     ["VM_FILE_RESTORE_OPERATOR"]="kubevirt.io/vm-file-restore-operator"
+    ["VIRT_IMPORT"]="kubevirt.io/virt-import-api"
   )
 
   UPDATED_VERSIONS=()
