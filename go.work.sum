@@ -502,6 +502,7 @@ gopkg.in/warnings.v0 v0.1.2/go.mod h1:jksf8JmL6Qr/oQM2OXTHunEvvTAsrWBLb6OOjuVWRN
 gotest.tools/v3 v3.5.2/go.mod h1:LtdLGcnqToBH83WByAAi/wiwSFCArdFIUV/xxN4pcjA=
 helm.sh/helm/v3 v3.20.2/go.mod h1:Fl1kBaWCpkUrM6IYXPjQ3bdZQfFrogKArqptvueZ6Ww=
 k8s.io/cli-runtime v0.37.2/go.mod h1:0IDMrrzVnj1cqBlCll8oGSOb2js6mSy0ALtbh0MsYyc=
+k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 h1:TT1WdmqqXareKxZ/oNXEUSwKlLiHzPMyB0t8BaFeBYI=
 k8s.io/helm v2.17.0+incompatible/go.mod h1:LZzlS4LQBHfciFOurYBFkCMTaZ0D1l+p0teMg7TSULI=
 k8s.io/kms v0.37.2/go.mod h1:0U6zfwLkfJr9O/jLgz2GARnKLh2uIhkq2EeaU66J5ow=
 k8s.io/kube-aggregator v0.37.2/go.mod h1:GsqVEKZkXn49ObCHg5NvYngIhM18Uup1Bg6Q3Lzu89A=

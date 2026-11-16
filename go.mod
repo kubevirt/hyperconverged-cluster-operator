@@ -151,6 +151,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiserver v0.37.2 // indirect
+	k8s.io/code-generator v0.37.2 // indirect
+	k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.34.1 // indirect
 	k8s.io/streaming v0.37.2 // indirect
@@ -242,3 +244,10 @@ replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9
 replace bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260901194050-81278704edb0
+
+tool (
+	k8s.io/code-generator/cmd/conversion-gen
+	k8s.io/code-generator/cmd/deepcopy-gen
+	k8s.io/code-generator/cmd/defaulter-gen
+	k8s.io/kube-openapi/cmd/openapi-gen
+)
