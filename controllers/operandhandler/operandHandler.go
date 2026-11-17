@@ -74,6 +74,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		netresinjector.NewDeploymentHandler(client, scheme),
 		netresinjector.NewPDBHandler(client, scheme),
 		netresinjector.NewMutatingWebhookConfigurationHandler(client, scheme),
+		netresinjector.NewNetworkPolicyHandler(client, scheme),
 	}
 
 	observabilityDeployed := false
