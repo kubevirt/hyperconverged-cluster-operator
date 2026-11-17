@@ -14,6 +14,9 @@ const (
 	guestDeviceDriversRoleName        = "guest-device-drivers-role"
 	guestDeviceDriversRoleBindingName = "guest-device-drivers-rolebinding"
 
+	// holds the CA bundle the controller verifies virt-handler against
+	kubevirtCAConfigMapName = "kubevirt-ca"
+
 	deployObsCntrlFGName     = "deployObservabilityController"
 	observeVMStatFeatureGate = "observeVMStat"
 )

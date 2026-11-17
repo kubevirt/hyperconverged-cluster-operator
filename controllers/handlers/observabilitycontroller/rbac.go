@@ -107,6 +107,10 @@ func newClusterRole() *rbacv1.ClusterRole {
 			Resources: []string{"subjectaccessreviews"},
 			Verbs:     []string{"create"},
 		},
+		{
+			NonResourceURLs: []string{"/metrics"},
+			Verbs:           []string{"get"},
+		},
 	}
 	return cr
 }
@@ -147,8 +151,15 @@ func newGuestDeviceDriversRole() *rbacv1.Role {
 		{
 			APIGroups:     []string{""},
 			Resources:     []string{"configmaps"},
-			ResourceNames: []string{guestDeviceDriversConfigMapName},
-			Verbs:         []string{"get", "list", "watch"},
+			ResourceNames: []string{guestDeviceDriversConfigMapName, kubevirtCAConfigMapName},
+			Verbs:         []string{"get"},
+		},
+		// the controller watches the guest device drivers ConfigMap, and
+		// resourceNames does not apply to list and watch
+		{
+			APIGroups: []string{""},
+			Resources: []string{"configmaps"},
+			Verbs:     []string{"list", "watch"},
 		},
 	}
 	return role

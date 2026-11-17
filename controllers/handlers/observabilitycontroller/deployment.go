@@ -67,6 +67,10 @@ func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 
 	podLabels := operands.GetLabels(hcoutil.AppComponentObservability)
 
+	// The controller reconciles its own metrics Service, and that Service
+	// selects app.kubernetes.io/name=virt-observability-controller
+	podLabels[hcoutil.AppLabelName] = controllerName
+
 	args := []string{
 		"--metrics-bind-address=:8443",
 		"--metrics-secure=true",

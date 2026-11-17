@@ -19,7 +19,7 @@ var _ = Describe("Observability Controller ClusterRole", func() {
 			Expect(cr.Name).To(Equal(clusterRoleName))
 			Expect(cr.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(cr.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentObservability)))
-			Expect(cr.Rules).To(HaveLen(12))
+			Expect(cr.Rules).To(HaveLen(13))
 
 			Expect(cr.Rules[0].APIGroups).To(ConsistOf("kubevirt.io"))
 			Expect(cr.Rules[0].Resources).To(ConsistOf("virtualmachines", "virtualmachineinstances", "virtualmachineinstancemigrations", "kubevirts"))
@@ -68,6 +68,11 @@ var _ = Describe("Observability Controller ClusterRole", func() {
 			Expect(cr.Rules[11].APIGroups).To(ConsistOf("authorization.k8s.io"))
 			Expect(cr.Rules[11].Resources).To(ConsistOf("subjectaccessreviews"))
 			Expect(cr.Rules[11].Verbs).To(ConsistOf("create"))
+
+			Expect(cr.Rules[12].NonResourceURLs).To(ConsistOf("/metrics"))
+			Expect(cr.Rules[12].Verbs).To(ConsistOf("get"))
+			Expect(cr.Rules[12].APIGroups).To(BeEmpty())
+			Expect(cr.Rules[12].Resources).To(BeEmpty())
 		})
 	})
 
@@ -152,11 +157,16 @@ var _ = Describe("Guest Device Drivers Role", func() {
 			Expect(role.Namespace).To(Equal(hcoutil.GetOperatorNamespaceFromEnv()))
 			Expect(role.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(role.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentObservability)))
-			Expect(role.Rules).To(HaveLen(1))
+			Expect(role.Rules).To(HaveLen(2))
 			Expect(role.Rules[0].APIGroups).To(ConsistOf(""))
 			Expect(role.Rules[0].Resources).To(ConsistOf("configmaps"))
-			Expect(role.Rules[0].ResourceNames).To(ConsistOf(guestDeviceDriversConfigMapName))
-			Expect(role.Rules[0].Verbs).To(ConsistOf("get", "list", "watch"))
+			Expect(role.Rules[0].ResourceNames).To(ConsistOf(guestDeviceDriversConfigMapName, kubevirtCAConfigMapName))
+			Expect(role.Rules[0].Verbs).To(ConsistOf("get"))
+
+			Expect(role.Rules[1].APIGroups).To(ConsistOf(""))
+			Expect(role.Rules[1].Resources).To(ConsistOf("configmaps"))
+			Expect(role.Rules[1].ResourceNames).To(BeEmpty())
+			Expect(role.Rules[1].Verbs).To(ConsistOf("list", "watch"))
 		})
 	})
 
@@ -167,8 +177,16 @@ var _ = Describe("Guest Device Drivers Role", func() {
 			req := commontestutils.NewReq(hco)
 
 			expected := newGuestDeviceDriversRole()
+			// a narrower rule set, as an earlier version of this handler produced
 			role := newGuestDeviceDriversRole()
-			role.Rules[0].Verbs = []string{"get"}
+			role.Rules = []rbacv1.PolicyRule{
+				{
+					APIGroups:     []string{""},
+					Resources:     []string{"configmaps"},
+					ResourceNames: []string{guestDeviceDriversConfigMapName},
+					Verbs:         []string{"get", "list", "watch"},
+				},
+			}
 			cl := commontestutils.InitClient([]client.Object{hco, role})
 
 			handler := NewGuestDeviceDriversRoleHandler(cl, commontestutils.GetScheme())

@@ -20,6 +20,11 @@
     "description": "Publish KubeVirt metrics, alerts, and recording rules. This is enabled by default. Disable this feature gate to stop publishing them. This feature is in Tech Preview."
   },
   {
+    "name": "observeVMStat",
+    "phase": "beta",
+    "description": "Allow collection of detailed per-virtual-machine metrics, such as CPU, memory, network, and storage usage. Enable them in observability allowed metrics config to publish them. This feature is in Tech Preview."
+  },
+  {
     "name": "rebootPolicy",
     "phase": "beta",
     "description": "RebootPolicy enables virtual machines to be recreated when they reboot from within the guest operating system. This feature is in Tech Preview."
@@ -78,11 +83,6 @@
     "name": "objectGraph",
     "phase": "alpha",
     "description": "ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview."
-  },
-  {
-    "name": "observeVMStat",
-    "phase": "alpha",
-    "description": "When enabled, the release date of each guest device driver is added to the kubevirt_vmi_guest_device_driver_timestamp_seconds metric, so guests running outdated VirtIO drivers can be found. Note: this feature is in Developer Preview."
   },
   {
     "name": "workloadEncryptionSEV",

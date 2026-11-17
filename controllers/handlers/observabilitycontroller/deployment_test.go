@@ -60,6 +60,8 @@ var _ = Describe("Observability Controller Deployment", func() {
 			Expect(dep.Spec.Replicas).To(HaveValue(Equal(int32(1))))
 			Expect(dep.Spec.Selector.MatchLabels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(dep.Spec.Selector.MatchLabels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentObservability)))
+			Expect(dep.Spec.Template.Labels).To(HaveKeyWithValue(hcoutil.AppLabelName, controllerName))
+			Expect(dep.Spec.Selector.MatchLabels).ToNot(HaveKey(hcoutil.AppLabelName))
 
 			Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue(securityv1.RequiredSCCAnnotation, "restricted-v2"))
 
@@ -109,10 +111,9 @@ var _ = Describe("Observability Controller Deployment", func() {
 			Expect(container.Resources.Requests).To(HaveKey(corev1.ResourceMemory))
 			Expect(container.Resources.Limits).To(HaveKey(corev1.ResourceMemory))
 
-			Expect(container.Args).ToNot(ContainElement(enableVMStatsArg))
-			Expect(container.Args).ToNot(ContainElement(vmstatsCertPathArg))
-			Expect(container.VolumeMounts).To(BeEmpty())
-			Expect(dep.Spec.Template.Spec.Volumes).To(BeEmpty())
+			Expect(container.Args).To(ContainElements(enableVMStatsArg, vmstatsCertPathArg))
+			Expect(container.VolumeMounts).To(HaveLen(1))
+			Expect(dep.Spec.Template.Spec.Volumes).To(HaveLen(1))
 		})
 	})
 
@@ -383,6 +384,18 @@ var _ = Describe("Observability Controller Deployment", func() {
 					},
 				},
 			}))
+		})
+
+		It("should not enable vmstats when the feature gate is explicitly disabled", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Disable(observeVMStatFeatureGate)
+			dep := newDeployment(hco)
+
+			container := dep.Spec.Template.Spec.Containers[0]
+			Expect(container.Args).ToNot(ContainElement(enableVMStatsArg))
+			Expect(container.Args).ToNot(ContainElement(vmstatsCertPathArg))
+			Expect(container.VolumeMounts).To(BeEmpty())
+			Expect(dep.Spec.Template.Spec.Volumes).To(BeEmpty())
 		})
 
 		It("should not update when the secret volume already has the API default mode", func() {

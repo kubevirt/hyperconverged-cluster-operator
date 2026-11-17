@@ -1031,6 +1031,10 @@ rules:
   - subjectaccessreviews
   verbs:
   - create
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
 - apiGroups:
   - cdi.kubevirt.io
   resources:
