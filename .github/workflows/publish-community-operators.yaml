@@ -15,6 +15,7 @@ jobs:
       REGISTRY_NAMESPACE: kubevirt
       OPM_VERSION: v1.47.0
       PACKAGE_DIR: "./deploy/olm-catalog/community-kubevirt-hyperconverged"
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -23,9 +24,7 @@ jobs:
           GIT_TAG=${{ github.ref }}
           TAGGED_VERSION=${GIT_TAG##*/v}
           TAGGED_MINOR_VERSION=${TAGGED_VERSION%.*}
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://api.github.com/repos/kubevirt/hyperconverged-cluster-operator/branches/release-${TAGGED_MINOR_VERSION})
-          if [[ "${HTTP_CODE}" == "200" ]]
-          then
+          if gh api repos/kubevirt/hyperconverged-cluster-operator/branches/release-${TAGGED_MINOR_VERSION} --silent 2>/dev/null; then
             TARGET_BRANCH=release-${TAGGED_MINOR_VERSION}
           else
             TARGET_BRANCH=main
@@ -37,6 +36,32 @@ jobs:
         with:
           ref: ${{ env.TARGET_BRANCH }}
           fetch-depth: 2
+
+      - name: add api tag
+        # This step creates a new tag, named "api/<current tag>", in order to allow consuming the
+        # api directory as a golang module, instead of importing the whole project, to prevent
+        # dependency conflicts.
+        env:
+          GH_TOKEN: ${{ secrets.HCO_BOT_TOKEN }}
+        run: |
+          GIT_TAG=${{ github.ref }}
+          TAG_NAME=${GIT_TAG##*/}
+          API_TAG="api/${TAG_NAME}"
+          API_HASH="$(gh api repos/kubevirt/hyperconverged-cluster-operator/tags --paginate --jq '.[] | select(.name=='\"${API_TAG}\"') | .commit.sha')"
+          if [[ -n "${API_HASH}" ]]; then
+            if [[ "${{ github.sha }}" == "${API_HASH}" ]]; then
+              echo "The ${API_TAG} tag already exists; nothing to do in this step"
+              exit 0
+            fi
+
+            echo "ERROR: ${API_TAG} tag already exists with different commit"
+            exit 1
+          fi
+          
+          gh api repos/kubevirt/hyperconverged-cluster-operator/git/refs \
+             -f ref="refs/tags/${API_TAG}" \
+             -f sha="${{ github.sha }}"
+
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
