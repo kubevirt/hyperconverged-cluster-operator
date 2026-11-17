@@ -147,6 +147,31 @@ with the `state` field of `Disabled`.
 
 **Graduation Status**: Beta
 
+### crossClusterMigrationProxy Feature Gate
+Add the `crossClusterMigrationProxy` feature gate to enable the synchronization-controller proxy datapath for
+decentralized live migration. When enabled, live-migration traffic can be proxied through synchronization controllers.
+Setting `spec.virtualization.liveMigrationConfig.decentralizedLiveMigrationDatapath` to `Proxy` also enables this
+feature gate in the KubeVirt CR.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: crossClusterMigrationProxy
+  virtualization:
+    liveMigrationConfig:
+      decentralizedLiveMigrationDatapath: Proxy
+```
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### declarativeHotplugVolumes Feature Gate
 Add the `declarativeHotplugVolumes` feature gate, to enable the declarative volume hotplug API in KubeVirt. By default,
 volume hotplug operations are performed using KubeVirt's subresource API. Changes made directly to the VirtualMachine
@@ -542,9 +567,35 @@ The migration will be canceled if memory copy fails to make progress in this tim
 
 #### network
 
-The name of a [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) network attachment definition to be dedicated to live migrations to minimize disruption to tenant workloads due to network saturation when VM live migrations are triggered. The format is a string.
+The name of a [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) network attachment definition to be dedicated to live migrations to minimize disruption to tenant workloads due to network saturation when VM live migrations are triggered. When `decentralizedLiveMigrationDatapath` is `Proxy`, this network is also used for virt-handler ↔ synchronization-controller migration listeners (omit = pod IP). The format is a string.
 
 **default**: unset
+
+#### crossClusterNetwork
+
+The name of the CNI network used for synchronization-controller peer traffic when `decentralizedLiveMigrationDatapath`
+is `Proxy`. When set, sync controllers attach to this network as `crosscluster0` and bind the sync gRPC port only there.
+When omitted with Proxy, peer traffic uses the pod network. Must not be set when `decentralizedLiveMigrationDatapath`
+is `Direct` (or unset).
+
+**default**: unset
+
+#### decentralizedLiveMigrationDatapath
+
+Selects how live-migration traffic moves for decentralized live migrations (cross-namespace or cross-cluster):
+
+- `Direct` (default when unset): no synchronization-controller migration-data proxy.
+- `Proxy`: sync controllers proxy migration traffic on a single gRPC port.
+
+Setting `Proxy` also enables the `CrossClusterMigrationProxy` feature gate in the KubeVirt CR.
+
+When using Proxy without `crossClusterNetwork`, KubeVirt uses the pod IP if no Route, Ingress, or Service is labeled.
+Optionally, label exactly one admin-supplied Route, Ingress, or Service with `kubevirt.io/synchronization-endpoint` so
+virt-operator can advertise an external endpoint in `status.synchronizationAddresses` on the KubeVirt CR. Routes take
+priority over Ingresses and Services. The label uses key-exists semantics; set the value to `true` by convention. Remove
+the label entirely to stop discovery.
+
+**default**: unset (`Direct`)
 
 #### allowAutoConverge
 
@@ -593,6 +644,8 @@ spec:
     liveMigrationConfig:
       completionTimeoutPerGiB: 20
       network: migration-network
+      crossClusterNetwork: cross-cluster-network
+      decentralizedLiveMigrationDatapath: Proxy
       parallelMigrationsPerCluster: 5
       parallelOutboundMigrationsPerNode: 1
       progressTimeout: 150

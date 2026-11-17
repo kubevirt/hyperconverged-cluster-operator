@@ -2300,14 +2300,17 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert LiveMigrationConfig", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					LiveMigrationConfig: hcov1.LiveMigrationConfigurations{
-						ParallelMigrationsPerCluster:      new(uint32(10)),
-						ParallelOutboundMigrationsPerNode: new(uint32(4)),
-						BandwidthPerMigration:             new("1Gi"),
-						CompletionTimeoutPerGiB:           new(int64(300)),
-						ProgressTimeout:                   new(int64(200)),
-						AllowAutoConverge:                 new(true),
-						AllowPostCopy:                     new(false),
-						AllowWorkloadDisruption:           new(true),
+						ParallelMigrationsPerCluster:       new(uint32(10)),
+						ParallelOutboundMigrationsPerNode:  new(uint32(4)),
+						BandwidthPerMigration:              new("1Gi"),
+						CompletionTimeoutPerGiB:            new(int64(300)),
+						ProgressTimeout:                    new(int64(200)),
+						Network:                            new("migration-network"),
+						CrossClusterNetwork:                new("cross-cluster-network"),
+						DecentralizedLiveMigrationDatapath: new("Proxy"),
+						AllowAutoConverge:                  new(true),
+						AllowPostCopy:                      new(false),
+						AllowWorkloadDisruption:            new(true),
 					},
 				}
 
@@ -2319,6 +2322,9 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(v1beta1Spec.LiveMigrationConfig.BandwidthPerMigration).To(HaveValue(Equal("1Gi")))
 				Expect(v1beta1Spec.LiveMigrationConfig.CompletionTimeoutPerGiB).To(HaveValue(Equal(int64(300))))
 				Expect(v1beta1Spec.LiveMigrationConfig.ProgressTimeout).To(HaveValue(Equal(int64(200))))
+				Expect(v1beta1Spec.LiveMigrationConfig.Network).To(HaveValue(Equal("migration-network")))
+				Expect(v1beta1Spec.LiveMigrationConfig.CrossClusterNetwork).To(HaveValue(Equal("cross-cluster-network")))
+				Expect(v1beta1Spec.LiveMigrationConfig.DecentralizedLiveMigrationDatapath).To(HaveValue(Equal("Proxy")))
 				Expect(v1beta1Spec.LiveMigrationConfig.AllowAutoConverge).To(HaveValue(BeTrue()))
 				Expect(v1beta1Spec.LiveMigrationConfig.AllowPostCopy).To(HaveValue(BeFalse()))
 				Expect(v1beta1Spec.LiveMigrationConfig.AllowWorkloadDisruption).To(HaveValue(BeTrue()))
@@ -2702,14 +2708,17 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert LiveMigrationConfig", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					LiveMigrationConfig: hcov1.LiveMigrationConfigurations{
-						ParallelMigrationsPerCluster:      new(uint32(10)),
-						ParallelOutboundMigrationsPerNode: new(uint32(4)),
-						BandwidthPerMigration:             new("1Gi"),
-						CompletionTimeoutPerGiB:           new(int64(300)),
-						ProgressTimeout:                   new(int64(200)),
-						AllowAutoConverge:                 new(true),
-						AllowPostCopy:                     new(false),
-						AllowWorkloadDisruption:           new(true),
+						ParallelMigrationsPerCluster:       new(uint32(10)),
+						ParallelOutboundMigrationsPerNode:  new(uint32(4)),
+						BandwidthPerMigration:              new("1Gi"),
+						CompletionTimeoutPerGiB:            new(int64(300)),
+						ProgressTimeout:                    new(int64(200)),
+						Network:                            new("migration-network"),
+						CrossClusterNetwork:                new("cross-cluster-network"),
+						DecentralizedLiveMigrationDatapath: new("Proxy"),
+						AllowAutoConverge:                  new(true),
+						AllowPostCopy:                      new(false),
+						AllowWorkloadDisruption:            new(true),
 					},
 				}
 
@@ -2721,6 +2730,9 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(v1VirtConfig.LiveMigrationConfig.BandwidthPerMigration).To(HaveValue(Equal("1Gi")))
 				Expect(v1VirtConfig.LiveMigrationConfig.CompletionTimeoutPerGiB).To(HaveValue(Equal(int64(300))))
 				Expect(v1VirtConfig.LiveMigrationConfig.ProgressTimeout).To(HaveValue(Equal(int64(200))))
+				Expect(v1VirtConfig.LiveMigrationConfig.Network).To(HaveValue(Equal("migration-network")))
+				Expect(v1VirtConfig.LiveMigrationConfig.CrossClusterNetwork).To(HaveValue(Equal("cross-cluster-network")))
+				Expect(v1VirtConfig.LiveMigrationConfig.DecentralizedLiveMigrationDatapath).To(HaveValue(Equal("Proxy")))
 				Expect(v1VirtConfig.LiveMigrationConfig.AllowAutoConverge).To(HaveValue(BeTrue()))
 				Expect(v1VirtConfig.LiveMigrationConfig.AllowPostCopy).To(HaveValue(BeFalse()))
 				Expect(v1VirtConfig.LiveMigrationConfig.AllowWorkloadDisruption).To(HaveValue(BeTrue()))

@@ -119,6 +119,15 @@ type HyperConvergedSpec struct {
 	//   feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * crossClusterMigrationProxy:
+	//   CrossClusterMigrationProxy enables the synchronization-controller proxy
+	//   datapath for decentralized live migration. When enabled, live-migration
+	//   traffic can be proxied through synchronization controllers (set
+	//   liveMigrationConfig.decentralizedLiveMigrationDatapath to Proxy). Setting
+	//   decentralizedLiveMigrationDatapath to Proxy also enables this feature
+	//   gate. Note: this feature is in Developer Preview.
+	//   Phase: alpha
+	//
 	// * downwardMetrics:
 	//   Allow to expose a limited set of host metrics to guests.
 	//   Phase: alpha
@@ -639,6 +648,7 @@ type NodePlacements struct {
 // LiveMigrationConfigurations - Live migration limits and timeouts are applied so that migration processes do not
 // overwhelm the cluster.
 // +k8s:openapi-gen=true
+// +kubebuilder:validation:XValidation:rule="!has(self.crossClusterNetwork) || (has(self.decentralizedLiveMigrationDatapath) && self.decentralizedLiveMigrationDatapath == 'Proxy')",message="crossClusterNetwork must not be set when decentralizedLiveMigrationDatapath is Direct or unset"
 type LiveMigrationConfigurations struct {
 	// Number of migrations running in parallel in the cluster.
 	// +optional
@@ -682,8 +692,33 @@ type LiveMigrationConfigurations struct {
 	ProgressTimeout *int64 `json:"progressTimeout,omitempty"`
 
 	// The migrations will be performed over a dedicated multus network to minimize disruption to tenant workloads due to network saturation when VM live migrations are triggered.
+	// When decentralizedLiveMigrationDatapath is Proxy, this network is also used for
+	// virt-handler ↔ synchronization-controller migration listeners (omit = pod IP).
 	// +optional
 	Network *string `json:"network,omitempty"`
+
+	// CrossClusterNetwork is the name of the CNI network used for synchronization-controller
+	// peer traffic when decentralizedLiveMigrationDatapath is Proxy. When set, sync controllers
+	// attach to this network as crosscluster0 and bind the sync gRPC port only there.
+	// When omitted with Proxy, peer traffic uses the pod network. Must not be set when
+	// decentralizedLiveMigrationDatapath is Direct (or unset).
+	// +optional
+	CrossClusterNetwork *string `json:"crossClusterNetwork,omitempty"`
+
+	// DecentralizedLiveMigrationDatapath selects how live-migration traffic moves for
+	// decentralized live migrations (cross-namespace or cross-cluster).
+	// Direct (default when unset): no synchronization-controller migration-data proxy.
+	// Proxy: sync controllers proxy migration traffic on a single gRPC port.
+	// Proxy requires both the decentralizedLiveMigration and crossClusterMigrationProxy
+	// feature gates. Selecting Proxy enables only crossClusterMigrationProxy in the
+	// KubeVirt CR; decentralizedLiveMigration must be enabled separately (it is enabled
+	// by default).
+	// When using Proxy without crossClusterNetwork, label an admin-supplied Route,
+	// Ingress, or Service with kubevirt.io/synchronization-endpoint so virt-operator
+	// can advertise the external endpoint in status.synchronizationAddresses.
+	// +optional
+	// +kubebuilder:validation:Enum=Direct;Proxy
+	DecentralizedLiveMigrationDatapath *string `json:"decentralizedLiveMigrationDatapath,omitempty"`
 
 	// AllowAutoConverge allows the platform to compromise performance/availability of VMIs to
 	// guarantee successful VMI live migrations. Defaults to false

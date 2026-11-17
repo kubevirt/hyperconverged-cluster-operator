@@ -495,6 +495,16 @@ func (in *LiveMigrationConfigurations) DeepCopyInto(out *LiveMigrationConfigurat
 		*out = new(string)
 		**out = **in
 	}
+	if in.CrossClusterNetwork != nil {
+		in, out := &in.CrossClusterNetwork, &out.CrossClusterNetwork
+		*out = new(string)
+		**out = **in
+	}
+	if in.DecentralizedLiveMigrationDatapath != nil {
+		in, out := &in.DecentralizedLiveMigrationDatapath, &out.DecentralizedLiveMigrationDatapath
+		*out = new(string)
+		**out = **in
+	}
 	if in.AllowAutoConverge != nil {
 		in, out := &in.AllowAutoConverge, &out.AllowAutoConverge
 		*out = new(bool)
