@@ -10,6 +10,9 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/pkg/featuregates"
 )
 
+// NVIDIAAIE is the NVIDIA Accelerated Infrastructure Enablement feature gate.
+const NVIDIAAIE = "nvidiaAIE"
+
 type State string
 
 const (

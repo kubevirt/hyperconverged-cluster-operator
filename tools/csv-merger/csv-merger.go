@@ -105,7 +105,8 @@ var (
 	kvVirtIOWinDataFile           = flag.String("kv-virtiowin-data-file", "", "Path to the data file inside the VirtIO Win image")
 	kvVirtIOWinMountPath          = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
 	_                             = flag.String("wasp-agent-image-name", "", "ignored: not in use")
-	aieWebhookImage               = flag.String("aie-webhook-image-name", "", "AIE Webhook image")
+	aieLauncherImage              = flag.String("aie-launcher-image-name", "", "AIE launcher image supplied by the bundle")
+	_                             = flag.String("aie-webhook-image-name", "", "ignored: the AIE webhook has been retired")
 	_                             = flag.String("iommufd-device-plugin-image-name", "", "ignored: not in use")
 	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
@@ -826,7 +827,7 @@ func getDeploymentParams() *manifests.DeploymentOperatorParams {
 		AutopilotVersion:              *autopilotVersion,
 		VMFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
-		AIEWebhookImage:               *aieWebhookImage,
+		AIELauncherImage:              *aieLauncherImage,
 		ObservabilityControllerImage:  *observabilityControllerImage,
 		Env:                           envVars,
 		AddNetworkPolicyLabels:        *dumpNetworkPolicies,

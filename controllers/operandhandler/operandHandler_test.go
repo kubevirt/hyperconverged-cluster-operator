@@ -27,6 +27,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
@@ -74,6 +75,50 @@ var _ = Describe("Test operandHandler", func() {
 			hcoNamespace = commontestutils.NewHcoNamespace()
 
 		})
+
+		It("removes enabled AIE policies during normal uninstall", func() {
+			original, present := os.LookupEnv(hcoutil.AIELauncherImageEnvV)
+			Expect(os.Setenv(hcoutil.AIELauncherImageEnvV, "registry.example/virt-launcher-4-nv:test")).To(Succeed())
+			DeferCleanup(func() {
+				if present {
+					Expect(os.Setenv(hcoutil.AIELauncherImageEnvV, original)).To(Succeed())
+				} else {
+					Expect(os.Unsetenv(hcoutil.AIELauncherImageEnvV)).To(Succeed())
+				}
+			})
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable(featuregates.NVIDIAAIE)
+			ci := commontestutils.ClusterInfoMock{}
+			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
+			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, commontestutils.NewEventEmitterMock())
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, dirtest.New())
+			req := commontestutils.NewReq(hco)
+			Expect(handler.Ensure(req)).To(Succeed())
+			Expect(cli.Get(req.Ctx, client.ObjectKey{Name: "kubevirt-aie-launcher"}, &admissionregistrationv1.MutatingAdmissionPolicy{})).To(Succeed())
+			Expect(handler.EnsureDeleted(req)).To(Succeed())
+			Expect(cli.Get(req.Ctx, client.ObjectKey{Name: "kubevirt-aie-launcher"}, &admissionregistrationv1.MutatingAdmissionPolicy{})).To(MatchError(apierrors.IsNotFound, "not found"))
+			Expect(cli.Get(req.Ctx, client.ObjectKey{Name: "kubevirt-aie-launcher-binding"}, &admissionregistrationv1.MutatingAdmissionPolicyBinding{})).To(MatchError(apierrors.IsNotFound, "not found"))
+		})
+
+		DescribeTable("keeps reconciling other operands when the AIE image is unavailable", func(enabled bool) {
+			original, present := os.LookupEnv(hcoutil.AIELauncherImageEnvV)
+			Expect(os.Unsetenv(hcoutil.AIELauncherImageEnvV)).To(Succeed())
+			DeferCleanup(func() {
+				if present {
+					Expect(os.Setenv(hcoutil.AIELauncherImageEnvV, original)).To(Succeed())
+				}
+			})
+			hco := commontestutils.NewHco()
+			if enabled {
+				hco.Spec.FeatureGates.Enable(featuregates.NVIDIAAIE)
+			}
+			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
+			handler := NewOperandHandler(cli, commontestutils.GetScheme(), commontestutils.ClusterInfoMock{}, commontestutils.NewEventEmitterMock())
+			req := commontestutils.NewReq(hco)
+			Expect(handler.Ensure(req)).To(Succeed())
+			Expect(cli.Get(req.Ctx, client.ObjectKey{Name: "kubevirt-aie-launcher"}, &admissionregistrationv1.MutatingAdmissionPolicy{})).To(MatchError(apierrors.IsNotFound, "not found"))
+			Expect(cli.Get(req.Ctx, client.ObjectKeyFromObject(handlers.NewKubeVirtWithNameOnly()), &kubevirtcorev1.KubeVirt{})).To(Succeed())
+		}, Entry("disabled installation", false), Entry("previously enabled installation", true))
 
 		It("includes VMExport admission operands in normal uninstall cleanup", func() {
 			hco := commontestutils.NewHco()

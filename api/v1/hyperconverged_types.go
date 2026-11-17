@@ -165,6 +165,13 @@ type HyperConvergedSpec struct {
 	//   natural networks API. Note: this feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * nvidiaAIE:
+	//   Enable the NVIDIA Accelerated Infrastructure Enablement (AIE) integration.
+	//   Newly created VM launcher Pods across workload namespaces use the NVIDIA
+	//   AIE launcher, and the required KubeVirt hardware feature gates are
+	//   enabled. This feature is in Developer Preview and is disabled by default.
+	//   Phase: alpha
+	//
 	// * objectGraph:
 	//   ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.
 	//   This subresource returns a structured list of k8s objects that are related
@@ -1131,10 +1138,6 @@ const (
 	// ConditionKubevirtObservabilityControllerReady indicates whether the
 	// virt-observability-controller deployment is fully ready (all replicas running).
 	ConditionKubevirtObservabilityControllerReady = "KubevirtObservabilityControllerReady"
-
-	// ConditionKubevirtAieWebhookReady indicates whether the kubevirt-aie-webhook
-	// deployment is fully ready (all replicas running).
-	ConditionKubevirtAieWebhookReady = "KubevirtAieWebhookReady"
 
 	// ConditionKubevirtApiserverProxyReady indicates whether the kubevirt-apiserver-proxy
 	// deployment is fully ready (all replicas running).

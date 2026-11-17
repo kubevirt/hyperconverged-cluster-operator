@@ -31,7 +31,6 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcofg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/kvfeaturegates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
@@ -1027,7 +1026,7 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 		fgs = append(fgs, kvPasstBinding)
 	}
 
-	if hc.Annotations[aie.DeployAIEAnnotation] == "true" {
+	if hc.Spec.FeatureGates.IsEnabled(hcofg.NVIDIAAIE) {
 		fgs = append(fgs, kvGraceIOVirtualization, kvIOMMUFD, kvPCINUMAAwareTopology)
 	}
 

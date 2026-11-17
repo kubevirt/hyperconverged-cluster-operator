@@ -182,6 +182,114 @@
         "name": "hyperconverged-cluster-webhook-operator-metrics",
         "namespace": "kubevirt-hyperconverged"
       }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "admissionregistration.k8s.io",
+        "version": "v1",
+        "kind": "MutatingWebhookConfiguration"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-webhook",
+        "namespace": ""
+      }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "apps",
+        "version": "v1",
+        "kind": "Deployment"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-webhook",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "Service"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-webhook",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ServiceAccount"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-webhook",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "rbac.authorization.k8s.io",
+        "version": "v1",
+        "kind": "ClusterRoleBinding"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-webhook",
+        "namespace": ""
+      }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "rbac.authorization.k8s.io",
+        "version": "v1",
+        "kind": "ClusterRole"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-webhook",
+        "namespace": ""
+      }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "networking.k8s.io",
+        "version": "v1",
+        "kind": "NetworkPolicy"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-webhook",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "Secret"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-webhook-tls",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.20.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ConfigMap"
+      },
+      "objectKey": {
+        "name": "kubevirt-aie-launcher-config",
+        "namespace": "kubevirt-hyperconverged"
+      }
     }
   ],
   "defaultFeatureGates": [

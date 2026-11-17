@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -29,20 +30,22 @@ const (
 )
 
 type WebhookV1Beta1Handler struct {
-	logger      logr.Logger
-	cli         client.Client
-	namespace   string
-	isOpenshift bool
-	decoder     admission.Decoder
+	logger       logr.Logger
+	cli          client.Client
+	namespace    string
+	isOpenshift  bool
+	decoder      admission.Decoder
+	aieAvailable bool
 }
 
 func NewWebhookV1Beta1Handler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshift bool) *WebhookV1Beta1Handler {
 	return &WebhookV1Beta1Handler{
-		logger:      logger.WithName(validatorV1Beta1Name),
-		cli:         cli,
-		namespace:   namespace,
-		isOpenshift: isOpenshift,
-		decoder:     decoder,
+		logger:       logger.WithName(validatorV1Beta1Name),
+		cli:          cli,
+		namespace:    namespace,
+		isOpenshift:  isOpenshift,
+		decoder:      decoder,
+		aieAvailable: strings.TrimSpace(os.Getenv(hcoutil.AIELauncherImageEnvV)) != "",
 	}
 }
 
@@ -107,6 +110,11 @@ func (wh *WebhookV1Beta1Handler) ValidateCreate(_ context.Context, logger logr.L
 		return warnings, err
 	}
 
+	err = validateNVIDIAAIE(v1hc, nil, wh.aieAvailable)
+	if err != nil {
+		return warnings, err
+	}
+
 	if _, err = handlers.NewKubeVirt(v1hc); err != nil {
 		return warnings, err
 	}
@@ -148,6 +156,15 @@ func (wh *WebhookV1Beta1Handler) ValidateUpdate(ctx context.Context, logger logr
 
 	v1hc := &hcov1.HyperConverged{}
 	if err = requested.ConvertTo(v1hc); err != nil {
+		return warnings, err
+	}
+
+	previous := &hcov1.HyperConverged{}
+	if err = exists.ConvertTo(previous); err != nil {
+		return warnings, err
+	}
+	err = validateNVIDIAAIE(v1hc, previous, wh.aieAvailable)
+	if err != nil {
 		return warnings, err
 	}
 
