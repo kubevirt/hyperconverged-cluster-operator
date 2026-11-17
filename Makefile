@@ -49,8 +49,7 @@ sanity: generate gogenerate generate-crd generate-crd-for-csv go-fix generate-do
 	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh
 
 goimport:
-	go install golang.org/x/tools/cmd/goimports@latest
-	goimports -w -local="kubevirt.io,github.com/kubevirt,github.com/kubevirt/hyperconverged-cluster-operator"  $(shell find . -type f -name '*.go' ! -path "*/vendor/*" ! -path "./_kubevirtci/*" ! -path "*zz_generated*" )
+	go tool goimports -w -local="kubevirt.io,github.com/kubevirt,github.com/kubevirt/hyperconverged-cluster-operator"  $(shell find . -type f -name '*.go' ! -path "*/vendor/*" ! -path "./_kubevirtci/*" ! -path "*zz_generated*" )
 
 update-kv-fg-file:
 	./hack/update-kv-fg-file.sh

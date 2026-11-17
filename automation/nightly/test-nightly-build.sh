@@ -218,9 +218,7 @@ $KUBECTL apply -n "${INSTALL_NAMESPACE}" -f deploy/hco.cr.yaml
 $KUBECTL wait -n "${INSTALL_NAMESPACE}" hco kubevirt-hyperconverged --for=condition=Available --timeout=5m
 
 # build func test
-go install github.com/onsi/ginkgo/v2/ginkgo@$(grep github.com/onsi/ginkgo go.mod | cut -d " " -f2)
-test_path="./tests/func-tests"
-ginkgo build -o functest.test ${test_path}
+go tool ginkgo build -o functest.test "./tests/func-tests"
 
 REPORT_FLAG=""
 if [[ -n ${ARTIFACTS} ]]; then
