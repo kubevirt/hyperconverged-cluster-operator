@@ -643,6 +643,29 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("virtualmachineinstancetypes", "virtualmachineclusterinstancetypes", "virtualmachinepreferences", "virtualmachineclusterpreferences"),
 			Verbs:     stringListToSlice("get", "list", "watch"),
 		},
+		// HCO does not read these resources itself, but it creates the
+		// virt-observability-controller ClusterRole that grants them. RBAC
+		// escalation prevention requires HCO to hold them in order to grant them.
+		{
+			APIGroups: stringListToSlice("snapshot.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachinesnapshots", "virtualmachinerestores"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("export.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineexports"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("clone.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineclones"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("pool.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachinepools"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
 		{
 			APIGroups: stringListToSlice("authentication.k8s.io"),
 			Resources: stringListToSlice("tokenreviews"),

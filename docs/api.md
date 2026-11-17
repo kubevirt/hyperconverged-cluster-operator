@@ -343,8 +343,8 @@ ObservabilityConfig contains configurations for the observability controller
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
 | workloads | Workloads defines filtering configuration for workload-related metrics | *[ObservabilityWorkloadsConfig](#observabilityworkloadsconfig) |  | false |
-| allowedAlerts | AllowedAlerts defines the list of alert rule names to include. When set, only alerts matching this list will be created. | []string |  | false |
-| allowedRecordingRules | AllowedRecordingRules defines the list of recording rule names to include. When set, only recording rules matching this list will be created. | []string |  | false |
+| allowedAlerts | AllowedAlerts defines the alerts to include in the PrometheusRule. Entries are either group names or individual alert names. A bare list is absolute; prefixing every entry with + or - adjusts the default set instead. \"all\" and \"none\" select everything or nothing. When empty, the default set is used: the groups KubeVirt does not publish itself. | []string |  | false |
+| allowedRecordingRules | AllowedRecordingRules defines the recording rules to include in the PrometheusRule. Entries are either group names or individual recording rule names. A bare list is absolute; prefixing every entry with + or - adjusts the default set instead. \"all\" and \"none\" select everything or nothing. When empty, the default set is used: the groups KubeVirt does not publish itself. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -354,7 +354,7 @@ ObservabilityWorkloadsConfig defines filtering for workload metrics
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| allowedMetrics | AllowedMetrics defines the list of metric names to expose. When set, only metrics matching this list will be collected. | []string |  | false |
+| allowedMetrics | AllowedMetrics defines the metrics to expose. Entries are either group names or individual metric names. A bare list is absolute; prefixing every entry with + or - adjusts the default set instead. \"all\" and \"none\" select everything or nothing. When empty, the default set is used: the groups KubeVirt does not publish itself. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 

@@ -53,6 +53,26 @@ func newClusterRole() *rbacv1.ClusterRole {
 			Verbs:     []string{"get", "list", "watch"},
 		},
 		{
+			APIGroups: []string{"snapshot.kubevirt.io"},
+			Resources: []string{"virtualmachinesnapshots", "virtualmachinerestores"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
+			APIGroups: []string{"export.kubevirt.io"},
+			Resources: []string{"virtualmachineexports"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
+			APIGroups: []string{"clone.kubevirt.io"},
+			Resources: []string{"virtualmachineclones"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
+			APIGroups: []string{"pool.kubevirt.io"},
+			Resources: []string{"virtualmachinepools"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
 			APIGroups: []string{"instancetype.kubevirt.io"},
 			Resources: []string{"virtualmachineinstancetypes", "virtualmachineclusterinstancetypes", "virtualmachinepreferences", "virtualmachineclusterpreferences"},
 			Verbs:     []string{"get", "list", "watch"},
