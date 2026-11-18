@@ -123,6 +123,7 @@ func openshift2MigrationSecProfile(hcProfile *openshiftconfigv1.TLSSecurityProfi
 			TLSProfileSpec: migrationv1alpha1.TLSProfileSpec{
 				Ciphers:       hcProfile.Custom.Ciphers,
 				MinTLSVersion: migrationv1alpha1.TLSProtocolVersion(hcProfile.Custom.MinTLSVersion),
+				Groups:        tlsGroupsToStrings(hcProfile.Custom.Groups),
 			},
 		}
 	}
