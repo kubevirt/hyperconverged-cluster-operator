@@ -2403,6 +2403,130 @@ Version: 1.2.3`)
 					Expect(foundResource.Spec.Configuration.PersistentReservationConfiguration).To(BeNil())
 				})
 
+				It("should enable SCSIMultiIOThread and MultiIOThreadAutoPolicy by default", func() {
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+					Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvSCSIMultiIOThread))
+					Expect(kv.Spec.Configuration.MultiIOThreadAutoPolicy).ToNot(BeNil())
+					Expect(kv.Spec.Configuration.MultiIOThreadAutoPolicy.Enabled).To(HaveValue(BeTrue()))
+				})
+
+				It("should restore SCSIMultiIOThread and MultiIOThreadAutoPolicy when missing from KV", func() {
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					existingResource.Spec.Configuration.MultiIOThreadAutoPolicy = nil
+					existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+						existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+						func(fg string) bool { return fg == kvSCSIMultiIOThread },
+					)
+
+					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
+					res := handler.Ensure(req)
+					Expect(res.UpgradeDone).To(BeFalse())
+					Expect(res.Updated).To(BeTrue())
+					Expect(res.Err).ToNot(HaveOccurred())
+
+					foundResource := &kubevirtcorev1.KubeVirt{}
+					Expect(
+						cl.Get(context.TODO(),
+							types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+							foundResource),
+					).ToNot(HaveOccurred())
+
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvSCSIMultiIOThread))
+					Expect(foundResource.Spec.Configuration.MultiIOThreadAutoPolicy).ToNot(BeNil())
+					Expect(foundResource.Spec.Configuration.MultiIOThreadAutoPolicy.Enabled).To(HaveValue(BeTrue()))
+				})
+
+				It("should disable SCSIMultiIOThread and MultiIOThreadAutoPolicy when the HCO feature gate is Disabled", func() {
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "scsiMultiIOThread", State: new(featuregates.Disabled)},
+					}
+
+					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
+					res := handler.Ensure(req)
+					Expect(res.UpgradeDone).To(BeFalse())
+					Expect(res.Updated).To(BeTrue())
+					Expect(res.Err).ToNot(HaveOccurred())
+
+					foundResource := &kubevirtcorev1.KubeVirt{}
+					Expect(
+						cl.Get(context.TODO(),
+							types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+							foundResource),
+					).ToNot(HaveOccurred())
+
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvSCSIMultiIOThread))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).To(ContainElement(kvSCSIMultiIOThread))
+					Expect(foundResource.Spec.Configuration.MultiIOThreadAutoPolicy).To(BeNil())
+				})
+
+				It("should keep SCSIMultiIOThread enabled when MultiIOThreadAutoPolicy is disabled", func() {
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					hco.Spec.Storage = &hcov1.StorageConfig{
+						MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{
+							Enabled: new(false),
+						},
+					}
+
+					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
+					res := handler.Ensure(req)
+					Expect(res.UpgradeDone).To(BeFalse())
+					Expect(res.Updated).To(BeTrue())
+					Expect(res.Err).ToNot(HaveOccurred())
+
+					foundResource := &kubevirtcorev1.KubeVirt{}
+					Expect(
+						cl.Get(context.TODO(),
+							types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+							foundResource),
+					).ToNot(HaveOccurred())
+
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvSCSIMultiIOThread))
+					Expect(foundResource.Spec.Configuration.MultiIOThreadAutoPolicy).To(BeNil())
+				})
+
+				It("should not enable MultiIOThreadAutoPolicy when the feature gate is Disabled even if config is enabled", func() {
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "scsiMultiIOThread", State: new(featuregates.Disabled)},
+					}
+					hco.Spec.Storage = &hcov1.StorageConfig{
+						MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{
+							Enabled: new(true),
+						},
+					}
+
+					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
+					res := handler.Ensure(req)
+					Expect(res.Err).ToNot(HaveOccurred())
+
+					foundResource := &kubevirtcorev1.KubeVirt{}
+					Expect(
+						cl.Get(context.TODO(),
+							types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+							foundResource),
+					).ToNot(HaveOccurred())
+
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvSCSIMultiIOThread))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).To(ContainElement(kvSCSIMultiIOThread))
+					Expect(foundResource.Spec.Configuration.MultiIOThreadAutoPolicy).To(BeNil())
+				})
+
 				It("should remove FG if it the HC CR does not contain the featureGates field", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(true)
 					existingResource, err := NewKubeVirt(hco)

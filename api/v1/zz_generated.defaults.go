@@ -111,6 +111,14 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 int = 10
 		in.Spec.Virtualization.VmiCPUAllocationRatio = &ptrVar1
 	}
+	if in.Spec.Storage != nil {
+		if in.Spec.Storage.MultiIOThreadAutoPolicy != nil {
+			if in.Spec.Storage.MultiIOThreadAutoPolicy.Enabled == nil {
+				var ptrVar1 bool = true
+				in.Spec.Storage.MultiIOThreadAutoPolicy.Enabled = &ptrVar1
+			}
+		}
+	}
 	if in.Spec.WorkloadSources.EnableCommonBootImageImport == nil {
 		var ptrVar1 bool = true
 		in.Spec.WorkloadSources.EnableCommonBootImageImport = &ptrVar1

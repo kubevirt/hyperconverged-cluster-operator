@@ -29,6 +29,7 @@ type v1OnlyFields struct {
 	DeployNetworkResourcesInjector *bool                              `json:"deployNetworkResourcesInjector,omitempty"`
 	MDevConfigEnable               *bool                              `json:"mdevConfigEnable,omitempty"`
 	PersistentReservationEnabled   *bool                              `json:"persistentReservationEnabled,omitempty"`
+	MultiIOThreadAutoPolicyEnabled *bool                              `json:"multiIOThreadAutoPolicyEnabled,omitempty"`
 	MultiArchEnabled               *bool                              `json:"multiArchEnabled,omitempty"`
 	FeatureGates                   hcov1fg.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 	Observability                  *hcov1.ObservabilityConfig         `json:"observability,omitempty"`
@@ -39,6 +40,7 @@ func (fields *v1OnlyFields) isEmpty() bool {
 	return fields.DeployNetworkResourcesInjector == nil &&
 		fields.MDevConfigEnable == nil &&
 		fields.PersistentReservationEnabled == nil &&
+		fields.MultiIOThreadAutoPolicyEnabled == nil &&
 		fields.MultiArchEnabled == nil &&
 		fields.FeatureGates == nil &&
 		fields.Observability == nil &&
@@ -611,6 +613,17 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		dst.Spec.Storage.PersistentReservationConfiguration.Enabled = new(*v1Fields.PersistentReservationEnabled)
 	}
 
+	if v1Fields.MultiIOThreadAutoPolicyEnabled != nil {
+		if dst.Spec.Storage == nil {
+			dst.Spec.Storage = &hcov1.StorageConfig{}
+		}
+		if dst.Spec.Storage.MultiIOThreadAutoPolicy == nil {
+			dst.Spec.Storage.MultiIOThreadAutoPolicy = &hcov1.MultiIOThreadAutoPolicy{}
+		}
+
+		dst.Spec.Storage.MultiIOThreadAutoPolicy.Enabled = new(*v1Fields.MultiIOThreadAutoPolicyEnabled)
+	}
+
 	if v1Fields.MultiArchEnabled != nil {
 		dst.Spec.WorkloadSources.EnableMultiArchBootImageImport = new(*v1Fields.MultiArchEnabled)
 	}
@@ -638,6 +651,10 @@ func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
 
 	if src.Spec.Storage != nil && src.Spec.Storage.PersistentReservationConfiguration != nil && src.Spec.Storage.PersistentReservationConfiguration.Enabled != nil {
 		v1Fields.PersistentReservationEnabled = new(*src.Spec.Storage.PersistentReservationConfiguration.Enabled)
+	}
+
+	if src.Spec.Storage != nil && src.Spec.Storage.MultiIOThreadAutoPolicy != nil && src.Spec.Storage.MultiIOThreadAutoPolicy.Enabled != nil {
+		v1Fields.MultiIOThreadAutoPolicyEnabled = new(*src.Spec.Storage.MultiIOThreadAutoPolicy.Enabled)
 	}
 
 	if src.Spec.WorkloadSources.EnableMultiArchBootImageImport != nil {

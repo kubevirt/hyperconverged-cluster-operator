@@ -93,6 +93,12 @@ type HyperConvergedSpec struct {
 	//   from within the guest operating system. This feature is in Tech Preview.
 	//   Phase: beta
 	//
+	// * scsiMultiIOThread:
+	//   SCSIMultiIOThread enables iothread virtqueue mapping for virtio-scsi
+	//   devices  by leveraging IOThreadsPolicy to allocate thread pools to the
+	//   SCSI Controller Driver. This feature is in Tech Preview.
+	//   Phase: beta
+	//
 	// * template:
 	//   VirtualMachine Templates provide a native, in-cluster VM templating for
 	//   KubeVirt. They allow you to define reusable VM blueprints with
@@ -450,6 +456,13 @@ type StorageConfig struct {
 	// +optional
 	// +k8s:conversion-gen=false
 	PersistentReservationConfiguration *PersistentReservationConfiguration `json:"persistentReservationConfiguration,omitempty"`
+
+	// MultiIOThreadAutoPolicy configures the auto IOThreadsPolicy to allocate multiple
+	// iothreads to virtio-blk disks. Defaults to enabled. Requires the scsiMultiIOThread
+	// feature gate; has no effect when that feature gate is disabled.
+	// +optional
+	// +k8s:conversion-gen=false
+	MultiIOThreadAutoPolicy *MultiIOThreadAutoPolicy `json:"multiIOThreadAutoPolicy,omitempty"`
 }
 
 // PersistentReservationConfiguration holds the configuration for SCSI persistent reservation support
@@ -458,6 +471,18 @@ type PersistentReservationConfiguration struct {
 	// Enabled controls the deployment of additional resources like the pr-helper container
 	// for enabling the use of the SCSI persistent reservation in VMs, defaults to false.
 	// +optional
+	// +k8s:conversion-gen=false
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// MultiIOThreadAutoPolicy holds the configuration for multi-iothread auto policy
+// +k8s:openapi-gen=true
+type MultiIOThreadAutoPolicy struct {
+	// Enabled configures the auto IOThreadsPolicy to allocate multiple iothreads to virtio-blk
+	// disks. Defaults to true. Requires the scsiMultiIOThread feature gate to be enabled.
+	// +optional
+	// +kubebuilder:default=true
+	// +default=true
 	// +k8s:conversion-gen=false
 	Enabled *bool `json:"enabled,omitempty"`
 }

@@ -77,6 +77,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			"objectGraph":                    BeFalseBecause("the objectGraph feature gate should be disabled by default"),
 			"incrementalBackup":              BeFalseBecause("the incrementalBackup feature gate should be disabled by default"),
 			"containerPathVolumes":           BeTrueBecause("the containerPathVolumes feature gate should be enabled by default"),
+			"scsiMultiIOThread":              BeTrueBecause("the scsiMultiIOThread feature gate should be enabled by default"),
 			"observeVMStat":                  BeFalseBecause("the observeVMStat feature gate should be disabled by default"),
 			"crossClusterMigrationProxy":     BeFalseBecause("the crossClusterMigrationProxy feature gate should be disabled by default"),
 		}

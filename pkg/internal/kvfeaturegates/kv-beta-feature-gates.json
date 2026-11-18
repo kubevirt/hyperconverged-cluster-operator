@@ -120,10 +120,6 @@
     "state": "Alpha"
   },
   {
-    "name": "SCSIMultiIOThread",
-    "state": "Alpha"
-  },
-  {
     "name": "Sidecar",
     "state": "Alpha"
   },
@@ -181,6 +177,10 @@
   },
   {
     "name": "RebootPolicy",
+    "state": "Beta"
+  },
+  {
+    "name": "SCSIMultiIOThread",
     "state": "Beta"
   },
   {
