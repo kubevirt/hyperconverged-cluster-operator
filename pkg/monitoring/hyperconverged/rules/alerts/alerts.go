@@ -20,9 +20,15 @@ const (
 	runbookURLTemplateEnv          = "RUNBOOK_URL_TEMPLATE"
 )
 
-func Register(operatorRegistry *operatorrules.Registry) error {
+// Register registers the alerts in the given registry. The installNamespace
+// parameter is the namespace OpenShift Virtualization is installed in; it
+// scopes the operator-health alerts to the control-plane pods and CSVs. The
+// isManagedByOLM parameter indicates whether the operator is managed by OLM
+// v0; alerts that depend on OLM v0 resources (eg. the CSV abnormal alert) are
+// only registered on such clusters.
+func Register(operatorRegistry *operatorrules.Registry, installNamespace string, isManagedByOLM bool) error {
 	alerts := [][]promv1.Rule{
-		operatorAlerts(),
+		operatorAlerts(installNamespace, isManagedByOLM),
 		healthAlerts(),
 	}
 

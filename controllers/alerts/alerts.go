@@ -24,8 +24,11 @@ type AlertRuleReconciler struct {
 }
 
 // newAlertRuleReconciler creates new AlertRuleReconciler instance and returns a pointer to it.
-func newAlertRuleReconciler(namespace string, owner metav1.OwnerReference) (*AlertRuleReconciler, error) {
-	err := rules.SetupRules()
+// isManagedByOLM indicates whether the operator is managed by OLM v0; alerts
+// that depend on OLM v0 resources (eg. the CSV abnormal alert) are only
+// registered on such clusters.
+func newAlertRuleReconciler(namespace string, owner metav1.OwnerReference, isManagedByOLM bool) (*AlertRuleReconciler, error) {
+	err := rules.SetupRules(namespace, isManagedByOLM)
 	if err != nil {
 		return nil, err
 	}

@@ -70,7 +70,7 @@ func CreateMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hco
 }
 
 func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.OwnerReference) []MetricReconciler {
-	alertRuleReconciler, err := newAlertRuleReconciler(namespace, owner)
+	alertRuleReconciler, err := newAlertRuleReconciler(namespace, owner, ci.IsManagedByOLM())
 	if err != nil {
 		logger.Error(err, "failed to create the 'PrometheusRule' reconciler")
 	}

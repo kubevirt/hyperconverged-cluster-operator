@@ -46,7 +46,11 @@ func main() {
 }
 
 func buildHyperconvergedRule() *promv1.PrometheusRule {
-	err := hcoRules.SetupRules()
+	// This namespace is baked into the alert expressions and must match the
+	// namespace used in hack/prom-rule-ci/hyperconverged-prom-rules-tests.yaml.
+	// Pass isManagedByOLM=true so OLM v0-gated alerts (eg. the CSV abnormal
+	// alert) are covered by the CI rule tests.
+	err := hcoRules.SetupRules("kubevirt-hyperconverged", true)
 	checkErrorAndExit(err)
 
 	rule, err := hcoRules.BuildPrometheusRule("default", metav1.OwnerReference{})

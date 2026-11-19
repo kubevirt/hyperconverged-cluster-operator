@@ -1177,3 +1177,213 @@ tests:
             openshift_io_alert_rule_component: "openshift-virtualization-virtual-machine"
             openshift_io_alert_rule_layer: "namespace"
             status_group: "running"
+
+# Test HCOClusterServiceVersionAbnormal alert
+- interval: 1m
+  input_series:
+  - series: 'csv_abnormal{namespace="kubevirt-hyperconverged", name="kubevirt-hyperconverged-operator.v4.10.0", version="4.10.0", phase="Pending", reason="InstallComponentsWaiting"}'
+    values: "1x40"
+
+  alert_rule_test:
+  # The alert is pending before 30 minutes
+  - eval_time: 29m
+    alertname: HCOClusterServiceVersionAbnormal
+    exp_alerts: [ ]
+
+  # The alert fires after the CSV is abnormal for more than 30 minutes
+  - eval_time: 31m
+    alertname: HCOClusterServiceVersionAbnormal
+    exp_alerts:
+    - exp_annotations:
+        summary: "ClusterServiceVersion kubevirt-hyperconverged-operator.v4.10.0 in namespace kubevirt-hyperconverged is in an abnormal phase for more than 30 minutes."
+        description: "The ClusterServiceVersion kubevirt-hyperconverged-operator.v4.10.0 version 4.10.0 in namespace kubevirt-hyperconverged is in an abnormal phase (Pending: InstallComponentsWaiting) for more than 30 minutes. OLM cannot complete the installation or upgrade of this OpenShift Virtualization component, so the operator health is impacted."
+        runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOClusterServiceVersionAbnormal"
+      exp_labels:
+        severity: "warning"
+        operator_health_impact: "critical"
+        kubernetes_operator_part_of: "kubevirt"
+        kubernetes_operator_component: "hyperconverged-cluster-operator"
+        namespace: "kubevirt-hyperconverged"
+        name: "kubevirt-hyperconverged-operator.v4.10.0"
+        version: "4.10.0"
+        phase: "Pending"
+        reason: "InstallComponentsWaiting"
+
+# A CSV abnormal in another namespace must not fire the alert
+- interval: 1m
+  input_series:
+  - series: 'csv_abnormal{namespace="openshift-operators", name="some-other-operator.v1.0.0", version="1.0.0", phase="Failed", reason="InstallComponentFailed"}'
+    values: "1x40"
+
+  alert_rule_test:
+  - eval_time: 40m
+    alertname: HCOClusterServiceVersionAbnormal
+    exp_alerts: [ ]
+
+# A CSV that recovers before 30 minutes must not fire the alert; the
+# current-state expression turns false as soon as the series goes stale
+- interval: 1m
+  input_series:
+  - series: 'csv_abnormal{namespace="kubevirt-hyperconverged", name="kubevirt-hyperconverged-operator.v4.10.0", version="4.10.0", phase="Replacing", reason="BeingReplaced"}'
+    values: "1x20 stale"
+
+  alert_rule_test:
+  - eval_time: 40m
+    alertname: HCOClusterServiceVersionAbnormal
+    exp_alerts: [ ]
+
+# A CSV that recovers right before the 30-minute threshold must not fire the
+# alert
+- interval: 1m
+  input_series:
+  - series: 'csv_abnormal{namespace="kubevirt-hyperconverged", name="kubevirt-hyperconverged-operator.v4.10.0", version="4.10.0", phase="Pending", reason="InstallComponentsWaiting"}'
+    values: "1x28 stale"
+
+  alert_rule_test:
+  - eval_time: 31m
+    alertname: HCOClusterServiceVersionAbnormal
+    exp_alerts: [ ]
+
+  - eval_time: 35m
+    alertname: HCOClusterServiceVersionAbnormal
+    exp_alerts: [ ]
+
+# Test HCOComponentPodCrashLooping alert
+- interval: 1m
+  input_series:
+  - series: 'kube_pod_container_status_waiting_reason{namespace="kubevirt-hyperconverged", pod="virt-controller-7d9c8f6b5c-x2p4q", container="virt-controller", reason="CrashLoopBackOff"}'
+    values: "1x20"
+
+  alert_rule_test:
+  # The alert is pending before 15 minutes
+  - eval_time: 14m
+    alertname: HCOComponentPodCrashLooping
+    exp_alerts: [ ]
+
+  # The alert fires after the container crashes for more than 15 minutes
+  - eval_time: 16m
+    alertname: HCOComponentPodCrashLooping
+    exp_alerts:
+    - exp_annotations:
+        summary: "Container virt-controller in pod virt-controller-7d9c8f6b5c-x2p4q in namespace kubevirt-hyperconverged has been crash looping for more than 15 minutes."
+        description: "The container virt-controller in pod virt-controller-7d9c8f6b5c-x2p4q in namespace kubevirt-hyperconverged, which is part of the OpenShift Virtualization control plane, has been in CrashLoopBackOff for more than 15 minutes. The operator health is impacted while a component pod keeps restarting."
+        runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOComponentPodCrashLooping"
+      exp_labels:
+        severity: "warning"
+        operator_health_impact: "warning"
+        kubernetes_operator_part_of: "kubevirt"
+        kubernetes_operator_component: "hyperconverged-cluster-operator"
+        namespace: "kubevirt-hyperconverged"
+        pod: "virt-controller-7d9c8f6b5c-x2p4q"
+        container: "virt-controller"
+        reason: "CrashLoopBackOff"
+
+# A pod crash looping in another namespace must not fire the alert
+- interval: 1m
+  input_series:
+  - series: 'kube_pod_container_status_waiting_reason{namespace="vm-workloads", pod="vm-nginx-85855b7c66-zs9lk", container="nginx", reason="CrashLoopBackOff"}'
+    values: "1x20"
+
+  alert_rule_test:
+  - eval_time: 20m
+    alertname: HCOComponentPodCrashLooping
+    exp_alerts: [ ]
+
+# A pod that runs briefly between crashes must keep the alert pending; the
+# max_over_time window bridges the gaps, so the 15-minute pending duration is
+# not reset
+- interval: 1m
+  input_series:
+  - series: 'kube_pod_container_status_waiting_reason{namespace="kubevirt-hyperconverged", pod="virt-controller-7d9c8f6b5c-x2p4q", container="virt-controller", reason="CrashLoopBackOff"}'
+    values: "1x8 stale 1x20"
+
+  alert_rule_test:
+  - eval_time: 16m
+    alertname: HCOComponentPodCrashLooping
+    exp_alerts:
+    - exp_annotations:
+        summary: "Container virt-controller in pod virt-controller-7d9c8f6b5c-x2p4q in namespace kubevirt-hyperconverged has been crash looping for more than 15 minutes."
+        description: "The container virt-controller in pod virt-controller-7d9c8f6b5c-x2p4q in namespace kubevirt-hyperconverged, which is part of the OpenShift Virtualization control plane, has been in CrashLoopBackOff for more than 15 minutes. The operator health is impacted while a component pod keeps restarting."
+        runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOComponentPodCrashLooping"
+      exp_labels:
+        severity: "warning"
+        operator_health_impact: "warning"
+        kubernetes_operator_part_of: "kubevirt"
+        kubernetes_operator_component: "hyperconverged-cluster-operator"
+        namespace: "kubevirt-hyperconverged"
+        pod: "virt-controller-7d9c8f6b5c-x2p4q"
+        container: "virt-controller"
+        reason: "CrashLoopBackOff"
+
+# The alert fires while the crash loop lasts and resolves a few minutes after
+# the container recovers, once the 5-minute window expires
+- interval: 1m
+  input_series:
+  - series: 'kube_pod_container_status_waiting_reason{namespace="kubevirt-hyperconverged", pod="virt-controller-7d9c8f6b5c-x2p4q", container="virt-controller", reason="CrashLoopBackOff"}'
+    values: "1x20 stale"
+
+  alert_rule_test:
+  - eval_time: 20m
+    alertname: HCOComponentPodCrashLooping
+    exp_alerts:
+    - exp_annotations:
+        summary: "Container virt-controller in pod virt-controller-7d9c8f6b5c-x2p4q in namespace kubevirt-hyperconverged has been crash looping for more than 15 minutes."
+        description: "The container virt-controller in pod virt-controller-7d9c8f6b5c-x2p4q in namespace kubevirt-hyperconverged, which is part of the OpenShift Virtualization control plane, has been in CrashLoopBackOff for more than 15 minutes. The operator health is impacted while a component pod keeps restarting."
+        runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOComponentPodCrashLooping"
+      exp_labels:
+        severity: "warning"
+        operator_health_impact: "warning"
+        kubernetes_operator_part_of: "kubevirt"
+        kubernetes_operator_component: "hyperconverged-cluster-operator"
+        namespace: "kubevirt-hyperconverged"
+        pod: "virt-controller-7d9c8f6b5c-x2p4q"
+        container: "virt-controller"
+        reason: "CrashLoopBackOff"
+
+  - eval_time: 30m
+    alertname: HCOComponentPodCrashLooping
+    exp_alerts: [ ]
+
+# Test that an abnormal CSV impacts the operator health status
+- interval: 1m
+  input_series:
+  - series: 'kubevirt_hco_system_health_status'
+    values: "0x40"
+  - series: 'csv_abnormal{namespace="kubevirt-hyperconverged", name="kubevirt-hyperconverged-operator.v4.10.0", version="4.10.0", phase="Pending", reason="InstallComponentsWaiting"}'
+    values: "1x40"
+
+  promql_expr_test:
+  # Before the CSV alert fires, the operator health status is fine
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
+    eval_time: 20m
+    exp_samples:
+    - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
+      value: 0
+  # Once the CSV alert fires (critical impact), the operator health status is critical
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
+    eval_time: 35m
+    exp_samples:
+    - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
+      value: 2
+
+# Test that a crash looping component pod impacts the operator health status
+- interval: 1m
+  input_series:
+  - series: 'kubevirt_hco_system_health_status'
+    values: "0x25"
+  - series: 'kube_pod_container_status_waiting_reason{namespace="kubevirt-hyperconverged", pod="virt-controller-7d9c8f6b5c-x2p4q", container="virt-controller", reason="CrashLoopBackOff"}'
+    values: "1x25"
+
+  promql_expr_test:
+  # Before the crash loop alert fires, the operator health status is fine
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
+      value: 0
+  # Once the crash loop alert fires (warning impact), the operator health status is warning
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
+    eval_time: 20m
+    exp_samples:
+    - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
+      value: 1

@@ -33,7 +33,7 @@ func TestAlerts(t *testing.T) {
 
 var _ = Describe("alert tests", func() {
 	var (
-		ci            = fakeclusterinfo.New(fakeclusterinfo.WithIsOpenshift(false))
+		ci            = fakeclusterinfo.New(fakeclusterinfo.WithIsOpenshift(false), fakeclusterinfo.WithIsManagedByOLM(true))
 		ee            = commontestutils.NewEventEmitterMock()
 		ns            *corev1.Namespace
 		req           *common.HcoRequest
@@ -204,7 +204,7 @@ var _ = Describe("alert tests", func() {
 		BeforeEach(func() {
 			currentMetric, _ = metrics.GetOverwrittenModificationsCount(monitoringv1.PrometheusRuleKind, ruleName)
 
-			err := rules.SetupRules()
+			err := rules.SetupRules(commontestutils.Namespace, true)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -403,7 +403,7 @@ var _ = Describe("alert tests", func() {
 			desiredRunbookURLTemplate := "desired/runbookURL/template/%s"
 			Expect(os.Setenv(runbookURLTemplateEnv, desiredRunbookURLTemplate)).To(Succeed())
 
-			err := rules.SetupRules()
+			err := rules.SetupRules(commontestutils.Namespace, true)
 			Expect(err).ToNot(HaveOccurred())
 
 			promRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)

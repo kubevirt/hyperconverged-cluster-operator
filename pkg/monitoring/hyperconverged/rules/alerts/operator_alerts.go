@@ -22,6 +22,8 @@ const (
 	unsupportedArchitecturesAlert    = "HCOGoldenImageWithNoSupportedArchitecture"
 	dictWithNoArchAnnotationAlert    = "HCOGoldenImageWithNoArchitectureAnnotation"
 	multiArchBootImagesDisabledAlert = "HCOMultiArchGoldenImagesDisabled"
+	csvAbnormalAlert                 = "HCOClusterServiceVersionAbnormal"
+	componentPodCrashLoopingAlert    = "HCOComponentPodCrashLooping"
 
 	severityAlertLabelKey      = "severity"
 	healthImpactAlertLabelKey  = "operator_health_impact"
@@ -32,8 +34,13 @@ const (
 	namespaceLayerAlertLabelValue          = "namespace"
 )
 
-func operatorAlerts() []promv1.Rule {
-	return []promv1.Rule{
+// csvAbnormalPhases is the union of the abnormal CSV phases that OLM reports
+// through the csv_abnormal metric. It mirrors the phases covered by the OLM
+// platform alerts CsvAbnormalFailedOver2Min and CsvAbnormalOver30Min.
+const csvAbnormalPhases = "Failed|Replacing|Pending|Deleting|Unknown"
+
+func operatorAlerts(installNamespace string, isManagedByOLM bool) []promv1.Rule {
+	rules := []promv1.Rule{
 		{
 			Alert: outOfBandUpdateAlert,
 			Expr:  intstr.FromString("sum by(component_name) ((round(increase(kubevirt_hco_out_of_band_modifications_total[10m]))>0 and kubevirt_hco_out_of_band_modifications_total offset 10m) or (kubevirt_hco_out_of_band_modifications_total != 0 unless kubevirt_hco_out_of_band_modifications_total offset 10m))"),
@@ -137,6 +144,62 @@ func operatorAlerts() []promv1.Rule {
 				ruleComponentAlertLabelKey: virtualMachineComponentAlertLabelValue,
 				ruleLayerAlertLabelKey:     namespaceLayerAlertLabelValue,
 			},
+		},
+	}
+
+	// The ClusterServiceVersion resource only exists on clusters managed by
+	// OLM v0; when the operator is deployed by OLM v1 (ClusterExtension)
+	// there is no CSV to watch.
+	if isManagedByOLM {
+		rules = append(rules, csvAbnormalAlertRule(installNamespace))
+	}
+
+	rules = append(rules, componentPodCrashLoopingAlertRule(installNamespace))
+
+	return rules
+}
+
+// csvAbnormalAlertRule returns the CSV abnormal alert. The CSV resource, and
+// the csv_abnormal metric OLM exposes for it, only exist on clusters managed
+// by OLM v0; register the alert only on such clusters.
+func csvAbnormalAlertRule(installNamespace string) promv1.Rule {
+	return promv1.Rule{
+		Alert: csvAbnormalAlert,
+		// Select the current phase so the alert stops pending as soon as the
+		// CSV recovers, instead of lagging behind a lookback window.
+		Expr: intstr.FromString(fmt.Sprintf(
+			`csv_abnormal{namespace=%q, phase=~%q} > 0`,
+			installNamespace, csvAbnormalPhases)),
+		For: new(promv1.Duration("30m")),
+		Annotations: map[string]string{
+			"summary":     "ClusterServiceVersion {{ $labels.name }} in namespace {{ $labels.namespace }} is in an abnormal phase for more than 30 minutes.",
+			"description": "The ClusterServiceVersion {{ $labels.name }} version {{ $labels.version }} in namespace {{ $labels.namespace }} is in an abnormal phase ({{ $labels.phase }}: {{ $labels.reason }}) for more than 30 minutes. OLM cannot complete the installation or upgrade of this OpenShift Virtualization component, so the operator health is impacted.",
+		},
+		Labels: map[string]string{
+			severityAlertLabelKey:     "warning",
+			healthImpactAlertLabelKey: "critical",
+		},
+	}
+}
+
+// componentPodCrashLoopingAlertRule returns the component pod crash-looping
+// alert. The max_over_time window keeps the expression true across the brief
+// gaps where the container is running between crashes, so the pending
+// duration is not reset while the pod keeps crash looping.
+func componentPodCrashLoopingAlertRule(installNamespace string) promv1.Rule {
+	return promv1.Rule{
+		Alert: componentPodCrashLoopingAlert,
+		Expr: intstr.FromString(fmt.Sprintf(
+			`max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace=%q}[5m]) >= 1`,
+			installNamespace)),
+		For: new(promv1.Duration("15m")),
+		Annotations: map[string]string{
+			"summary":     "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been crash looping for more than 15 minutes.",
+			"description": "The container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }}, which is part of the OpenShift Virtualization control plane, has been in CrashLoopBackOff for more than 15 minutes. The operator health is impacted while a component pod keeps restarting.",
+		},
+		Labels: map[string]string{
+			severityAlertLabelKey:     "warning",
+			healthImpactAlertLabelKey: "warning",
 		},
 	}
 }

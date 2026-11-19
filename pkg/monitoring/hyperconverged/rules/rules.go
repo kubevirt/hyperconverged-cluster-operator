@@ -16,13 +16,19 @@ const (
 
 var operatorRegistry = operatorrules.NewRegistry()
 
-func SetupRules() error {
+// SetupRules registers the recording rules and alerts in the operator's
+// registry. The installNamespace parameter is the namespace OpenShift
+// Virtualization is installed in; it scopes the operator-health alerts to the
+// control-plane pods and CSVs. The isManagedByOLM parameter indicates whether
+// the operator is managed by OLM v0; alerts that depend on OLM v0 resources
+// (eg. the CSV abnormal alert) are only registered on such clusters.
+func SetupRules(installNamespace string, isManagedByOLM bool) error {
 	err := recordingrules.Register(operatorRegistry)
 	if err != nil {
 		return err
 	}
 
-	err = alerts.Register(operatorRegistry)
+	err = alerts.Register(operatorRegistry, installNamespace, isManagedByOLM)
 	if err != nil {
 		return err
 	}

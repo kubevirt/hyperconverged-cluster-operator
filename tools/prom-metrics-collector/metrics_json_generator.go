@@ -52,7 +52,10 @@ func main() {
 	metricsList := metrics.ListMetrics()
 	metricsList = append(metricsList, collectors.FeatureGateEnabledMetric())
 
-	err = rules.SetupRules()
+	// The namespace only scopes alert expressions, which this tool does not
+	// render. Pass isManagedByOLM=true so OLM v0-gated alerts are included
+	// in the registry as well.
+	err = rules.SetupRules("kubevirt-hyperconverged", true)
 	if err != nil {
 		panic(err)
 	}
