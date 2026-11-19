@@ -2020,13 +2020,13 @@ spec:
   observability:
     workloads:
       allowedMetrics:
-      - kubevirt_vmi_memory_used_bytes
+      - kubevirt_guest_device_driver_config_invalid
       - kubevirt_vmi_cpu_usage_seconds_total
     allowedAlerts:
-    - KubeVirtVMDown
+    - VirtAPIDown
     - KubeVirtVMIExcessiveMigrations
     allowedRecordingRules:
-    - kubevirt_vmi_phase_count:sum
+    - kubevirt_vmi_phase_count
 ```
 
 ## Deployment Configurations

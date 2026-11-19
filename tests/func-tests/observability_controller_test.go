@@ -578,7 +578,20 @@ func getObservabilityControllerPods() []corev1.Pod {
 		tests.GetControllerRuntimeClient().List(context.Background(), pods, nsOpt, matchLblOpt),
 	).To(Succeed())
 
-	return pods.Items
+	var ready []corev1.Pod
+	for _, pod := range pods.Items {
+		if pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+			continue
+		}
+
+		if slices.ContainsFunc(pod.Status.Conditions, func(c corev1.PodCondition) bool {
+			return c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue
+		}) {
+			ready = append(ready, pod)
+		}
+	}
+
+	return ready
 }
 
 // sendReqToObservabilityMetrics sends an HTTP request to the observability controller pod's

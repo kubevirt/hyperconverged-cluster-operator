@@ -4828,10 +4828,10 @@ var _ = Describe("api/v1beta1", func() {
 			v1HC.Spec.FeatureGates.Enable("explicitlyEnabledFG")
 			v1HC.Spec.FeatureGates = append(v1HC.Spec.FeatureGates, hcofg.FeatureGate{Name: "implicitlyEnabledFG"})
 			v1HC.Spec.Observability = &hcov1.ObservabilityConfig{
-				AllowedAlerts:         []string{"KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"},
-				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count:sum"},
+				AllowedAlerts:         []string{"VirtAPIDown", "KubeVirtVMIExcessiveMigrations"},
+				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count"},
 				Workloads: &hcov1.ObservabilityWorkloadsConfig{
-					AllowedMetrics: []string{"kubevirt_vmi_memory_used_bytes"},
+					AllowedMetrics: []string{"kubevirt_guest_device_driver_config_invalid"},
 				},
 			}
 			v1HC.Spec.Virtualization.SMBIOSConfig = &hcov1.SMBIOSConfiguration{
@@ -4853,10 +4853,10 @@ var _ = Describe("api/v1beta1", func() {
 	],
 	"observability": {
 		"workloads": {
-			"allowedMetrics": ["kubevirt_vmi_memory_used_bytes"]
+			"allowedMetrics": ["kubevirt_guest_device_driver_config_invalid"]
 		},
-		"allowedAlerts": ["KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"],
-		"allowedRecordingRules": ["kubevirt_vmi_phase_count:sum"]
+		"allowedAlerts": ["VirtAPIDown", "KubeVirtVMIExcessiveMigrations"],
+		"allowedRecordingRules": ["kubevirt_vmi_phase_count"]
 		},
 		"smbios": {
 			"family": "Red Hat Enterprise Linux"
@@ -4891,10 +4891,10 @@ var _ = Describe("api/v1beta1", func() {
 			Expect(enabled).To(BeTrue())
 
 			Expect(roundTripHC.Spec.Observability).ToNot(BeNil())
-			Expect(roundTripHC.Spec.Observability.AllowedAlerts).To(ConsistOf("KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"))
-			Expect(roundTripHC.Spec.Observability.AllowedRecordingRules).To(ConsistOf("kubevirt_vmi_phase_count:sum"))
+			Expect(roundTripHC.Spec.Observability.AllowedAlerts).To(ConsistOf("VirtAPIDown", "KubeVirtVMIExcessiveMigrations"))
+			Expect(roundTripHC.Spec.Observability.AllowedRecordingRules).To(ConsistOf("kubevirt_vmi_phase_count"))
 			Expect(roundTripHC.Spec.Observability.Workloads).ToNot(BeNil())
-			Expect(roundTripHC.Spec.Observability.Workloads.AllowedMetrics).To(ConsistOf("kubevirt_vmi_memory_used_bytes"))
+			Expect(roundTripHC.Spec.Observability.Workloads.AllowedMetrics).To(ConsistOf("kubevirt_guest_device_driver_config_invalid"))
 			Expect(roundTripHC.Spec.Virtualization.SMBIOSConfig).ToNot(BeNil())
 			Expect(roundTripHC.Spec.Virtualization.SMBIOSConfig.Family).To(HaveValue(Equal("Red Hat Enterprise Linux")))
 		})
