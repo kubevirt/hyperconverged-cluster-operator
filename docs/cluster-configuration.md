@@ -953,6 +953,23 @@ spec:
       defaultCPUModel: "EPYC"
 ```
 
+### Compatible CPU models
+`status.nodeInfo.cpu.models` lists libvirt CPU models from `kubevirt.io/schedulable`
+nodes (newest family first). Each entry has `name` and optional `unsupportedNodes`.
+Use a name as a VM `cpu.model` or as `defaultCPUModel` when it is cluster-wide.
+HCO does not set the cluster default from this list.
+
+```yaml
+status:
+  nodeInfo:
+    cpu:
+      models:
+        - name: Cascadelake-Server-v5
+          unsupportedNodes:
+            - worker-b
+        - name: Penryn
+```
+
 ### Enable eventual launcher updates by default
 us the HyperConverged `spec.virtualization.workloadUpdateStrategy` object to define how to handle automated workload
 updates at the cluster level.

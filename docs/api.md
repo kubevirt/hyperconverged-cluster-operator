@@ -8,6 +8,7 @@ This Document documents the `v1` API version's types introduced by the hyperconv
 * [ApplicationAwareConfigurations](#applicationawareconfigurations)
 * [CertRotateConfigCA](#certrotateconfigca)
 * [CertRotateConfigServer](#certrotateconfigserver)
+* [CPUModelStatus](#cpumodelstatus)
 * [DataImportCronStatus](#dataimportcronstatus)
 * [DataImportCronTemplate](#dataimportcrontemplate)
 * [DataImportCronTemplateStatus](#dataimportcrontemplatestatus)
@@ -25,6 +26,7 @@ This Document documents the `v1` API version's types introduced by the hyperconv
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
 * [MediatedHostDevice](#mediatedhostdevice)
 * [NetworkingConfig](#networkingconfig)
+* [NodeCPUStatus](#nodecpustatus)
 * [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
 * [NodePlacements](#nodeplacements)
@@ -311,6 +313,28 @@ NodeInfoStatus holds information about the cluster nodes
 | workloadsArchitectures | WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster. | []string |  | false |
 | controlPlaneArchitectures | ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes. | []string |  | false |
 | defaultWorkloadArchitecture | DefaultWorkloadArchitecture is chosen automatically by HCO. This field reports the architecture selected by HCO. | string |  | false |
+| cpu | CPU holds CPU status from schedulable nodes. | *[NodeCPUStatus](#nodecpustatus) |  | false |
+
+[Back to TOC](#table-of-contents)
+
+## NodeCPUStatus
+
+NodeCPUStatus holds CPU information from schedulable nodes.
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| models | Models lists libvirt CPU models advertised by at least one kubevirt.io/schedulable node, newest family first. UnsupportedNodes is empty when every schedulable node advertises that model. HCO does not set defaultCPUModel from this list. | [][CPUModelStatus](#cpumodelstatus) |  | false |
+
+[Back to TOC](#table-of-contents)
+
+## CPUModelStatus
+
+CPUModelStatus is one libvirt CPU model from schedulable nodes.
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| name | Name is the cpu-model.node.kubevirt.io/ label suffix. | string |  | true |
+| unsupportedNodes | UnsupportedNodes lists schedulable nodes that do not advertise this model. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 
