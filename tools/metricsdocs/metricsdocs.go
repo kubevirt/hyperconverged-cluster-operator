@@ -18,7 +18,8 @@ func main() {
 		panic(err)
 	}
 
-	err = rules.SetupRules()
+	// The namespace only scopes alert expressions, which this tool does not render.
+	err = rules.SetupRules("kubevirt-hyperconverged")
 	if err != nil {
 		panic(err)
 	}

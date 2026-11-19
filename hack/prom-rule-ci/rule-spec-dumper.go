@@ -46,7 +46,9 @@ func main() {
 }
 
 func buildHyperconvergedRule() *promv1.PrometheusRule {
-	err := hcoRules.SetupRules()
+	// This namespace is baked into the alert expressions and must match the
+	// namespace used in hack/prom-rule-ci/hyperconverged-prom-rules-tests.yaml.
+	err := hcoRules.SetupRules("kubevirt-hyperconverged")
 	checkErrorAndExit(err)
 
 	rule, err := hcoRules.BuildPrometheusRule("default", metav1.OwnerReference{})
