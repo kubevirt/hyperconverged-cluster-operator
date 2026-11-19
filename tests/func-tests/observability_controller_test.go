@@ -395,21 +395,21 @@ var _ = Describe("Observability Controller Allowlist Configuration", Label(tests
 	})
 
 	It("should propagate specific metrics allowlist to the deployment", func(ctx context.Context) {
-		patch := []byte(`[{"op": "add", "path": "/spec/observability", "value": {"workloads": {"allowedMetrics": ["kubevirt_vmi_memory_used_bytes", "kubevirt_vmi_cpu_usage_seconds_total"]}, "allowedAlerts": ["KubeVirtVMDown"], "allowedRecordingRules": ["kubevirt_vmi_phase_count:sum"]}}]`)
+		patch := []byte(`[{"op": "add", "path": "/spec/observability", "value": {"workloads": {"allowedMetrics": ["kubevirt_guest_device_driver_config_invalid", "kubevirt_vmi_cpu_usage_seconds_total"]}, "allowedAlerts": ["KubeVirtVMIExcessiveMigrations"], "allowedRecordingRules": ["kubevirt_vmi_phase_count"]}}]`)
 		tests.PatchHCO(ctx, cli, patch)
 
 		Eventually(func(g Gomega, ctx context.Context) {
 			args, err := getDeploymentArgs(ctx)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_vmi_memory_used_bytes,kubevirt_vmi_cpu_usage_seconds_total"))
-			g.Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMDown"))
-			g.Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count:sum"))
+			g.Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_guest_device_driver_config_invalid,kubevirt_vmi_cpu_usage_seconds_total"))
+			g.Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMIExcessiveMigrations"))
+			g.Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count"))
 		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).WithContext(ctx).Should(Succeed())
 	})
 
 	It("should reject mixed 'none' with other values", func(ctx context.Context) {
 		hco := tests.HCOWithNameOnly()
-		patch := client.RawPatch(types.JSONPatchType, []byte(`[{"op": "replace", "path": "/spec/observability", "value": {"allowedAlerts": ["none", "KubeVirtVMDown"]}}]`))
+		patch := client.RawPatch(types.JSONPatchType, []byte(`[{"op": "replace", "path": "/spec/observability", "value": {"allowedAlerts": ["none", "KubeVirtVMIExcessiveMigrations"]}}]`))
 		err := cli.Patch(ctx, hco, patch)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("cannot be combined"))
