@@ -987,6 +987,39 @@ rules:
   - list
   - watch
 - apiGroups:
+  - snapshot.kubevirt.io
+  resources:
+  - virtualmachinesnapshots
+  - virtualmachinerestores
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - export.kubevirt.io
+  resources:
+  - virtualmachineexports
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - clone.kubevirt.io
+  resources:
+  - virtualmachineclones
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pool.kubevirt.io
+  resources:
+  - virtualmachinepools
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - authentication.k8s.io
   resources:
   - tokenreviews
@@ -998,6 +1031,10 @@ rules:
   - subjectaccessreviews
   verbs:
   - create
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
 - apiGroups:
   - cdi.kubevirt.io
   resources:

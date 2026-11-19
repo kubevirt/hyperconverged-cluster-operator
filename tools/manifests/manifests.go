@@ -643,6 +643,27 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("virtualmachineinstancetypes", "virtualmachineclusterinstancetypes", "virtualmachinepreferences", "virtualmachineclusterpreferences"),
 			Verbs:     stringListToSlice("get", "list", "watch"),
 		},
+		// held so that HCO can grant them to virt-observability-controller
+		{
+			APIGroups: stringListToSlice("snapshot.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachinesnapshots", "virtualmachinerestores"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("export.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineexports"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("clone.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineclones"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("pool.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachinepools"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
 		{
 			APIGroups: stringListToSlice("authentication.k8s.io"),
 			Resources: stringListToSlice("tokenreviews"),
@@ -652,6 +673,10 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice("authorization.k8s.io"),
 			Resources: stringListToSlice("subjectaccessreviews"),
 			Verbs:     stringListToSlice("create"),
+		},
+		{
+			NonResourceURLs: stringListToSlice("/metrics"),
+			Verbs:           stringListToSlice("get"),
 		},
 		roleWithAllPermissions(cdiapi.GroupName, stringListToSlice("cdis", "cdis/finalizers")),
 		roleWithAllPermissions(sspapi.GroupVersion.Group, stringListToSlice("ssps", "ssps/finalizers")),

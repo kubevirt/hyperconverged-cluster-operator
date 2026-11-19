@@ -53,6 +53,26 @@ func newClusterRole() *rbacv1.ClusterRole {
 			Verbs:     []string{"get", "list", "watch"},
 		},
 		{
+			APIGroups: []string{"snapshot.kubevirt.io"},
+			Resources: []string{"virtualmachinesnapshots", "virtualmachinerestores"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
+			APIGroups: []string{"export.kubevirt.io"},
+			Resources: []string{"virtualmachineexports"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
+			APIGroups: []string{"clone.kubevirt.io"},
+			Resources: []string{"virtualmachineclones"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
+			APIGroups: []string{"pool.kubevirt.io"},
+			Resources: []string{"virtualmachinepools"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
 			APIGroups: []string{"instancetype.kubevirt.io"},
 			Resources: []string{"virtualmachineinstancetypes", "virtualmachineclusterinstancetypes", "virtualmachinepreferences", "virtualmachineclusterpreferences"},
 			Verbs:     []string{"get", "list", "watch"},
@@ -86,6 +106,10 @@ func newClusterRole() *rbacv1.ClusterRole {
 			APIGroups: []string{"authorization.k8s.io"},
 			Resources: []string{"subjectaccessreviews"},
 			Verbs:     []string{"create"},
+		},
+		{
+			NonResourceURLs: []string{"/metrics"},
+			Verbs:           []string{"get"},
 		},
 	}
 	return cr
@@ -127,8 +151,15 @@ func newGuestDeviceDriversRole() *rbacv1.Role {
 		{
 			APIGroups:     []string{""},
 			Resources:     []string{"configmaps"},
-			ResourceNames: []string{guestDeviceDriversConfigMapName},
-			Verbs:         []string{"get", "list", "watch"},
+			ResourceNames: []string{guestDeviceDriversConfigMapName, kubevirtCAConfigMapName},
+			Verbs:         []string{"get"},
+		},
+		// the controller watches the guest device drivers ConfigMap, and
+		// resourceNames does not apply to list and watch
+		{
+			APIGroups: []string{""},
+			Resources: []string{"configmaps"},
+			Verbs:     []string{"list", "watch"},
 		},
 	}
 	return role

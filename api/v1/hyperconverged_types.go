@@ -88,6 +88,12 @@ type HyperConvergedSpec struct {
 	//   is in Tech Preview.
 	//   Phase: beta
 	//
+	// * observeVMStat:
+	//   Allow collection of detailed per-virtual-machine metrics, such as CPU,
+	//   memory, network, and storage usage. Enable them in observability allowed
+	//   metrics config to publish them. This feature is in Tech Preview.
+	//   Phase: beta
+	//
 	// * rebootPolicy:
 	//   RebootPolicy enables virtual machines to be recreated when they reboot
 	//   from within the guest operating system. This feature is in Tech Preview.
@@ -172,13 +178,6 @@ type HyperConvergedSpec struct {
 	//   This feature is in Developer Preview.
 	//   Phase: alpha
 	//
-	// * observeVMStat:
-	//   When enabled, the release date of each guest device driver is added to the
-	//   kubevirt_vmi_guest_device_driver_timestamp_seconds metric, so guests
-	//   running outdated VirtIO drivers can be found. Note: this feature is in
-	//   Developer Preview.
-	//   Phase: alpha
-	//
 	// * workloadEncryptionSEV:
 	//   Enable AMD SEV and SEV-SNP workload encryption for confidential VMs. Note:
 	//   this feature is in Developer Preview.
@@ -255,15 +254,21 @@ type ObservabilityConfig struct {
 	// +optional
 	Workloads *ObservabilityWorkloadsConfig `json:"workloads,omitempty"`
 
-	// AllowedAlerts defines the list of alert rule names to include.
-	// When set, only alerts matching this list will be created.
+	// AllowedAlerts defines the alerts to include in the PrometheusRule.
+	// Entries are either group names or individual alert names. A bare list is
+	// absolute; prefixing every entry with + or - adjusts the default set instead.
+	// "all" and "none" select everything or nothing. When empty, the default set
+	// is used: the groups KubeVirt does not publish itself.
 	// +optional
 	// +listType=atomic
 	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"
 	AllowedAlerts []string `json:"allowedAlerts,omitempty"`
 
-	// AllowedRecordingRules defines the list of recording rule names to include.
-	// When set, only recording rules matching this list will be created.
+	// AllowedRecordingRules defines the recording rules to include in the PrometheusRule.
+	// Entries are either group names or individual recording rule names. A bare list is
+	// absolute; prefixing every entry with + or - adjusts the default set instead.
+	// "all" and "none" select everything or nothing. When empty, the default set
+	// is used: the groups KubeVirt does not publish itself.
 	// +optional
 	// +listType=atomic
 	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"
@@ -273,8 +278,11 @@ type ObservabilityConfig struct {
 // ObservabilityWorkloadsConfig defines filtering for workload metrics
 // +k8s:openapi-gen=true
 type ObservabilityWorkloadsConfig struct {
-	// AllowedMetrics defines the list of metric names to expose.
-	// When set, only metrics matching this list will be collected.
+	// AllowedMetrics defines the metrics to expose.
+	// Entries are either group names or individual metric names. A bare list is
+	// absolute; prefixing every entry with + or - adjusts the default set instead.
+	// "all" and "none" select everything or nothing. When empty, the default set
+	// is used: the groups KubeVirt does not publish itself.
 	// +optional
 	// +listType=atomic
 	// +kubebuilder:validation:XValidation:rule="(self.size() <= 1) || !self.exists(r, (r == 'none'))",message="'none' cannot be combined with other values"

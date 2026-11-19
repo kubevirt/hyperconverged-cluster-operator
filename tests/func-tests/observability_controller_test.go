@@ -11,6 +11,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	routev1 "github.com/openshift/api/route/v1"
+	promApiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	promModel "github.com/prometheus/common/model"
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -393,21 +395,21 @@ var _ = Describe("Observability Controller Allowlist Configuration", Label(tests
 	})
 
 	It("should propagate specific metrics allowlist to the deployment", func(ctx context.Context) {
-		patch := []byte(`[{"op": "add", "path": "/spec/observability", "value": {"workloads": {"allowedMetrics": ["kubevirt_vmi_memory_used_bytes", "kubevirt_vmi_cpu_usage_seconds_total"]}, "allowedAlerts": ["KubeVirtVMDown"], "allowedRecordingRules": ["kubevirt_vmi_phase_count:sum"]}}]`)
+		patch := []byte(`[{"op": "add", "path": "/spec/observability", "value": {"workloads": {"allowedMetrics": ["kubevirt_guest_device_driver_config_invalid", "kubevirt_vmi_cpu_usage_seconds_total"]}, "allowedAlerts": ["KubeVirtVMIExcessiveMigrations"], "allowedRecordingRules": ["kubevirt_vmi_phase_count"]}}]`)
 		tests.PatchHCO(ctx, cli, patch)
 
 		Eventually(func(g Gomega, ctx context.Context) {
 			args, err := getDeploymentArgs(ctx)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_vmi_memory_used_bytes,kubevirt_vmi_cpu_usage_seconds_total"))
-			g.Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMDown"))
-			g.Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count:sum"))
+			g.Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_guest_device_driver_config_invalid,kubevirt_vmi_cpu_usage_seconds_total"))
+			g.Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMIExcessiveMigrations"))
+			g.Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count"))
 		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).WithContext(ctx).Should(Succeed())
 	})
 
 	It("should reject mixed 'none' with other values", func(ctx context.Context) {
 		hco := tests.HCOWithNameOnly()
-		patch := client.RawPatch(types.JSONPatchType, []byte(`[{"op": "replace", "path": "/spec/observability", "value": {"allowedAlerts": ["none", "KubeVirtVMDown"]}}]`))
+		patch := client.RawPatch(types.JSONPatchType, []byte(`[{"op": "replace", "path": "/spec/observability", "value": {"allowedAlerts": ["none", "KubeVirtVMIExcessiveMigrations"]}}]`))
 		err := cli.Patch(ctx, hco, patch)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("cannot be combined"))
@@ -576,7 +578,20 @@ func getObservabilityControllerPods() []corev1.Pod {
 		tests.GetControllerRuntimeClient().List(context.Background(), pods, nsOpt, matchLblOpt),
 	).To(Succeed())
 
-	return pods.Items
+	var ready []corev1.Pod
+	for _, pod := range pods.Items {
+		if pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+			continue
+		}
+
+		if slices.ContainsFunc(pod.Status.Conditions, func(c corev1.PodCondition) bool {
+			return c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue
+		}) {
+			ready = append(ready, pod)
+		}
+	}
+
+	return ready
 }
 
 // sendReqToObservabilityMetrics sends an HTTP request to the observability controller pod's
@@ -603,3 +618,42 @@ func sendReqToObservabilityHealth(ctx context.Context, k8sClientSet *kubernetes.
 	By("Sending an HTTP request from the client pod to the observability controller pod's healthz endpoint")
 	return tests.ExecuteCommandOnPod(toCtx, k8sClientSet, fromPod, command)
 }
+
+var _ = Describe("Observability Controller Metrics Scraping", Label(tests.OpenshiftLabel, testName), func() {
+	var promClient promApiv1.API
+
+	BeforeEach(func(ctx context.Context) {
+		cli := tests.GetControllerRuntimeClient()
+		tests.FailIfNotOpenShift(ctx, cli, "Prometheus")
+
+		cliSet := tests.GetK8sClientSet()
+		promClient = initializePromClient(
+			getPrometheusURL(ctx, cliSet.RESTClient()),
+			getAuthorizationTokenForPrometheus(ctx, cliSet),
+		)
+	})
+
+	// the controller reconciles its own metrics Service and ServiceMonitor, so
+	// neither the pod labels they select on nor the RBAC the endpoint
+	// authorizes against is covered by anything on the HCO side
+	It("should be scraped by Prometheus", func(ctx context.Context) {
+		const query = `up{job="virt-observability-controller-metrics"}`
+
+		Eventually(func(g Gomega, ctx context.Context) {
+			result, _, err := promClient.Query(ctx, query, time.Now())
+			g.Expect(err).ToNot(HaveOccurred())
+
+			vector, ok := result.(promModel.Vector)
+			g.Expect(ok).To(BeTrue(), "expected a Vector result for the %q query", query)
+			g.Expect(vector).ToNot(BeEmpty(),
+				"the %q query returned no sample: Prometheus has no target for the metrics Service, "+
+					"which usually means the Service selector matches no pods", query)
+			g.Expect(float64(vector[0].Value)).To(Equal(float64(1)),
+				"the %q target is down: the scrape is reaching the endpoint but failing, "+
+					"which usually means the ServiceAccount cannot GET /metrics", query)
+		}).WithTimeout(5 * time.Minute).
+			WithPolling(10 * time.Second).
+			WithContext(ctx).
+			Should(Succeed())
+	})
+})

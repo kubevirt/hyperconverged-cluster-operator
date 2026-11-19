@@ -60,6 +60,8 @@ var _ = Describe("Observability Controller Deployment", func() {
 			Expect(dep.Spec.Replicas).To(HaveValue(Equal(int32(1))))
 			Expect(dep.Spec.Selector.MatchLabels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(dep.Spec.Selector.MatchLabels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentObservability)))
+			Expect(dep.Spec.Template.Labels).To(HaveKeyWithValue(hcoutil.AppLabelName, controllerName))
+			Expect(dep.Spec.Selector.MatchLabels).ToNot(HaveKey(hcoutil.AppLabelName))
 
 			Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue(securityv1.RequiredSCCAnnotation, "restricted-v2"))
 
@@ -109,10 +111,9 @@ var _ = Describe("Observability Controller Deployment", func() {
 			Expect(container.Resources.Requests).To(HaveKey(corev1.ResourceMemory))
 			Expect(container.Resources.Limits).To(HaveKey(corev1.ResourceMemory))
 
-			Expect(container.Args).ToNot(ContainElement(enableVMStatsArg))
-			Expect(container.Args).ToNot(ContainElement(vmstatsCertPathArg))
-			Expect(container.VolumeMounts).To(BeEmpty())
-			Expect(dep.Spec.Template.Spec.Volumes).To(BeEmpty())
+			Expect(container.Args).To(ContainElements(enableVMStatsArg, vmstatsCertPathArg))
+			Expect(container.VolumeMounts).To(HaveLen(1))
+			Expect(dep.Spec.Template.Spec.Volumes).To(HaveLen(1))
 		})
 	})
 
@@ -385,6 +386,18 @@ var _ = Describe("Observability Controller Deployment", func() {
 			}))
 		})
 
+		It("should not enable vmstats when the feature gate is explicitly disabled", func() {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Disable(observeVMStatFeatureGate)
+			dep := newDeployment(hco)
+
+			container := dep.Spec.Template.Spec.Containers[0]
+			Expect(container.Args).ToNot(ContainElement(enableVMStatsArg))
+			Expect(container.Args).ToNot(ContainElement(vmstatsCertPathArg))
+			Expect(container.VolumeMounts).To(BeEmpty())
+			Expect(dep.Spec.Template.Spec.Volumes).To(BeEmpty())
+		})
+
 		It("should not update when the secret volume already has the API default mode", func() {
 			hco := commontestutils.NewHco()
 			hco.Spec.FeatureGates.Enable(deployObsCntrlFGName)
@@ -430,15 +443,15 @@ var _ = Describe("Observability Controller Deployment", func() {
 			hco.Spec.FeatureGates.Enable(observeVMStatFeatureGate)
 			hco.Spec.Observability = &hcov1.ObservabilityConfig{
 				Workloads: &hcov1.ObservabilityWorkloadsConfig{
-					AllowedMetrics: []string{"kubevirt_vmi_memory_used_bytes"},
+					AllowedMetrics: []string{"kubevirt_guest_device_driver_config_invalid"},
 				},
-				AllowedAlerts:         []string{"KubeVirtVMDown"},
-				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count:sum"},
+				AllowedAlerts:         []string{"VirtAPIDown"},
+				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count"},
 			}
 			args := newDeployment(hco).Spec.Template.Spec.Containers[0].Args
-			Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_vmi_memory_used_bytes"))
-			Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMDown"))
-			Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count:sum"))
+			Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_guest_device_driver_config_invalid"))
+			Expect(args).To(ContainElement("--alerts-allowlist=VirtAPIDown"))
+			Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count"))
 		})
 	})
 
@@ -489,16 +502,16 @@ var _ = Describe("Observability Controller Deployment", func() {
 			hco := commontestutils.NewHco()
 			hco.Spec.Observability = &hcov1.ObservabilityConfig{
 				Workloads: &hcov1.ObservabilityWorkloadsConfig{
-					AllowedMetrics: []string{"kubevirt_vmi_memory_used_bytes", "kubevirt_vmi_cpu_usage_seconds_total"},
+					AllowedMetrics: []string{"kubevirt_guest_device_driver_config_invalid", "kubevirt_vmi_cpu_usage_seconds_total"},
 				},
-				AllowedAlerts:         []string{"KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"},
-				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count:sum"},
+				AllowedAlerts:         []string{"VirtAPIDown", "KubeVirtVMIExcessiveMigrations"},
+				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count"},
 			}
 			dep := newDeployment(hco)
 			args := dep.Spec.Template.Spec.Containers[0].Args
-			Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_vmi_memory_used_bytes,kubevirt_vmi_cpu_usage_seconds_total"))
-			Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMDown,KubeVirtVMIExcessiveMigrations"))
-			Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count:sum"))
+			Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_guest_device_driver_config_invalid,kubevirt_vmi_cpu_usage_seconds_total"))
+			Expect(args).To(ContainElement("--alerts-allowlist=VirtAPIDown,KubeVirtVMIExcessiveMigrations"))
+			Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count"))
 		})
 
 		It("should not add metrics-allowlist when workloads is nil", func() {

@@ -151,7 +151,7 @@ var _ = Describe("Handler resource verification", func() {
 
 		foundCR := newClusterRoleWithNameOnly()
 		Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(foundCR), foundCR)).To(Succeed())
-		Expect(foundCR.Rules).To(HaveLen(8))
+		Expect(foundCR.Rules).To(HaveLen(13))
 	})
 
 	It("should create Deployment with correct replicas", func() {

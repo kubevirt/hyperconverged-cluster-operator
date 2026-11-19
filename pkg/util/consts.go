@@ -60,6 +60,7 @@ const (
 	// Recommended labels by Kubernetes. See
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	AppLabelPrefix    = "app.kubernetes.io"
+	AppLabelName      = AppLabelPrefix + "/name"
 	AppLabelVersion   = AppLabelPrefix + "/version"
 	AppLabelManagedBy = AppLabelPrefix + "/managed-by"
 	AppLabelPartOf    = AppLabelPrefix + "/part-of"

@@ -343,8 +343,8 @@ ObservabilityConfig contains configurations for the observability controller
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
 | workloads | Workloads defines filtering configuration for workload-related metrics | *[ObservabilityWorkloadsConfig](#observabilityworkloadsconfig) |  | false |
-| allowedAlerts | AllowedAlerts defines the list of alert rule names to include. When set, only alerts matching this list will be created. | []string |  | false |
-| allowedRecordingRules | AllowedRecordingRules defines the list of recording rule names to include. When set, only recording rules matching this list will be created. | []string |  | false |
+| allowedAlerts | AllowedAlerts defines the alerts to include in the PrometheusRule. Entries are either group names or individual alert names. A bare list is absolute; prefixing every entry with + or - adjusts the default set instead. \"all\" and \"none\" select everything or nothing. When empty, the default set is used: the groups KubeVirt does not publish itself. | []string |  | false |
+| allowedRecordingRules | AllowedRecordingRules defines the recording rules to include in the PrometheusRule. Entries are either group names or individual recording rule names. A bare list is absolute; prefixing every entry with + or - adjusts the default set instead. \"all\" and \"none\" select everything or nothing. When empty, the default set is used: the groups KubeVirt does not publish itself. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -354,7 +354,7 @@ ObservabilityWorkloadsConfig defines filtering for workload metrics
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| allowedMetrics | AllowedMetrics defines the list of metric names to expose. When set, only metrics matching this list will be collected. | []string |  | false |
+| allowedMetrics | AllowedMetrics defines the metrics to expose. Entries are either group names or individual metric names. A bare list is absolute; prefixing every entry with + or - adjusts the default set instead. \"all\" and \"none\" select everything or nothing. When empty, the default set is used: the groups KubeVirt does not publish itself. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -550,6 +550,7 @@ A feature gate may be in the following phases:
 | decentralizedLiveMigration | DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Tech Preview. | beta |
 | declarativeHotplugVolumes | DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true or nil, the "DeclarativeHotplugVolumes" feature gate is enabled and the "HotplugVolumes" feature gate is not (default behavior). When set to false, the "HotplugVolumes" featuregate is enabled in KubeVirt. This feature is in Technical Preview. | beta |
 | deployObservabilityController | Publish KubeVirt metrics, alerts, and recording rules. This is enabled by default. Disable this feature gate to stop publishing them. This feature is in Tech Preview. | beta |
+| observeVMStat | Allow collection of detailed per-virtual-machine metrics, such as CPU, memory, network, and storage usage. Enable them in observability allowed metrics config to publish them. This feature is in Tech Preview. | beta |
 | rebootPolicy | RebootPolicy enables virtual machines to be recreated when they reboot from within the guest operating system. This feature is in Tech Preview. | beta |
 | template | VirtualMachine Templates provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable VM blueprints with parameterized values that can be processed to create virtual machine. the "template" feature gate enables this feature. Note: this feature is in Tech Preview. | beta |
 | vsock | VSOCK enables the AF_VSOCK host-guest communication channel for virtual machines. When enabled, a VSOCK device can be attached to a VM by setting spec.domain.devices.autoattachVSOCK. This feature is in Tech Preview. | beta |
@@ -562,7 +563,6 @@ A feature gate may be in the following phases:
 | mDevVGPULiveMigration | MDevVGPULiveMigration enables live migration of virtual machines that use a single mediated device (mdev) vGPU. The vGPU must be declared in spec.virtualization.permittedHostDevices.mediatedDevices, and virtual machines with more than one GPU, or with a GPU that is not an mdev device, remain non-migratable. The source and target nodes must run a compatible NVIDIA Virtual GPU Manager and have a matching ECC configuration. This feature gate does not cover live migration of VFIO PCI passthrough or SR-IOV virtual function devices. Note: This feature is in Developer Preview. | alpha |
 | networkDevicesWithDRA | NetworkDevicesWithDRA allows users to create VMIs with DRA provisioned network devices specified in spec.networks with resourceClaim type. This enables DRA-managed network resources to be attached to VMs using the natural networks API. Note: this feature is in Developer Preview. | alpha |
 | objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | alpha |
-| observeVMStat | When enabled, the release date of each guest device driver is added to the kubevirt_vmi_guest_device_driver_timestamp_seconds metric, so guests running outdated VirtIO drivers can be found. Note: this feature is in Developer Preview. | alpha |
 | workloadEncryptionSEV | Enable AMD SEV and SEV-SNP workload encryption for confidential VMs. Note: this feature is in Developer Preview. | alpha |
 | workloadEncryptionTDX | Enable Intel TDX workload encryption for confidential VMs. Note: this feature is in Developer Preview. | alpha |
 | disableMDevConfiguration | Deprecated: This feature gate has graduated to a dedicated configuration field; use spec.virtualization.mediatedDevicesConfiguration.enabled instead. This feature gate is deprecated and will be removed in a future release. | deprecated |

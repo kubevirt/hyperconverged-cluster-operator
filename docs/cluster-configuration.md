@@ -460,27 +460,55 @@ spec:
 **Graduation Status**: Beta
 
 ### observeVMStat Feature Gate
-When enabled, the release date of each guest device driver is added to the
-`kubevirt_vmi_guest_device_driver_timestamp_seconds` metric, with one sample
-per device. Compare it with `kubevirt_guest_device_driver_latest_version_info`,
-which lists the driver versions shipped for this cluster, to find guests
-running outdated VirtIO drivers. Query either series from the metrics console.
+When this feature gate is enabled, detailed per-virtual-machine metrics, such as
+CPU, memory, network, and storage usage, can be collected. This is the default.
+Enabling it also enables the `VMStatsCollector` feature gate in the KubeVirt CR.
+
+Only the metrics that KubeVirt does not already publish itself are published by
+default: `guest-agent`, `guest-os`, `guest-drivers`, `vmi-interfaces`,
+`vmi-hotplug` and `inventory`. The usage series — `vmi-cpu`, `vmi-memory`,
+`vmi-network`, `vmi-storage`, `vmi-vcpu`, `vmi-dirty-rate` and
+`guest-filesystem` — are not, because KubeVirt publishes equivalent series and
+they would be duplicated. Add them to
+`spec.observability.workloads.allowedMetrics`, prefixing every entry with `+` so
+that they are added to the default set instead of replacing it:
 
 ```yaml
-apiVersion: hco.kubevirt.io/v1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
+spec:
+  observability:
+    workloads:
+      allowedMetrics:
+      - +vmi-cpu
+      - +vmi-memory
+```
+
+`kubevirt_vmi_guest_device_driver_timestamp_seconds`, one of the series
+published by default, carries the release date of each guest device driver.
+Compare it with `kubevirt_guest_device_driver_latest_version_info`, which lists
+the driver versions shipped for this cluster, to find guests running outdated
+VirtIO drivers.
+
+Alerts and recording rules are not narrowed the same way. While this feature
+gate is enabled, every group is published, because virt-operator stops
+publishing its own `prometheus-kubevirt-rules` PrometheusRule once the
+`VMStatsCollector` feature gate is on, so there is nothing left to duplicate.
+`spec.observability.allowedAlerts` and `spec.observability.allowedRecordingRules`
+still narrow that set.
+
+When this feature gate is disabled, none of these metrics are published.
+
+```yaml
 spec:
   featureGates:
   - name: observeVMStat
+    state: Disabled
 ```
 
-**Note**: This feature is in Developer Preview.
+**Note**: This feature is in Tech Preview.
 
-**Default**: `Disabled`
+**Default**: `Enabled`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
 ### RebootPolicy Feature Gate
 
@@ -1992,13 +2020,13 @@ spec:
   observability:
     workloads:
       allowedMetrics:
-      - kubevirt_vmi_memory_used_bytes
+      - kubevirt_guest_device_driver_config_invalid
       - kubevirt_vmi_cpu_usage_seconds_total
     allowedAlerts:
-    - KubeVirtVMDown
+    - VirtAPIDown
     - KubeVirtVMIExcessiveMigrations
     allowedRecordingRules:
-    - kubevirt_vmi_phase_count:sum
+    - kubevirt_vmi_phase_count
 ```
 
 ## Deployment Configurations

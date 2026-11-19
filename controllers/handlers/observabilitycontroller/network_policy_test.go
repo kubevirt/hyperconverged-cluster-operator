@@ -35,10 +35,9 @@ var _ = Describe("Observability Controller NetworkPolicy", func() {
 				networkingv1.PolicyTypeIngress,
 			))
 
-			// DNS egress + API server egress. virt-handler egress is added only
-			// when observeVMStat is enabled.
-			Expect(np.Spec.Egress).To(HaveLen(2))
-			Expect(np.Spec.Egress).ToNot(ContainElement(vmstatsEgressRule()))
+			// DNS, API server and virt-handler egress
+			Expect(np.Spec.Egress).To(HaveLen(3))
+			Expect(np.Spec.Egress).To(ContainElement(vmstatsEgressRule()))
 
 			// metrics ingress, open to any source
 			Expect(np.Spec.Ingress).To(HaveLen(1))
@@ -60,6 +59,13 @@ var _ = Describe("Observability Controller NetworkPolicy", func() {
 
 			Expect(np.Spec.Egress).To(HaveLen(3))
 			Expect(np.Spec.Egress).To(ContainElement(vmstatsEgressRule()))
+
+			hco.Spec.FeatureGates.Disable(observeVMStatFeatureGate)
+
+			np = newNetworkPolicy(hco)
+
+			Expect(np.Spec.Egress).To(HaveLen(2))
+			Expect(np.Spec.Egress).ToNot(ContainElement(vmstatsEgressRule()))
 		})
 	})
 

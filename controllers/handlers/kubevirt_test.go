@@ -38,8 +38,9 @@ import (
 var _ = Describe("KubeVirt Operand", func() {
 
 	var (
-		mandatoryFgCount             = len(hardCodeKvFgs) + 1    // hard coded + HypervStrictCheck, that only absent when in emulation mode
-		conditionalFeatureGatesCount = len(kvExposedBetaFGs) + 1 // Number of conditional featuregates always added + one of DeclarativeHotplugVolumes or HotplugVolumes
+		mandatoryFgCount = len(hardCodeKvFgs) + 1 // hard coded + HypervStrictCheck, that only absent when in emulation mode
+		// exposed beta FGs + one of DeclarativeHotplugVolumes or HotplugVolumes + VMStatsCollector
+		conditionalFeatureGatesCount = len(kvExposedBetaFGs) + 2
 
 		basicNumFgOnOpenshift = mandatoryFgCount + conditionalFeatureGatesCount
 
