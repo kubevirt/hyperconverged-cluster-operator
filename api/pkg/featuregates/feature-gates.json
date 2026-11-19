@@ -25,6 +25,11 @@
     "description": "RebootPolicy enables virtual machines to be recreated when they reboot from within the guest operating system. This feature is in Tech Preview."
   },
   {
+    "name": "scsiMultiIOThread",
+    "phase": "beta",
+    "description": "SCSIMultiIOThread enables iothread virtqueue mapping for virtio-scsi devices  by leveraging IOThreadsPolicy to allocate thread pools to the SCSI Controller Driver. This feature is in Tech Preview."
+  },
+  {
     "name": "template",
     "phase": "beta",
     "description": "VirtualMachine Templates provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable VM blueprints with parameterized values that can be processed to create virtual machine. the \"template\" feature gate enables this feature. Note: this feature is in Tech Preview."

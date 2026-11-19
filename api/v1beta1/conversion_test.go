@@ -4683,6 +4683,108 @@ var _ = Describe("api/v1beta1", func() {
 			),
 		)
 
+		DescribeTable("should round-trip MultiIOThreadAutoPolicy through v1 → v1beta1 → v1", func(
+			storage *hcov1.StorageConfig,
+			expectedAnnotation gomegatypes.GomegaMatcher,
+			assertRoundTrip func(roundTrip *hcov1.HyperConverged),
+		) {
+			v1HC := getV1HC()
+			v1HC.Spec.Deployment.DeployNetworkResourcesInjector = nil
+			v1HC.Spec.Storage = storage
+
+			v1beta1HC := &HyperConverged{}
+			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
+			Expect(v1beta1HC.Annotations).To(expectedAnnotation)
+
+			roundTripHC := &hcov1.HyperConverged{}
+			Expect(v1beta1HC.ConvertTo(roundTripHC)).To(Succeed())
+			Expect(roundTripHC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+			assertRoundTrip(roundTripHC)
+		},
+			Entry("policy absent",
+				nil,
+				Not(HaveKey(v1OnlyFieldAnnotation)),
+				func(roundTrip *hcov1.HyperConverged) {
+					Expect(roundTrip.Spec.Storage).To(BeNil())
+				},
+			),
+			Entry("policy-only storage with Enabled nil",
+				&hcov1.StorageConfig{
+					MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{},
+				},
+				Not(HaveKey(v1OnlyFieldAnnotation)),
+				func(roundTrip *hcov1.HyperConverged) {
+					// nil Enabled produces no annotation, so Storage is not recreated.
+					Expect(roundTrip.Spec.Storage).To(BeNil())
+				},
+			),
+			Entry("policy-only storage with Enabled true",
+				&hcov1.StorageConfig{
+					MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{Enabled: new(true)},
+				},
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"multiIOThreadAutoPolicyEnabled": true}`)),
+				func(roundTrip *hcov1.HyperConverged) {
+					Expect(roundTrip.Spec.Storage).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy.Enabled).To(HaveValue(BeTrue()))
+				},
+			),
+			Entry("policy-only storage with Enabled false",
+				&hcov1.StorageConfig{
+					MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{Enabled: new(false)},
+				},
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"multiIOThreadAutoPolicyEnabled": false}`)),
+				func(roundTrip *hcov1.HyperConverged) {
+					Expect(roundTrip.Spec.Storage).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy.Enabled).To(HaveValue(BeFalse()))
+				},
+			),
+			Entry("policy alongside other storage fields with Enabled true",
+				&hcov1.StorageConfig{
+					VMStateStorageClass: new("vm-state-sc"),
+					MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{
+						Enabled: new(true),
+					},
+				},
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"multiIOThreadAutoPolicyEnabled": true}`)),
+				func(roundTrip *hcov1.HyperConverged) {
+					Expect(roundTrip.Spec.Storage).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.VMStateStorageClass).To(HaveValue(Equal("vm-state-sc")))
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy.Enabled).To(HaveValue(BeTrue()))
+				},
+			),
+			Entry("policy alongside other storage fields with Enabled false",
+				&hcov1.StorageConfig{
+					VMStateStorageClass: new("vm-state-sc"),
+					MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{
+						Enabled: new(false),
+					},
+				},
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"multiIOThreadAutoPolicyEnabled": false}`)),
+				func(roundTrip *hcov1.HyperConverged) {
+					Expect(roundTrip.Spec.Storage).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.VMStateStorageClass).To(HaveValue(Equal("vm-state-sc")))
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy.Enabled).To(HaveValue(BeFalse()))
+				},
+			),
+			Entry("policy alongside other storage fields with Enabled nil",
+				&hcov1.StorageConfig{
+					VMStateStorageClass:     new("vm-state-sc"),
+					MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{},
+				},
+				Not(HaveKey(v1OnlyFieldAnnotation)),
+				func(roundTrip *hcov1.HyperConverged) {
+					Expect(roundTrip.Spec.Storage).ToNot(BeNil())
+					Expect(roundTrip.Spec.Storage.VMStateStorageClass).To(HaveValue(Equal("vm-state-sc")))
+					// nil Enabled is not preserved through the annotation path.
+					Expect(roundTrip.Spec.Storage.MultiIOThreadAutoPolicy).To(BeNil())
+				},
+			),
+		)
+
 		DescribeTable("should round-trip, keeping the PersistentReservationConfiguration.Enabled field", func(fieldValue bool, v1FG hcofg.HyperConvergedFeatureGates, expectedAnnotation string) {
 			v1HC := getV1HC()
 			v1HC.Spec.Deployment.DeployNetworkResourcesInjector = nil
@@ -4822,6 +4924,9 @@ var _ = Describe("api/v1beta1", func() {
 				PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
 					Enabled: new(true),
 				},
+				MultiIOThreadAutoPolicy: &hcov1.MultiIOThreadAutoPolicy{
+					Enabled: new(false),
+				},
 			}
 			v1HC.Spec.FeatureGates.Enable(PersistentReservationFGName)
 			v1HC.Spec.FeatureGates.Disable("aDisabledFG")
@@ -4844,6 +4949,7 @@ var _ = Describe("api/v1beta1", func() {
 	"deployNetworkResourcesInjector": false,
 	"mdevConfigEnable": false,
 	"persistentReservationEnabled": true,
+	"multiIOThreadAutoPolicyEnabled": false,
 	"featureGates": [
 		{"name": "disableMDevConfiguration", "state": "Enabled"},
 		{"name": "persistentReservation", "state": "Enabled"},
@@ -4875,6 +4981,8 @@ var _ = Describe("api/v1beta1", func() {
 			Expect(roundTripHC.Spec.Storage).ToNot(BeNil())
 			Expect(roundTripHC.Spec.Storage.PersistentReservationConfiguration).ToNot(BeNil())
 			Expect(roundTripHC.Spec.Storage.PersistentReservationConfiguration.Enabled).To(HaveValue(BeTrue()))
+			Expect(roundTripHC.Spec.Storage.MultiIOThreadAutoPolicy).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Storage.MultiIOThreadAutoPolicy.Enabled).To(HaveValue(BeFalse()))
 
 			Expect(roundTripHC.Spec.FeatureGates.IsEnabled(DisableMDevConfigurationFG)).To(BeTrue())
 

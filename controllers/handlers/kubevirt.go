@@ -154,6 +154,7 @@ const (
 	kvMDevVGPULiveMigration      = "MDevVGPULiveMigration"
 	kvCrossClusterMigrationProxy = "CrossClusterMigrationProxy"
 	kvVMStatsCollector           = "VMStatsCollector"
+	kvSCSIMultiIOThread          = "SCSIMultiIOThread"
 )
 
 var (
@@ -164,6 +165,7 @@ var (
 		kvTemplateFG,
 		kvRebootPolicyFG,
 		kvVSOCKFG,
+		kvSCSIMultiIOThread,
 	}
 
 	// these FGs are disabled by default, but exposed in the HyperConverged CR and may be switched on
@@ -463,6 +465,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 		PermittedHostDevices:               toKvPermittedHostDevices(hc.Spec.Virtualization.PermittedHostDevices),
 		MediatedDevicesConfiguration:       toKvMediatedDevicesConfiguration(hc),
 		PersistentReservationConfiguration: toKvPersistentReservationConfiguration(hc),
+		MultiIOThreadAutoPolicy:            toKvMultiIOThreadAutoPolicy(hc),
 		ObsoleteCPUModels:                  obsoleteCPUs,
 		TLSConfiguration:                   hcTLSSecurityProfileToKv(tlssecprofile.GetTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile)),
 		APIConfiguration:                   rateLimiter,
@@ -695,6 +698,31 @@ func toKvPersistentReservationConfiguration(hc *hcov1.HyperConverged) *kubevirtc
 
 	return &kubevirtcorev1.PersistentReservationConfiguration{
 		Enabled: enabled,
+	}
+}
+
+// toKvMultiIOThreadAutoPolicy enables multi-iothread auto policy when both the
+// scsiMultiIOThread feature gate and spec.storage.multiIOThreadAutoPolicy are enabled.
+// The feature gate can be enabled without this policy; the policy has no effect without
+// the feature gate. Both default to enabled.
+func toKvMultiIOThreadAutoPolicy(hc *hcov1.HyperConverged) *kubevirtcorev1.MultiIOThreadAutoPolicy {
+	if !hc.Spec.FeatureGates.IsEnabled("scsiMultiIOThread") {
+		return nil
+	}
+
+	enabled := true
+	if hc.Spec.Storage != nil &&
+		hc.Spec.Storage.MultiIOThreadAutoPolicy != nil &&
+		hc.Spec.Storage.MultiIOThreadAutoPolicy.Enabled != nil {
+		enabled = *hc.Spec.Storage.MultiIOThreadAutoPolicy.Enabled
+	}
+
+	if !enabled {
+		return nil
+	}
+
+	return &kubevirtcorev1.MultiIOThreadAutoPolicy{
+		Enabled: new(true),
 	}
 }
 

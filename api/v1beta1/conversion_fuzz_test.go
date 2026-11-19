@@ -447,6 +447,15 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 				Enabled: randPtr(r, r.IntN(2) == 1),
 			}
 		}
+		// MultiIOThreadAutoPolicy: absent, present with nil Enabled, or present with true/false.
+		switch r.IntN(3) {
+		case 1:
+			hc.Spec.Storage.MultiIOThreadAutoPolicy = &hcov1.MultiIOThreadAutoPolicy{}
+		case 2:
+			hc.Spec.Storage.MultiIOThreadAutoPolicy = &hcov1.MultiIOThreadAutoPolicy{
+				Enabled: new(r.IntN(2) == 1),
+			}
+		}
 	}
 
 	hc.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{

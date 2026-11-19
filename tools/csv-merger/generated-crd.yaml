@@ -2302,6 +2302,12 @@ spec:
                     from within the guest operating system. This feature is in Tech Preview.
                     Phase: beta
 
+                  * scsiMultiIOThread:
+                    SCSIMultiIOThread enables iothread virtqueue mapping for virtio-scsi
+                    devices  by leveraging IOThreadsPolicy to allocate thread pools to the
+                    SCSI Controller Driver. This feature is in Tech Preview.
+                    Phase: beta
+
                   * template:
                     VirtualMachine Templates provide a native, in-cluster VM templating for
                     KubeVirt. They allow you to define reusable VM blueprints with
@@ -2876,6 +2882,19 @@ spec:
                           and the values are the overhead. This value overrides the
                           global value
                         type: object
+                    type: object
+                  multiIOThreadAutoPolicy:
+                    description: |-
+                      MultiIOThreadAutoPolicy configures the auto IOThreadsPolicy to allocate multiple
+                      iothreads to virtio-blk disks. Defaults to enabled. Requires the scsiMultiIOThread
+                      feature gate; has no effect when that feature gate is disabled.
+                    properties:
+                      enabled:
+                        default: true
+                        description: |-
+                          Enabled configures the auto IOThreadsPolicy to allocate multiple iothreads to virtio-blk
+                          disks. Defaults to true. Requires the scsiMultiIOThread feature gate to be enabled.
+                        type: boolean
                     type: object
                   persistentReservationConfiguration:
                     description: |-

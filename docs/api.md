@@ -24,6 +24,7 @@ This Document documents the `v1` API version's types introduced by the hyperconv
 * [LogVerbosityConfiguration](#logverbosityconfiguration)
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
 * [MediatedHostDevice](#mediatedhostdevice)
+* [MultiIOThreadAutoPolicy](#multiiothreadautopolicy)
 * [NetworkingConfig](#networkingconfig)
 * [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
@@ -290,6 +291,16 @@ MediatedHostDevice represents a host mediated device allowed for passthrough
 
 [Back to TOC](#table-of-contents)
 
+## MultiIOThreadAutoPolicy
+
+MultiIOThreadAutoPolicy holds the configuration for multi-iothread auto policy
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| enabled | Enabled configures the auto IOThreadsPolicy to allocate multiple iothreads to virtio-blk disks. Defaults to true. Requires the scsiMultiIOThread feature gate to be enabled. | *bool | true | false |
+
+[Back to TOC](#table-of-contents)
+
 ## NetworkingConfig
 
 NetworkingConfig contains all the networking configurations
@@ -426,6 +437,7 @@ StorageConfig contains all the storage configurations
 | filesystemOverhead | FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes. A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead) | *cdiv1beta1.FilesystemOverhead |  | false |
 | workloadResourceRequirements | WorkloadResourceRequirements defines the resource requirements for storage workloads. It will propagate to the CDI custom resource | *corev1.ResourceRequirements |  | false |
 | persistentReservationConfiguration | PersistentReservationConfiguration controls the deployment of additional resources required for using SCSI persistent reservation in VMs | *[PersistentReservationConfiguration](#persistentreservationconfiguration) |  | false |
+| multiIOThreadAutoPolicy | MultiIOThreadAutoPolicy configures the auto IOThreadsPolicy to allocate multiple iothreads to virtio-blk disks. Defaults to enabled. Requires the scsiMultiIOThread feature gate; has no effect when that feature gate is disabled. | *[MultiIOThreadAutoPolicy](#multiiothreadautopolicy) |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -551,6 +563,7 @@ A feature gate may be in the following phases:
 | declarativeHotplugVolumes | DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true or nil, the "DeclarativeHotplugVolumes" feature gate is enabled and the "HotplugVolumes" feature gate is not (default behavior). When set to false, the "HotplugVolumes" featuregate is enabled in KubeVirt. This feature is in Technical Preview. | beta |
 | deployObservabilityController | Publish KubeVirt metrics, alerts, and recording rules. This is enabled by default. Disable this feature gate to stop publishing them. This feature is in Tech Preview. | beta |
 | rebootPolicy | RebootPolicy enables virtual machines to be recreated when they reboot from within the guest operating system. This feature is in Tech Preview. | beta |
+| scsiMultiIOThread | SCSIMultiIOThread enables iothread virtqueue mapping for virtio-scsi devices  by leveraging IOThreadsPolicy to allocate thread pools to the SCSI Controller Driver. This feature is in Tech Preview. | beta |
 | template | VirtualMachine Templates provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable VM blueprints with parameterized values that can be processed to create virtual machine. the "template" feature gate enables this feature. Note: this feature is in Tech Preview. | beta |
 | vsock | VSOCK enables the AF_VSOCK host-guest communication channel for virtual machines. When enabled, a VSOCK device can be attached to a VM by setting spec.domain.devices.autoattachVSOCK. This feature is in Tech Preview. | beta |
 | alignCPUs | Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. | alpha |
