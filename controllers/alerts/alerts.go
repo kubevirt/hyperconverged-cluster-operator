@@ -25,7 +25,7 @@ type AlertRuleReconciler struct {
 
 // newAlertRuleReconciler creates new AlertRuleReconciler instance and returns a pointer to it.
 func newAlertRuleReconciler(namespace string, owner metav1.OwnerReference) (*AlertRuleReconciler, error) {
-	err := rules.SetupRules()
+	err := rules.SetupRules(namespace)
 	if err != nil {
 		return nil, err
 	}

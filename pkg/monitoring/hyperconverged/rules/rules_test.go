@@ -14,11 +14,15 @@ func TestRules(t *testing.T) {
 	RunSpecs(t, "Rules Suite")
 }
 
+// installNamespace is the OpenShift Virtualization install namespace used to
+// build the rules under test.
+const installNamespace = "kubevirt-hyperconverged"
+
 var _ = Describe("Rules Validation", func() {
 	var linter *testutil.Linter
 
 	BeforeEach(func() {
-		Expect(SetupRules()).To(Succeed())
+		Expect(SetupRules(installNamespace)).To(Succeed())
 		linter = testutil.New()
 	})
 
