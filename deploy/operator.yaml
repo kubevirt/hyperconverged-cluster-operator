@@ -86,6 +86,8 @@ spec:
           value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
         - name: OBSERVABILITY_CONTROLLER_IMAGE
           value: quay.io/kubevirt/virt-observability-controller@sha256:df397e39415b42cd28c014c99299e040eec1cce94abca8a1fb355388b82f5d34
+        - name: VIRT_IMPORT_CONTROLLER_IMAGE
+        - name: VIRT_IMPORT_FETCHER_IMAGE
         image: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
         imagePullPolicy: Always
         livenessProbe:

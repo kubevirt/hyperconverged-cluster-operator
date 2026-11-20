@@ -510,6 +510,56 @@ spec:
 
 **Graduation Status**: Beta
 
+### deployVirtImport Feature Gate
+Add the `deployVirtImport` feature gate to deploy
+[virt-import](https://github.com/kubevirt/virt-import). It provides the
+`VirtualMachineImport` API to import VirtualMachines and VirtualMachineTemplates
+from OCI artifacts in a container registry.
+
+When enabled, HCO deploys the `VirtualMachineImport` CRD, the virt-import
+controller Deployment, its ServiceAccount and RBAC, the aggregated
+admin/edit/view ClusterRoles and a ValidatingAdmissionPolicy, which only allows
+users to create a `VirtualMachineImport` if they may create the resources it
+creates. The controller is placed according to `spec.deployment.nodePlacements.infra`,
+but always only on nodes with an architecture and OS virt-import supports. A
+NetworkPolicy only allows its DNS and API server egress, and the `VirtImportReady`
+condition of the HyperConverged reports whether it is ready.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: deployVirtImport
+```
+
+To disable virt-import after it has been enabled, set the feature gate state to
+`Disabled`:
+
+```yaml
+spec:
+  featureGates:
+  - name: deployVirtImport
+    state: Disabled
+```
+
+**Warning**: Disabling the feature gate removes the `VirtualMachineImport` CRD
+and with it all `VirtualMachineImports`. Their intermediate resources are
+garbage collected. VirtualMachines, VirtualMachineTemplates and PVCs created by
+finished imports are kept. HCO removes the other virt-import resources once the
+CRD is gone. Removing the `VirtualMachineImports` needs the virt-import controller,
+which removes their finalizers: if it is not running, the CRD and the other
+virt-import resources stay until it runs again, and deleting the HyperConverged
+waits for it as well.
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### RebootPolicy Feature Gate
 
 When a guest VM is rebooted, the vmi pod is not terminated and new VM settings

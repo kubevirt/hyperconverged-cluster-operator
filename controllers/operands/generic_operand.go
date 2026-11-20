@@ -318,3 +318,11 @@ func componentNotAvailable(req *common.HcoRequest, component string, msg string)
 		ObservedGeneration: req.Instance.Generation,
 	})
 }
+
+func logUpdate(req *common.HcoRequest, kind, name string) {
+	if req.HCOTriggered {
+		req.Logger.Info("Updating existing "+kind+" to new opinionated values", "name", name)
+	} else {
+		req.Logger.Info("Reconciling an externally updated "+kind+" to its opinionated values", "name", name)
+	}
+}

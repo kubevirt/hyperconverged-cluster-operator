@@ -529,6 +529,7 @@ spec:
           verbs:
           - get
           - list
+          - create
           - update
           - patch
           - watch
@@ -835,6 +836,93 @@ spec:
           - update
           - delete
           - patch
+        - apiGroups:
+          - import.kubevirt.io
+          resources:
+          - virtualmachineimports
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+          - deletecollection
+        - apiGroups:
+          - import.kubevirt.io
+          resources:
+          - virtualmachineimports/status
+          verbs:
+          - get
+          - patch
+        - apiGroups:
+          - import.kubevirt.io
+          resources:
+          - virtualmachineimports/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - pods/log
+          verbs:
+          - get
+        - apiGroups:
+          - batch
+          resources:
+          - jobs
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - cdiconfigs
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - datavolumes
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - patch
+          - delete
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachines
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachines/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - template.kubevirt.io
+          resources:
+          - virtualmachinetemplates
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - template.kubevirt.io
+          resources:
+          - virtualmachinetemplates/finalizers
+          verbs:
+          - update
         serviceAccountName: hyperconverged-cluster-operator
       - rules: []
         serviceAccountName: hyperconverged-cluster-cli-download
@@ -4644,6 +4732,8 @@ spec:
                   value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d45bf47b999a0b25d22db0f8355b0f063a5aa33ddf4e8ff14043b45001a0169d
                 - name: OBSERVABILITY_CONTROLLER_IMAGE
                   value: quay.io/kubevirt/virt-observability-controller@sha256:df397e39415b42cd28c014c99299e040eec1cce94abca8a1fb355388b82f5d34
+                - name: VIRT_IMPORT_CONTROLLER_IMAGE
+                - name: VIRT_IMPORT_FETCHER_IMAGE
                 image: +IMAGE_TO_REPLACE+
                 imagePullPolicy: IfNotPresent
                 livenessProbe:

@@ -39,7 +39,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate gogenerate generate-crd generate-crd-for-csv go-fix generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring update-kv-fg-file
+sanity: generate gogenerate generate-crd generate-crd-for-csv go-fix generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring update-kv-fg-file update-virt-import-bundle
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -53,6 +53,9 @@ goimport:
 
 update-kv-fg-file:
 	./hack/update-kv-fg-file.sh
+
+update-virt-import-bundle:
+	./hack/update-virt-import-bundle.sh
 
 lint:
 	GOTOOLCHAIN=go1.26.3 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANDCI_LINT_VERSION}
@@ -405,6 +408,7 @@ push-builder-image: retag-builder-image
 		sanity \
 		goimport \
 		update-kv-fg-file \
+		update-virt-import-bundle \
 		bump-hco \
 		bump-kubevirtci \
 		build-push-multi-arch-operator-image \

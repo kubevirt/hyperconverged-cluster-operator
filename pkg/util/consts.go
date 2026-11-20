@@ -36,6 +36,8 @@ const (
 	VirtioWinImageEnvV                      = "VIRTIOWIN_CONTAINER"
 	AIEWebhookImageEnvV                     = "AIE_WEBHOOK_IMAGE"
 	ObservabilityControllerImageEnvV        = "OBSERVABILITY_CONTROLLER_IMAGE"
+	VirtImportControllerImageEnvV           = "VIRT_IMPORT_CONTROLLER_IMAGE"
+	VirtImportFetcherImageEnvV              = "VIRT_IMPORT_FETCHER_IMAGE"
 	DeployNetworkPoliciesEnvV               = "DEPLOY_NETWORK_POLICIES"
 	VirtIOWinDataFileEnvV                   = "DEPLOY_VIRT_IO_WIN_DATA_FILE"
 	VirtIODownloadDir                       = "virtio-win"
@@ -160,6 +162,7 @@ const (
 	AppComponentNetResInjector     AppComponent = "virt-network-resources-injector"
 	AppComponentObservability      AppComponent = "virt-observability-controller"
 	AppComponentFileRestore        AppComponent = "vm-file-restore"
+	AppComponentVirtImport         AppComponent = "virt-import"
 )
 
 // The authoritative client CA used to verify metrics scrapers lives in the

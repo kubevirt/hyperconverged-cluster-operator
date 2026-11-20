@@ -18,12 +18,14 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,6 +54,7 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/virtimport"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operandhandler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -186,6 +189,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&policyv1.PodDisruptionBudget{},
+		&admissionregistrationv1.ValidatingAdmissionPolicy{},
+		&admissionregistrationv1.ValidatingAdmissionPolicyBinding{},
 	}
 	if ci.IsMonitoringAvailable() {
 		secondaryResources = append(secondaryResources, []client.Object{
@@ -266,6 +271,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		}
 	}
 
+	if os.Getenv(hcoutil.VirtImportControllerImageEnvV) != "" && os.Getenv(hcoutil.VirtImportFetcherImageEnvV) != "" {
+		if err = watchVirtImportCRDs(mgr, c); err != nil {
+			return err
+		}
+	}
+
 	err = c.Watch(
 		source.Channel(
 			nodeEventChannel,
@@ -284,6 +295,34 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 	}
 
 	return nil
+}
+
+// watchVirtImportCRDs reconciles when a virt-import CRD changes, in particular when its deletion
+// completed: only then the remaining virt-import objects are removed. An invalid bundle is
+// already logged when the operands are created, so it only skips the watch here.
+func watchVirtImportCRDs(mgr manager.Manager, c controller.Controller) error {
+	crds, err := virtimport.CRDs()
+	if err != nil {
+		log.Error(err, "can't watch the virt-import CRDs")
+		return nil
+	}
+	crdNames := make([]string, 0, len(crds))
+	for _, crd := range crds {
+		crdNames = append(crdNames, crd.Name)
+	}
+
+	return c.Watch(
+		source.Kind(mgr.GetCache(), client.Object(&apiextensionsv1.CustomResourceDefinition{}),
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, a client.Object) []reconcile.Request {
+				log.Info("Reconciling for a virt-import CustomResourceDefinition", "name", a.GetName())
+				return []reconcile.Request{
+					reqresolver.GetSecondaryCRRequest(),
+				}
+			}),
+			predicate.NewPredicateFuncs(func(object client.Object) bool {
+				return slices.Contains(crdNames, object.GetName())
+			}),
+		))
 }
 
 var _ reconcile.Reconciler = &ReconcileHyperConverged{}
@@ -1137,6 +1176,10 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 
 	removeOldQuickStartGuides(req, r.client, r.operandHandler.GetQuickStartNames())
 	removeOldImageStream(req, r.client, r.operandHandler.GetImageStreamNames())
+
+	if err = virtimport.RemoveStaleObjects(req, r.client); err != nil {
+		return upgradePatched, err
+	}
 
 	if err = removeOldNetworkPolicies(req, r.client); err != nil {
 		return upgradePatched, err

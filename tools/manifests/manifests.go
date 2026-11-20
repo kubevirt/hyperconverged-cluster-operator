@@ -41,6 +41,8 @@ type DeploymentOperatorParams struct {
 	NetworkResourcesInjectorImage string
 	AIEWebhookImage               string
 	ObservabilityControllerImage  string
+	VirtImportControllerImage     string
+	VirtImportFetcherImage        string
 	ImagePullPolicy               string
 	ConversionContainer           string
 	VmwareContainer               string
@@ -299,6 +301,14 @@ func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.ObservabilityControllerImageEnvV,
 			Value: params.ObservabilityControllerImage,
+		},
+		{
+			Name:  util.VirtImportControllerImageEnvV,
+			Value: params.VirtImportControllerImage,
+		},
+		{
+			Name:  util.VirtImportFetcherImageEnvV,
+			Value: params.VirtImportFetcherImage,
 		},
 	}, params.Env...)
 
@@ -727,7 +737,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		{
 			APIGroups: stringListToSlice("apiextensions.k8s.io"),
 			Resources: stringListToSlice("customresourcedefinitions"),
-			Verbs:     stringListToSlice("get", "list", "update", "patch", "watch", "delete"),
+			Verbs:     stringListToSlice("get", "list", "create", "update", "patch", "watch", "delete"),
 		},
 		{
 			APIGroups: stringListToSlice("apiextensions.k8s.io"),
@@ -851,6 +861,61 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 		roleWithAllPermissions("cert-manager.io", stringListToSlice("certificates", "issuers")),
+		{
+			APIGroups: stringListToSlice("import.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineimports"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"),
+		},
+		{
+			APIGroups: stringListToSlice("import.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineimports/status"),
+			Verbs:     stringListToSlice("get", "patch"),
+		},
+		{
+			APIGroups: stringListToSlice("import.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineimports/finalizers"),
+			Verbs:     stringListToSlice("update"),
+		},
+		{
+			APIGroups: emptyAPIGroup,
+			Resources: stringListToSlice("pods/log"),
+			Verbs:     stringListToSlice("get"),
+		},
+		{
+			APIGroups: stringListToSlice("batch"),
+			Resources: stringListToSlice("jobs"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(cdiapi.GroupName),
+			Resources: stringListToSlice("cdiconfigs"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice(cdiapi.GroupName),
+			Resources: stringListToSlice("datavolumes"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "patch", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(kvapi.GroupName),
+			Resources: stringListToSlice("virtualmachines"),
+			Verbs:     stringListToSlice("get", "create"),
+		},
+		{
+			APIGroups: stringListToSlice(kvapi.GroupName),
+			Resources: stringListToSlice("virtualmachines/finalizers"),
+			Verbs:     stringListToSlice("update"),
+		},
+		{
+			APIGroups: stringListToSlice("template.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachinetemplates"),
+			Verbs:     stringListToSlice("get", "create"),
+		},
+		{
+			APIGroups: stringListToSlice("template.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachinetemplates/finalizers"),
+			Verbs:     stringListToSlice("update"),
+		},
 	}
 }
 

@@ -134,6 +134,13 @@ type HyperConvergedSpec struct {
 	//   gate. Note: this feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * deployVirtImport:
+	//   Deploy the virt-import component, which provides the VirtualMachineImport
+	//   API to import VirtualMachines and VirtualMachineTemplates from OCI
+	//   artifacts. Disabling the feature gate removes the component, including its
+	//   CRD and all VirtualMachineImports.
+	//   Phase: alpha
+	//
 	// * downwardMetrics:
 	//   Allow to expose a limited set of host metrics to guests.
 	//   Phase: alpha
@@ -1147,6 +1154,10 @@ const (
 	// ConditionKubevirtApiserverProxyReady indicates whether the kubevirt-apiserver-proxy
 	// deployment is fully ready (all replicas running).
 	ConditionKubevirtApiserverProxyReady = "KubevirtApiserverProxyReady"
+
+	// ConditionVirtImportReady indicates whether the virt-import controller
+	// deployment is fully ready (all replicas running).
+	ConditionVirtImportReady = "VirtImportReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

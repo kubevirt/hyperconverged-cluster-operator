@@ -108,6 +108,8 @@ var (
 	aieWebhookImage               = flag.String("aie-webhook-image-name", "", "AIE Webhook image")
 	_                             = flag.String("iommufd-device-plugin-image-name", "", "ignored: not in use")
 	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
+	virtImportControllerImage     = flag.String("virt-import-controller-image-name", "", "virt-import controller image")
+	virtImportFetcherImage        = flag.String("virt-import-fetcher-image-name", "", "virt-import fetcher image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
 	smbiosFile                    = flag.String("smbios-file", "", "Custom SMBIOS file name, used by HCO to configure the SMBIOS in KubeVirt CR")
 	machinetype                   = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
@@ -828,6 +830,8 @@ func getDeploymentParams() *manifests.DeploymentOperatorParams {
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		AIEWebhookImage:               *aieWebhookImage,
 		ObservabilityControllerImage:  *observabilityControllerImage,
+		VirtImportControllerImage:     *virtImportControllerImage,
+		VirtImportFetcherImage:        *virtImportFetcherImage,
 		Env:                           envVars,
 		AddNetworkPolicyLabels:        *dumpNetworkPolicies,
 	}

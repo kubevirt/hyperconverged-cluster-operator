@@ -374,7 +374,9 @@ ${TOOLS}/manifest-templator \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
-  --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}"
+  --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
+  --virt-import-controller-image-name="${VIRT_IMPORT_CONTROLLER_IMAGE}" \
+  --virt-import-fetcher-image-name="${VIRT_IMPORT_FETCHER_IMAGE}"
 
 if [[ "${UNIQUE}" == "true"  ]]; then
   CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
@@ -440,6 +442,8 @@ ${TOOLS}/csv-merger \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
+  --virt-import-controller-image-name="${VIRT_IMPORT_CONTROLLER_IMAGE}" \
+  --virt-import-fetcher-image-name="${VIRT_IMPORT_FETCHER_IMAGE}" \
   --dump-services \
   ${NETWORK_POLICIES_PARAMS} \
   > temp_manifests.yaml

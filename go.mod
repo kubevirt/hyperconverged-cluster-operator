@@ -6,6 +6,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/blang/semver/v4 v4.0.0
 	github.com/containers/image/v5 v5.36.2
+	github.com/distribution/reference v0.6.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -70,7 +71,6 @@ require (
 	github.com/containers/ocicrypt v1.3.2 // indirect
 	github.com/containers/storage v1.59.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect

@@ -21,20 +21,23 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	netresinjector "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/netresinjector"
 	observabilitycontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/observabilitycontroller"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/virtimport"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const (
-	reconcileFailed       = "ReconcileFailed"
-	ErrCDIUninstall       = "ErrCDIUninstall"
-	uninstallCDIErrorMsg  = "The uninstall request failed on CDI component: "
-	ErrVirtUninstall      = "ErrVirtUninstall"
-	uninstallVirtErrorMsg = "The uninstall request failed on virt component: "
-	ErrHCOUninstall       = "ErrHCOUninstall"
-	uninstallHCOErrorMsg  = "The uninstall request failed on dependent components, please check their logs."
-	deleteTimeOut         = time.Minute
+	reconcileFailed             = "ReconcileFailed"
+	ErrCDIUninstall             = "ErrCDIUninstall"
+	uninstallCDIErrorMsg        = "The uninstall request failed on CDI component: "
+	ErrVirtUninstall            = "ErrVirtUninstall"
+	uninstallVirtErrorMsg       = "The uninstall request failed on virt component: "
+	ErrHCOUninstall             = "ErrHCOUninstall"
+	uninstallHCOErrorMsg        = "The uninstall request failed on dependent components, please check their logs."
+	ErrVirtImportUninstall      = "ErrVirtImportUninstall"
+	uninstallVirtImportErrorMsg = "The uninstall request failed on the virt-import CRDs: "
+	deleteTimeOut               = time.Minute
 )
 
 var (
@@ -45,8 +48,10 @@ type OperandHandler struct {
 	client   client.Client
 	operands []operands.Operand
 	// save for deletions
-	objects      []client.Object
-	eventEmitter hcoutil.EventEmitter
+	objects []client.Object
+	// deleted before objects, while the controllers that remove the finalizers of their CRs still run
+	firstToDelete []client.Object
+	eventEmitter  hcoutil.EventEmitter
 
 	observabilityDeployed bool
 }
@@ -140,12 +145,37 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		operandList = append(operandList, handlers.NewCsvHandler(client))
 	}
 
-	return &OperandHandler{
+	oh := &OperandHandler{
 		client:                client,
 		operands:              operandList,
 		eventEmitter:          eventEmitter,
 		observabilityDeployed: observabilityDeployed,
 	}
+
+	if os.Getenv(hcoutil.VirtImportControllerImageEnvV) != "" && os.Getenv(hcoutil.VirtImportFetcherImageEnvV) != "" {
+		if err := oh.addVirtImportOperands(client, scheme); err != nil {
+			logger.Error(err, "can't deploy virt-import")
+		}
+	}
+
+	return oh
+}
+
+func (h *OperandHandler) addVirtImportOperands(cli client.Client, scheme *runtime.Scheme) error {
+	ops, err := virtimport.NewOperands(cli, scheme)
+	if err != nil {
+		return err
+	}
+	crds, err := virtimport.CRDs()
+	if err != nil {
+		return err
+	}
+
+	h.operands = append(h.operands, ops...)
+	for _, crd := range crds {
+		h.firstToDelete = append(h.firstToDelete, crd)
+	}
+	return nil
 }
 
 // FirstUseInitiation is a lazy init function
@@ -261,6 +291,14 @@ func (h *OperandHandler) handleUpdatedOperand(req *common.HcoRequest, res *opera
 func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	tCtx, cancel := context.WithTimeout(req.Ctx, deleteTimeOut)
 	defer cancel()
+
+	// The virt-import CRDs go first: their CRs have finalizers, which only the virt-import
+	// controller removes, so it must still run while they are deleted.
+	for _, o := range h.firstToDelete {
+		if err := h.deleteSingleResource(tCtx, req, o, ErrVirtImportUninstall, uninstallVirtImportErrorMsg); err != nil {
+			return err
+		}
+	}
 
 	err := h.deleteMultipleResources(tCtx, req)
 	if err != nil {
