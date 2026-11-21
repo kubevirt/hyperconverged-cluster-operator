@@ -151,6 +151,7 @@ const (
 	kvNetworkDevicesWithDRA      = "NetworkDevicesWithDRA"
 	kvGPUsWithDRA                = "GPUsWithDRA"
 	kvCPUsWithDRA                = "CPUsWithDRA"
+	kvHostDevicesWithDRA         = "HostDevicesWithDRA"
 	kvMDevVGPULiveMigration      = "MDevVGPULiveMigration"
 	kvCrossClusterMigrationProxy = "CrossClusterMigrationProxy"
 	kvVMStatsCollector           = "VMStatsCollector"
@@ -176,6 +177,7 @@ var (
 		kvNetworkDevicesWithDRA,
 		kvGPUsWithDRA,
 		kvCPUsWithDRA,
+		kvHostDevicesWithDRA,
 		kvMDevVGPULiveMigration,
 	}
 )
