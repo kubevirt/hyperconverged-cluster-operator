@@ -4917,6 +4917,29 @@ Version: 1.2.3`)
 
 	})
 
+	Context("host-device DRA feature gate", func() {
+		DescribeTable("should reconcile host-device DRA without changing GPU DRA", func(gates featuregates.HyperConvergedFeatureGates) {
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.Enable("hostDevicesWithDRA")
+			hco.Spec.FeatureGates.Enable("gpusWithDRA")
+			existing, err := NewKubeVirt(hco)
+			Expect(err).ToNot(HaveOccurred())
+			cl := commontestutils.InitClient([]client.Object{hco, existing})
+			hco.Spec.FeatureGates = gates
+			hco.Spec.FeatureGates.Enable("gpusWithDRA")
+			res := NewKubevirtHandler(cl, commontestutils.GetScheme()).Ensure(commontestutils.NewReq(hco))
+			Expect(res.Err).ToNot(HaveOccurred())
+			found := &kubevirtcorev1.KubeVirt{}
+			Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(existing), found)).To(Succeed())
+			Expect(found.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvGPUsWithDRA))
+			Expect(found.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvCPUsWithDRA))
+			Expect(found.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvHostDevicesWithDRA))
+		},
+			Entry("when the host-device gate is removed", nil),
+			Entry("when the host-device gate is disabled", featuregates.HyperConvergedFeatureGates{{Name: "hostDevicesWithDRA", State: new(featuregates.Disabled)}}),
+		)
+	})
+
 	Context("Quantity", func() {
 		It("should add a quantity type if missing", func() {
 			hco := commontestutils.NewHco()
