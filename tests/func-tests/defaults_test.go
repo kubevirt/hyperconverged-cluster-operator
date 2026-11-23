@@ -66,6 +66,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 	Context("feature gate defaults", func() {
 		defaultFeatureGates := map[string]gomegatypes.GomegaMatcher{
+			"hostDevicesWithDRA":             BeFalseBecause("the hostDevicesWithDRA feature gate should be disabled by default"),
 			"downwardMetrics":                BeFalseBecause("the downwardMetrics feature gate should be disabled by default"),
 			"disableMDevConfiguration":       BeFalseBecause("the disableMDevConfiguration feature gate should be disabled by default"),
 			"persistentReservation":          BeFalseBecause("the persistentReservation feature gate should be disabled by default"),
