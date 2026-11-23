@@ -357,6 +357,23 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 			"spec": map[string]any{},
 		})
 
+	// Namespace template with Pod Security Admission labels for OLM v1
+	const namespaceTemplate = `{
+  "apiVersion": "v1",
+  "kind": "Namespace",
+  "metadata": {
+    "name": "%s",
+    "labels": {
+      "pod-security.kubernetes.io/audit": "privileged",
+      "pod-security.kubernetes.io/audit-version": "latest",
+      "pod-security.kubernetes.io/enforce": "privileged",
+      "pod-security.kubernetes.io/enforce-version": "latest",
+      "pod-security.kubernetes.io/warn": "privileged",
+      "pod-security.kubernetes.io/warn-version": "latest"
+    }
+  }
+}`
+
 	// Explicitly fail on unvalidated (for any reason) requests:
 	// this can make removing HCO CR harder if HCO webhook is not able
 	// to really validate the requests.
@@ -433,20 +450,20 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 				"description":                            params.MetaDescription,
 				"repository":                             "https://github.com/kubevirt/hyperconverged-cluster-operator",
 				"support":                                "false",
-				"operatorframework.io/suggested-namespace":         params.Namespace,
-				"operatorframework.io/initialization-resource":     string(almExamples),
-				"operators.openshift.io/infrastructure-features":   `["disconnected","proxy-aware"]`, // TODO: deprecated, remove once all the tools support "features.operators.openshift.io/*"
-				"features.operators.openshift.io/disconnected":     "true",
-				"features.operators.openshift.io/fips-compliant":   "false",
-				"features.operators.openshift.io/proxy-aware":      "true",
-				"features.operators.openshift.io/cnf":              "false",
-				"features.operators.openshift.io/cni":              "true",
-				"features.operators.openshift.io/csi":              "true",
-				"features.operators.openshift.io/tls-profiles":     "true",
-				"features.operators.openshift.io/token-auth-aws":   "false",
-				"features.operators.openshift.io/token-auth-azure": "false",
-				"features.operators.openshift.io/token-auth-gcp":   "false",
-				"openshift.io/required-scc":                        "restricted-v2",
+				"operatorframework.io/suggested-namespace-template": fmt.Sprintf(namespaceTemplate, params.Namespace),
+				"operatorframework.io/initialization-resource":      string(almExamples),
+				"operators.openshift.io/infrastructure-features":    `["disconnected","proxy-aware"]`, // TODO: deprecated, remove once all the tools support "features.operators.openshift.io/*"
+				"features.operators.openshift.io/disconnected":      "true",
+				"features.operators.openshift.io/fips-compliant":    "false",
+				"features.operators.openshift.io/proxy-aware":       "true",
+				"features.operators.openshift.io/cnf":               "false",
+				"features.operators.openshift.io/cni":               "true",
+				"features.operators.openshift.io/csi":               "true",
+				"features.operators.openshift.io/tls-profiles":      "true",
+				"features.operators.openshift.io/token-auth-aws":    "false",
+				"features.operators.openshift.io/token-auth-azure":  "false",
+				"features.operators.openshift.io/token-auth-gcp":    "false",
+				"openshift.io/required-scc":                         "restricted-v2",
 			},
 		},
 		Spec: csvv1alpha1.ClusterServiceVersionSpec{
