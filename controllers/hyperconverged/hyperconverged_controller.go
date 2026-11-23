@@ -184,6 +184,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		&corev1.Service{},
 		&corev1.ServiceAccount{},
 		&appsv1.DaemonSet{},
+		&appsv1.Deployment{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
 		&rbacv1.ClusterRole{},
@@ -208,7 +209,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 			&consolev1.ConsolePlugin{},
 			&imagev1.ImageStream{},
 			&corev1.Namespace{},
-			&appsv1.Deployment{},
 			&securityv1.SecurityContextConstraints{},
 		}...)
 	}
