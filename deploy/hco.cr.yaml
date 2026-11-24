@@ -18,7 +18,7 @@ spec:
         renewBefore: 12h0m0s
   virtualization:
     higherWorkloadDensity:
-      memoryOvercommitPercentage: 100
+      memoryOvercommitPercentage: 110
     liveMigrationConfig:
       allowAutoConverge: false
       allowPostCopy: false

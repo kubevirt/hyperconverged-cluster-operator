@@ -161,7 +161,7 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 	}
 	if in.Spec.HigherWorkloadDensity != nil {
 		if in.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage == 0 {
-			in.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage = 100
+			in.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage = 110
 		}
 	}
 	if in.Spec.EnableCommonBootImageImport == nil {

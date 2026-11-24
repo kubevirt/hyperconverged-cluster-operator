@@ -1354,7 +1354,7 @@ metadata:
 spec:
   virtualization:
     higherWorkloadDensity:
-      memoryOvercommitPercentage: <intValue> # i.e. 150, 200, default is 100
+      memoryOvercommitPercentage: <intValue> # i.e. 150, 200, default is 110
 ```
 As an example, if the VM compute container requests 4Gi memory, then the corresponding VM guest OS will see `4Gi * 150 / 100 = 6Gi`.
 

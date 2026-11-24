@@ -27,7 +27,7 @@
         "disableSerialConsoleLog": false
       },
       "higherWorkloadDensity": {
-        "memoryOvercommitPercentage": 100
+        "memoryOvercommitPercentage": 110
       },
       "vmiCPUAllocationRatio": 10
     },

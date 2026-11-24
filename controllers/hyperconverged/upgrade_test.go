@@ -672,6 +672,51 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(requeue).To(BeFalse())
 			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB).To(HaveValue(BeEquivalentTo(800)))
 		})
+
+		It("should update memoryOvercommitPercentage from old default on upgrade", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.19.5")
+			expected.hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 100,
+			}
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeTrue())
+			_, _, requeue = doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.HigherWorkloadDensity).NotTo(BeNil())
+			Expect(foundResource.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage).To(Equal(110))
+		})
+
+		It("should not update memoryOvercommitPercentage when user customized the value", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.19.5")
+			expected.hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 800,
+			}
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.HigherWorkloadDensity).NotTo(BeNil())
+			Expect(foundResource.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage).To(Equal(800))
+		})
+
+		It("should not update memoryOvercommitPercentage when upgrading from an unaffected version", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.20.0")
+			expected.hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 100,
+			}
+
+			cl := expected.initClient()
+			foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.HigherWorkloadDensity).NotTo(BeNil())
+			Expect(foundResource.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage).To(Equal(100))
+		})
 	})
 
 	Context("remove old quickstart guides", func() {
