@@ -18,11 +18,11 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-const sampleGuestDeviceDriversConfig = `version: v1alpha1
+const sampleGuestDeviceDriversConfig = `version: v1alpha2
 devices:
   - deviceID: "1041"
     deviceName: "VirtIO network device"
-    current:
+    minimum:
       - guestOSVersionID: "2022"
         driverVersion: "100.95.104.26200"
 `

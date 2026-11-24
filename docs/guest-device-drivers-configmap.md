@@ -1,10 +1,11 @@
 # Guest Device Drivers Reference ConfigMap
 
 HCO can deploy a reference ConfigMap, named `kubevirt-guest-device-drivers-config`, that
-maps VirtIO guest device IDs to the driver versions shipped by the distributor. The
+maps VirtIO guest device IDs to the minimum driver versions supported by the distributor. The
 [observability controller](https://github.com/kubevirt/kubevirt-observability-controller)
-reads this ConfigMap to report the `kubevirt_guest_device_driver_latest_version_info`
-metric, which allows alerting on VirtualMachines running outdated guest device drivers.
+reads this ConfigMap to report the `kubevirt_guest_device_driver_minimum_build_number`
+metric, which allows alerting on VirtualMachines running guest device drivers below the
+supported minimum.
 See [VEP #385: Guest Device Info Metrics](https://github.com/kubevirt/enhancements/blob/main/veps/sig-observability/385-guest-device-info/vep.md#driver-version-reference-configmap)
 for the full design.
 
@@ -23,14 +24,18 @@ The file is read from the operator's working directory when the operand handlers
 initialized. The expected file format is:
 
 ```yaml
-version: v1alpha1
+version: v1alpha2
 devices:
   - deviceID: "1041"
     deviceName: "VirtIO network device"
-    current:
+    minimum:
       - guestOSVersionID: "2022"
         driverVersion: "100.95.104.26200"
 ```
+
+Each `(deviceID, guestOSVersionID)` key carries exactly one minimum `driverVersion`, and
+every `driverVersion` must have four 16-bit decimal components (for example
+`100.95.104.26200`); the observability controller rejects the whole ConfigMap otherwise.
 
 Upstream builds do not ship this file.
 

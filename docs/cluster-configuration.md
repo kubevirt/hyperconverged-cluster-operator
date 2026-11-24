@@ -515,11 +515,11 @@ spec:
       - +vmi-memory
 ```
 
-`kubevirt_vmi_guest_device_driver_timestamp_seconds`, one of the series
-published by default, carries the release date of each guest device driver.
-Compare it with `kubevirt_guest_device_driver_latest_version_info`, which lists
-the driver versions shipped for this cluster, to find guests running outdated
-VirtIO drivers.
+`kubevirt_vmi_guest_device_driver_build_number`, one of the series
+published by default, carries the build number of each guest device driver.
+Compare it with `kubevirt_guest_device_driver_minimum_build_number`, which
+carries the minimum driver version shipped for this cluster, to find guests
+running outdated VirtIO drivers.
 
 Alerts and recording rules are not narrowed the same way. While this feature
 gate is enabled, every group is published, because virt-operator stops
