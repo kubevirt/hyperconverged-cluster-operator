@@ -9,9 +9,9 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 )
 
-func TestAIEWebhook(t *testing.T) {
+func TestAIE(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "AIE Webhook Suite")
+	RunSpecs(t, "AIE Launcher Suite")
 }
 
 var _ = BeforeSuite(func() {

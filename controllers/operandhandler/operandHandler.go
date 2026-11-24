@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -45,8 +46,9 @@ type OperandHandler struct {
 	client   client.Client
 	operands []operands.Operand
 	// save for deletions
-	objects      []client.Object
-	eventEmitter hcoutil.EventEmitter
+	objects        []client.Object
+	cleanupObjects []client.Object
+	eventEmitter   hcoutil.EventEmitter
 
 	observabilityDeployed bool
 }
@@ -60,13 +62,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewAAQHandler(client, scheme),
 		handlers.NewMigControllerHandler(client, scheme),
 		handlers.NewVMFileRestoreHandler(client, scheme),
-		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
-		aie.NewAIEWebhookServiceHandler(client, scheme),
-		aie.NewAIEWebhookDeploymentHandler(client, scheme),
-		aie.NewAIEWebhookConfigMapHandler(client, scheme),
-		aie.NewAIEWebhookClusterRoleHandler(client, scheme),
-		aie.NewAIEWebhookClusterRoleBindingHandler(client, scheme),
-		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
 		netresinjector.NewClusterRoleHandler(client, scheme),
 		netresinjector.NewClusterRoleBindingHandler(client, scheme),
 		netresinjector.NewServiceAccountHandler(client, scheme),
@@ -75,6 +70,16 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		netresinjector.NewPDBHandler(client, scheme),
 		netresinjector.NewMutatingWebhookConfigurationHandler(client, scheme),
 		netresinjector.NewNetworkPolicyHandler(client, scheme),
+	}
+
+	// Retain resource identities for cleanup if the image disappears during an upgrade.
+	cleanupObjects := aie.LauncherResources()
+	aieLauncherImage := strings.TrimSpace(os.Getenv(hcoutil.AIELauncherImageEnvV))
+	if aieLauncherImage != "" {
+		cleanupObjects = nil
+		operandList = append(operandList, aie.NewLauncherPolicyHandler(client, scheme, aieLauncherImage), aie.NewLauncherBindingHandler(client, scheme))
+	} else {
+		logger.Info("NVIDIA AIE is unavailable because the launcher image is not configured", "environmentVariable", hcoutil.AIELauncherImageEnvV)
 	}
 
 	observabilityDeployed := false
@@ -142,6 +147,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 
 	return &OperandHandler{
 		client:                client,
+		objects:               cleanupObjects,
+		cleanupObjects:        cleanupObjects,
 		operands:              operandList,
 		eventEmitter:          eventEmitter,
 		observabilityDeployed: observabilityDeployed,
@@ -217,20 +224,19 @@ func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1.HyperConv
 }
 
 func (h *OperandHandler) Ensure(req *common.HcoRequest) error {
+	for _, obj := range h.cleanupObjects {
+		res := operands.EnsureObjectDeleted(req, h.client, h.client.Scheme(), obj)
+		if res.Err != nil {
+			return reconciliationError(req, res.Err)
+		}
+		if res.Deleted {
+			h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetName()))
+		}
+	}
 	for _, handler := range h.operands {
 		res := handler.Ensure(req)
 		if res.Err != nil {
-			req.Logger.Error(res.Err, "failed to Ensure an operand")
-
-			req.ComponentUpgradeInProgress = false
-			req.Conditions.SetStatusCondition(metav1.Condition{
-				Type:               hcov1.ConditionReconcileComplete,
-				Status:             metav1.ConditionFalse,
-				Reason:             reconcileFailed,
-				Message:            fmt.Sprintf("Error while reconciling: %v", res.Err),
-				ObservedGeneration: req.Instance.Generation,
-			})
-			return res.Err
+			return reconciliationError(req, res.Err)
 		}
 
 		if res.Created {
@@ -245,6 +251,20 @@ func (h *OperandHandler) Ensure(req *common.HcoRequest) error {
 	}
 	return nil
 
+}
+
+func reconciliationError(req *common.HcoRequest, err error) error {
+	req.Logger.Error(err, "failed to reconcile a managed resource")
+
+	req.ComponentUpgradeInProgress = false
+	req.Conditions.SetStatusCondition(metav1.Condition{
+		Type:               hcov1.ConditionReconcileComplete,
+		Status:             metav1.ConditionFalse,
+		Reason:             reconcileFailed,
+		Message:            fmt.Sprintf("Error while reconciling: %v", err),
+		ObservedGeneration: req.Instance.Generation,
+	})
+	return err
 }
 
 func (h *OperandHandler) handleUpdatedOperand(req *common.HcoRequest, res *operands.EnsureResult) {

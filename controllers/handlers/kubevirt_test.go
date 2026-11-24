@@ -29,7 +29,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/kvfeaturegates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -2095,21 +2094,34 @@ Version: 1.2.3`)
 						Not(ContainElement(kvPasstBinding)),
 					),
 					// AIE feature gates (GraceIOVirtualization, IOMMUFD, PCINUMAAwareTopology)
-					Entry("should add AIE feature gates to KubeVirt CR if deployAIE annotation is true",
+					Entry("should ignore the retired deployAIE annotation",
 						func(hc *hcov1.HyperConverged) {
-							hc.Annotations[aie.DeployAIEAnnotation] = "true"
+							hc.Annotations["hco.kubevirt.io/deployAIE"] = "true"
+						},
+						And(Not(ContainElement(kvGraceIOVirtualization)), Not(ContainElement(kvIOMMUFD)), Not(ContainElement(kvPCINUMAAwareTopology))),
+					),
+					Entry("should add NVIDIA AIE feature gates when nvidiaAIE is enabled",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates.Enable(featuregates.NVIDIAAIE)
 						},
 						And(ContainElement(kvGraceIOVirtualization), ContainElement(kvIOMMUFD), ContainElement(kvPCINUMAAwareTopology)),
 					),
+					Entry("should leave AIE disabled despite a leftover annotation",
+						func(hc *hcov1.HyperConverged) {
+							hc.Annotations["hco.kubevirt.io/deployAIE"] = "true"
+							hc.Spec.FeatureGates.Disable(featuregates.NVIDIAAIE)
+						},
+						And(Not(ContainElement(kvGraceIOVirtualization)), Not(ContainElement(kvIOMMUFD)), Not(ContainElement(kvPCINUMAAwareTopology))),
+					),
 					Entry("should not add AIE feature gates to KubeVirt CR if deployAIE annotation is false",
 						func(hc *hcov1.HyperConverged) {
-							hc.Annotations[aie.DeployAIEAnnotation] = "false"
+							hc.Annotations["hco.kubevirt.io/deployAIE"] = "false"
 						},
 						And(Not(ContainElement(kvGraceIOVirtualization)), Not(ContainElement(kvIOMMUFD)), Not(ContainElement(kvPCINUMAAwareTopology))),
 					),
 					Entry("should not add AIE feature gates to KubeVirt CR if deployAIE annotation is not set",
 						func(hc *hcov1.HyperConverged) {
-							delete(hc.Annotations, aie.DeployAIEAnnotation)
+							delete(hc.Annotations, "hco.kubevirt.io/deployAIE")
 						},
 						And(Not(ContainElement(kvGraceIOVirtualization)), Not(ContainElement(kvIOMMUFD)), Not(ContainElement(kvPCINUMAAwareTopology))),
 					),

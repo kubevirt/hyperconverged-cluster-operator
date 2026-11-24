@@ -39,7 +39,7 @@ type DeploymentOperatorParams struct {
 	KVUIPluginImage               string
 	KVUIProxyImage                string
 	NetworkResourcesInjectorImage string
-	AIEWebhookImage               string
+	AIELauncherImage              string
 	ObservabilityControllerImage  string
 	ImagePullPolicy               string
 	ConversionContainer           string
@@ -293,14 +293,14 @@ func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 			Value: params.NetworkResourcesInjectorImage,
 		},
 		{
-			Name:  util.AIEWebhookImageEnvV,
-			Value: params.AIEWebhookImage,
-		},
-		{
 			Name:  util.ObservabilityControllerImageEnvV,
 			Value: params.ObservabilityControllerImage,
 		},
 	}, params.Env...)
+
+	if params.AIELauncherImage != "" {
+		envs = append(envs, corev1.EnvVar{Name: util.AIELauncherImageEnvV, Value: params.AIELauncherImage})
+	}
 
 	if params.KvVirtLancherOsVersion != "" {
 		envs = append(envs, corev1.EnvVar{
@@ -538,7 +538,7 @@ func GetDeploymentSpecWebhook(params *DeploymentOperatorParams) appsv1.Deploymen
 }
 
 func buildWebhookEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
-	return append([]corev1.EnvVar{
+	envs := append([]corev1.EnvVar{
 		{
 			// deprecated: left here for CI test.
 			Name:  util.OperatorWebhookModeEnv,
@@ -573,6 +573,10 @@ func buildWebhookEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 			Value: params.HcoKvIoVersion,
 		},
 	}, params.Env...)
+	if params.AIELauncherImage != "" {
+		envs = append(envs, corev1.EnvVar{Name: util.AIELauncherImageEnvV, Value: params.AIELauncherImage})
+	}
+	return envs
 }
 
 func GetWebhookMetricsService() corev1.Service {

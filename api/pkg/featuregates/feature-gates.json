@@ -85,6 +85,11 @@
     "description": "NetworkDevicesWithDRA allows users to create VMIs with DRA provisioned network devices specified in spec.networks with resourceClaim type. This enables DRA-managed network resources to be attached to VMs using the natural networks API. Note: this feature is in Developer Preview."
   },
   {
+    "name": "nvidiaAIE",
+    "phase": "alpha",
+    "description": "Enable the NVIDIA Accelerated Infrastructure Enablement (AIE) integration. Newly created VM launcher Pods across workload namespaces use the NVIDIA AIE launcher, and the required KubeVirt hardware feature gates are enabled. This feature is in Developer Preview and is disabled by default."
+  },
+  {
     "name": "objectGraph",
     "phase": "alpha",
     "description": "ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview."
