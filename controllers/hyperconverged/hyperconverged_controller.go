@@ -503,6 +503,15 @@ func updateStatus(req *common.HcoRequest) {
 		req.Instance.Status.NodeInfo.DefaultWorkloadArchitecture = defaultArch
 		req.StatusDirty = true
 	}
+
+	var desiredCPU *hcov1.NodeCPUStatus
+	if models := nodeinfo.GetCPUModels(); len(models) > 0 {
+		desiredCPU = &hcov1.NodeCPUStatus{Models: models}
+	}
+	if !reflect.DeepEqual(req.Instance.Status.NodeInfo.CPU, desiredCPU) {
+		req.Instance.Status.NodeInfo.CPU = desiredCPU
+		req.StatusDirty = true
+	}
 }
 
 // getHyperConverged gets the HyperConverged resource from the Kubernetes API.

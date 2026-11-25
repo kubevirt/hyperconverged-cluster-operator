@@ -10,6 +10,7 @@ var (
 	origGetControlPlaneArchitectures  = nodeinfo.GetControlPlaneArchitectures
 	origGetWorkloadsArchitectures     = nodeinfo.GetWorkloadsArchitectures
 	origGetDefaultArchitecture        = nodeinfo.GetDefaultArchitecture
+	origGetCPUModels                  = nodeinfo.GetCPUModels
 )
 
 func ResetNodeInfoMocks() {
@@ -20,6 +21,7 @@ func ResetNodeInfoMocks() {
 	nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
 	nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
 	nodeinfo.GetDefaultArchitecture = origGetDefaultArchitecture
+	nodeinfo.GetCPUModels = origGetCPUModels
 }
 
 // HighlyAvailableNodeInfoMocks mocks highly available cluster

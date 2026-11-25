@@ -1004,6 +1004,24 @@ type NodeInfoStatus struct {
 
 	// DefaultWorkloadArchitecture is chosen automatically by HCO. This field reports the architecture selected by HCO.
 	DefaultWorkloadArchitecture string `json:"defaultWorkloadArchitecture,omitempty"`
+
+	// CPU holds CPU status from schedulable nodes.
+	// +optional
+	CPU *NodeCPUStatus `json:"cpu,omitempty"`
+}
+
+// NodeCPUStatus holds CPU information from schedulable nodes.
+type NodeCPUStatus struct {
+	// Models lists libvirt CPU models advertised by at least one
+	// kubevirt.io/schedulable node, newest family first.
+	// +optional
+	Models []CPUModelStatus `json:"models,omitempty"`
+}
+
+// CPUModelStatus is one libvirt CPU model from schedulable nodes.
+type CPUModelStatus struct {
+	// Name is the cpu-model.node.kubevirt.io/ label suffix.
+	Name string `json:"name"`
 }
 
 // ApplicationAwareConfigurations holds the AAQ configurations
