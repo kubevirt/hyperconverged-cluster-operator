@@ -67,3 +67,5 @@ require (
 exclude k8s.io/controller-manager v0.0.0
 
 replace k8s.io/client-go => k8s.io/client-go v0.37.2
+
+replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20260603220949-865597e52e25
