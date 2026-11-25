@@ -902,7 +902,9 @@ spec:
 
 ### Compatible CPU models
 `status.nodeInfo.cpu.models` lists libvirt CPU models from `kubevirt.io/schedulable`
-nodes (newest family first). Each entry has a `name`. A listed model may be
+nodes, newest family first. Within a family, the unsuffixed name comes before
+`-vN` versions, and those come before reduced variants such as `-noTSX`.
+Each entry has a `name`. A listed model may be
 advertised by only some of those nodes. Use a name as a VM `cpu.model` or as
 `defaultCPUModel`. Choosing it as `defaultCPUModel` restricts new VMs and their
 migration targets to nodes that advertise that model; if no node advertises it,
@@ -913,7 +915,7 @@ status:
   nodeInfo:
     cpu:
       models:
-        - name: Cascadelake-Server-v5
+        - name: Cascadelake-Server
         - name: Penryn
 ```
 

@@ -287,6 +287,9 @@ help: ## Show this help screen
 test-unit: gogenerate generate-crd
 	./hack/unit-test.sh
 
+sync-libvirt-cpu-models: ## Collect x86/arm/ppc64 CPU model names from the pinned libvirt cpu_map
+	./hack/sync-libvirt-cpu-models.sh
+
 test-unit-coverage: gogenerate generate-crd
 	./hack/unit-test-coverage.sh
 

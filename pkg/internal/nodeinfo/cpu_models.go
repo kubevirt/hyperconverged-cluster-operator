@@ -82,24 +82,43 @@ func sortCPUModelNames(names []string) {
 		if bi < 0 {
 			bi = len(cpuFamiliesNewestFirst)
 		}
-		return cmp.Or(cmp.Compare(ai, bi), cmp.Compare(bv, av), strings.Compare(a, b))
+		// Alias, then higher -vN, then reduced variants (-noTSX, -IBRS).
+		return cmp.Or(
+			cmp.Compare(ai, bi),
+			cmp.Compare(cpuModelVariantRank(a, af, av), cpuModelVariantRank(b, bf, bv)),
+			cmp.Compare(bv, av),
+			strings.Compare(a, b),
+		)
 	})
 }
 
-// cpuFamiliesNewestFirst follows libvirt's x86 cpu_map groups, newest family first.
+// cpuModelVariantRank orders the unsuffixed alias ahead of -vN versions,
+// and those ahead of reduced variants.
+func cpuModelVariantRank(model, family string, version int) int {
+	switch {
+	case model == family:
+		return 0
+	case version > 0:
+		return 1
+	default:
+		return 2
+	}
+}
+
+// cpuFamiliesNewestFirst is the recommendation order, newest family first.
 var cpuFamiliesNewestFirst = []string{
-	// Intel CPU models
+	// Intel server and client, newest first.
 	"DiamondRapids",
 	"KnightsMill",
 	"Denverton",
+	"GraniteRapids",
 	"ClearwaterForest",
 	"SierraForest",
-	"GraniteRapids",
 	"SapphireRapids",
 	"Snowridge",
-	"Cooperlake",
 	"Icelake-Server",
 	"Icelake-Client",
+	"Cooperlake",
 	"Cascadelake-Server",
 	"Skylake-Server",
 	"Skylake-Client",
@@ -112,7 +131,7 @@ var cpuFamiliesNewestFirst = []string{
 	"Penryn",
 	"Conroe",
 
-	// AMD CPU models
+	// AMD, newest first.
 	"EPYC-Turin",
 	"EPYC-Genoa",
 	"EPYC-Milan",
@@ -132,15 +151,40 @@ var cpuFamiliesNewestFirst = []string{
 	// Zhaoxin CentaurHauls CPU models
 	"YongFeng",
 
-	// Generic QEMU CPU models
+	// ARM, newest server models first.
+	"Neoverse-V2",
+	"Neoverse-V1",
+	"Neoverse-N2",
+	"Neoverse-N1",
+	"Ampere-1a",
+	"Ampere-1",
+	"Kunpeng-920",
+	"a64fx",
+	"Tengyun-S2500",
+	"FT-2000plus",
+	"cortex-a72",
+	"cortex-a57",
+	"cortex-a53",
+	"Falkor",
+	"ThunderX299xx",
+
+	// POWER, newest first, then Freescale.
+	"POWER11",
+	"POWER10",
+	"POWER9",
+	"POWER8",
+	"POWER7",
+	"POWER6",
+	"POWERPC_e6500",
+	"POWERPC_e5500",
+
+	// Generic QEMU models, then the baseline.
 	"kvm64",
 	"qemu64",
 	"cpu64-rhel6",
 	"cpu64-rhel5",
 	"kvm32",
 	"qemu32",
-
-	// Intel-based QEMU generic CPU models
 	"core2duo",
 	"n270",
 	"coreduo",
@@ -148,8 +192,6 @@ var cpuFamiliesNewestFirst = []string{
 	"pentium3",
 	"pentium2",
 	"pentium",
-
-	// generic
 	"486",
 }
 
