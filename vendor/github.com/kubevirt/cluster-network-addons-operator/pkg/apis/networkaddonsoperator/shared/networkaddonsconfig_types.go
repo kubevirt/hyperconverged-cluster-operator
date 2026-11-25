@@ -64,7 +64,9 @@ type MultusDynamicNetworks struct {
 }
 
 // LinuxBridge plugin allows users to create a bridge and add the host and the container to it
-type LinuxBridge struct{}
+type LinuxBridge struct {
+	BridgeMarkerHealthPort *int32 `json:"bridgeMarkerHealthPort,omitempty"`
+}
 
 // Ovs plugin allows users to define Kubernetes networks on top of Open vSwitch bridges available on nodes
 type Ovs struct{}

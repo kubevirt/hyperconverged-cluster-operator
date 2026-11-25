@@ -74,6 +74,12 @@ spec:
               linuxBridge:
                 description: LinuxBridge plugin allows users to create a bridge and
                   add the host and the container to it
+                properties:
+                  bridgeMarkerHealthPort:
+                    description: BridgeMarkerHealthPort defines the health check port
+                      for the linux-bridge marker container
+                    format: int32
+                    type: integer
                 type: object
               macvtap:
                 description: MacvtapCni plugin allows users to define Kubernetes networks
@@ -1742,6 +1748,12 @@ spec:
               linuxBridge:
                 description: LinuxBridge plugin allows users to create a bridge and
                   add the host and the container to it
+                properties:
+                  bridgeMarkerHealthPort:
+                    description: BridgeMarkerHealthPort defines the health check port
+                      for the linux-bridge marker container
+                    format: int32
+                    type: integer
                 type: object
               macvtap:
                 description: MacvtapCni plugin allows users to define Kubernetes networks
