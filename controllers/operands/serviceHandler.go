@@ -2,6 +2,7 @@ package operands
 
 import (
 	"errors"
+	"maps"
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
@@ -54,6 +55,10 @@ func updateService(req *common.HcoRequest, Client client.Client, exists runtime.
 			req.Logger.Info("Reconciling an externally updated Service's Spec to its opinionated values")
 		}
 		util.MergeLabels(&service.ObjectMeta, &found.ObjectMeta)
+		if found.Annotations == nil {
+			found.Annotations = make(map[string]string, len(service.Annotations))
+		}
+		maps.Copy(found.Annotations, service.Annotations)
 		service.Spec.ClusterIP = found.Spec.ClusterIP
 		service.Spec.DeepCopyInto(&found.Spec)
 		err := Client.Update(req.Ctx, found)
@@ -69,9 +74,10 @@ func updateService(req *common.HcoRequest, Client client.Client, exists runtime.
 // We need to check only certain fields of Service object. Since there
 // are some fields in the Spec that are set by k8s like "clusterIP", "ipFamilyPolicy", etc.
 // When we compare current spec with expected spec by using reflect.DeepEqual, it
-// never returns true.
+// never returns true. Annotations others added are kept.
 func HasServiceRightFields(found *corev1.Service, required *corev1.Service) bool {
 	return util.CompareLabels(required, found) &&
+		util.IsSubset(required.Annotations, found.Annotations) &&
 		reflect.DeepEqual(required.Spec.Selector, found.Spec.Selector) &&
 		reflect.DeepEqual(required.Spec.Ports, found.Spec.Ports)
 }
