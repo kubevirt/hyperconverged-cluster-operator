@@ -43,10 +43,11 @@ func MergeLabelsJSONPatch(src, tgt *metav1.ObjectMeta) ([]byte, error) {
 // CompareLabels reports whether src labels are contained into tgt ones; extra labels on tgt are ignored.
 // It returns true if the src labels map is a subset of the tgt one.
 func CompareLabels(src, tgt metav1.Object) bool {
-	return compareLabels(src.GetLabels(), tgt.GetLabels())
+	return IsSubset(src.GetLabels(), tgt.GetLabels())
 }
 
-func compareLabels(src, tgt map[string]string) bool {
+// IsSubset reports whether all entries of src are in tgt.
+func IsSubset(src, tgt map[string]string) bool {
 	for srcKey, srcVal := range src {
 		tgtVal, ok := tgt[srcKey]
 		if !ok || tgtVal != srcVal {
