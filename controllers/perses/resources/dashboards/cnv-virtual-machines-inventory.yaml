@@ -69,6 +69,21 @@ spec:
             - enableSorting: true
               header: Outdated
               name: outdated
+            - cellSettings:
+              - condition:
+                  kind: Value
+                  spec:
+                    value: "true"
+                text: Present
+              - condition:
+                  kind: Value
+                  spec:
+                    value: "false"
+                text: Missing
+                textColor: '#F2495C'
+              enableSorting: true
+              header: Panic Device
+              name: has_panic_device
             - enableSorting: true
               header: OS Name
               name: guest_os_name
@@ -132,6 +147,8 @@ spec:
               name: 'value #12'
             - hide: true
               name: 'value #13'
+            - hide: true
+              name: 'value #14'
             - hide: true
               name: __name__
             - hide: true
@@ -227,7 +244,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: |-
-                  sum by (namespace, name)(kubevirt_vmi_memory_available_bytes{namespace=~"$namespace", name=~"$name"}*0+1)+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                  sum by (namespace, name)(kubevirt_vmi_info{namespace=~"$namespace", name=~"$name", guest_os_name!=""})+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
                   +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
         - kind: TimeSeriesQuery
           spec:
@@ -316,6 +333,16 @@ spec:
                     label_replace(sum by (namespace, name)(kubevirt_vmi_non_evictable{name=~"$name", namespace=~"$namespace"} == 1), "live_migratable", "false", "__name__", ".*")
                     or
                     label_replace(sum by (namespace, name)(kubevirt_vmi_non_evictable{name=~"$name", namespace=~"$namespace"} == 0), "live_migratable", "true",  "__name__", ".*")
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                  +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: |-
+                  sum by (namespace, name, has_panic_device)(
+                    kubevirt_vmi_info{namespace=~"$namespace", name=~"$name"}
                   )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
                   +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
   variables:

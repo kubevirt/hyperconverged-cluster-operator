@@ -382,8 +382,9 @@ spec:
             plugin:
               kind: PrometheusTimeSeriesQuery
               spec:
-                query: sum by (namespace, name)(kubevirt_vmi_memory_available_bytes{namespace=~"$namespace",
-                  name=~"$name"}*0+1)+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                query: sum by (namespace, name)(kubevirt_vmi_info{namespace=~"$namespace",
+                  name=~"$name", guest_os_name!=""})+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
   variables:
   - kind: ListVariable
     spec:
