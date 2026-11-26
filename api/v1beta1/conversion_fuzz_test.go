@@ -376,6 +376,15 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	}
 
 	if r.IntN(2) == 1 {
+		if hc.Spec.Networking == nil {
+			hc.Spec.Networking = &hcov1.NetworkingConfig{}
+		}
+		hc.Spec.Networking.LinuxBridgeConfig = &hcov1.LinuxBridgeConfig{
+			BridgeMarkerHealthProberPort: randPtr(r, int32(1024+r.IntN(64512))),
+		}
+	}
+
+	if r.IntN(2) == 1 {
 		hc.Spec.Virtualization.ObsoleteCPUModels = randStringSlice(r)
 	}
 

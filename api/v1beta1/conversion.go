@@ -33,6 +33,7 @@ type v1OnlyFields struct {
 	FeatureGates                   hcov1fg.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 	Observability                  *hcov1.ObservabilityConfig         `json:"observability,omitempty"`
 	SMBIOS                         *hcov1.SMBIOSConfiguration         `json:"smbios,omitempty"`
+	LinuxBridgeConfig              *hcov1.LinuxBridgeConfig           `json:"linuxBridgeConfig,omitempty"`
 }
 
 func (fields *v1OnlyFields) isEmpty() bool {
@@ -42,7 +43,8 @@ func (fields *v1OnlyFields) isEmpty() bool {
 		fields.MultiArchEnabled == nil &&
 		fields.FeatureGates == nil &&
 		fields.Observability == nil &&
-		fields.SMBIOS == nil
+		fields.SMBIOS == nil &&
+		fields.LinuxBridgeConfig == nil
 }
 
 // Implement the conversion.Convertible interface, to be used in the conversion webhook.
@@ -73,7 +75,21 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 
 	convertSecurityV1beta1ToV1(src.Spec, &dst.Spec.Security)
 
+	// keep the v1-only linuxBridgeConfig field, that was restored from the annotation
+	var linuxBridgeConfig *hcov1.LinuxBridgeConfig
+	if dst.Spec.Networking != nil {
+		linuxBridgeConfig = dst.Spec.Networking.LinuxBridgeConfig
+	}
+
 	dst.Spec.Networking = convertNetworkingV1beta1ToV1(src.Spec)
+
+	if linuxBridgeConfig != nil {
+		if dst.Spec.Networking == nil {
+			dst.Spec.Networking = &hcov1.NetworkingConfig{}
+		}
+
+		dst.Spec.Networking.LinuxBridgeConfig = linuxBridgeConfig
+	}
 
 	convertWorkloadSourcesV1beta1ToV1(src.Spec, &dst.Spec.WorkloadSources)
 
@@ -623,6 +639,14 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		dst.Spec.Virtualization.SMBIOSConfig = v1Fields.SMBIOS.DeepCopy()
 	}
 
+	if v1Fields.LinuxBridgeConfig != nil {
+		if dst.Spec.Networking == nil {
+			dst.Spec.Networking = &hcov1.NetworkingConfig{}
+		}
+
+		dst.Spec.Networking.LinuxBridgeConfig = v1Fields.LinuxBridgeConfig.DeepCopy()
+	}
+
 	return nil
 }
 
@@ -657,6 +681,10 @@ func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
 
 	if src.Spec.Virtualization.SMBIOSConfig != nil {
 		v1Fields.SMBIOS = src.Spec.Virtualization.SMBIOSConfig.DeepCopy()
+	}
+
+	if src.Spec.Networking != nil && src.Spec.Networking.LinuxBridgeConfig != nil {
+		v1Fields.LinuxBridgeConfig = src.Spec.Networking.LinuxBridgeConfig.DeepCopy()
 	}
 
 	if v1Fields.isEmpty() {

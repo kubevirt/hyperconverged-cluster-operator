@@ -4837,6 +4837,11 @@ var _ = Describe("api/v1beta1", func() {
 			v1HC.Spec.Virtualization.SMBIOSConfig = &hcov1.SMBIOSConfiguration{
 				Family: new("Red Hat Enterprise Linux"),
 			}
+			v1HC.Spec.Networking = &hcov1.NetworkingConfig{
+				LinuxBridgeConfig: &hcov1.LinuxBridgeConfig{
+					BridgeMarkerHealthProberPort: new(int32(9090)),
+				},
+			}
 			v1beta1HC := &HyperConverged{}
 
 			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
@@ -4860,7 +4865,10 @@ var _ = Describe("api/v1beta1", func() {
 		},
 		"smbios": {
 			"family": "Red Hat Enterprise Linux"
-	}
+		},
+		"linuxBridgeConfig": {
+			"bridgeMarkerHealthProberPort": 9090
+		}
 }`
 			Expect(v1beta1HC.Annotations).To(HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(expectedJSONAnnotation)))
 
@@ -4897,6 +4905,9 @@ var _ = Describe("api/v1beta1", func() {
 			Expect(roundTripHC.Spec.Observability.Workloads.AllowedMetrics).To(ConsistOf("kubevirt_guest_device_driver_config_invalid"))
 			Expect(roundTripHC.Spec.Virtualization.SMBIOSConfig).ToNot(BeNil())
 			Expect(roundTripHC.Spec.Virtualization.SMBIOSConfig.Family).To(HaveValue(Equal("Red Hat Enterprise Linux")))
+			Expect(roundTripHC.Spec.Networking).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Networking.LinuxBridgeConfig).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Networking.LinuxBridgeConfig.BridgeMarkerHealthProberPort).To(HaveValue(Equal(int32(9090))))
 		})
 	})
 })

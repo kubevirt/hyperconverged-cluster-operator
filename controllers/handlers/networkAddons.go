@@ -150,6 +150,10 @@ func NewNetworkAddons(hc *hcov1.HyperConverged) (*networkaddonsv1.NetworkAddonsC
 		KubevirtIpamController: ipam,
 	}
 
+	if nt := hc.Spec.Networking; nt != nil && nt.LinuxBridgeConfig != nil {
+		cnaoSpec.LinuxBridge.BridgeMarkerHealthPort = nt.LinuxBridgeConfig.BridgeMarkerHealthProberPort
+	}
+
 	cnaoSpec.Ovs = hcoAnnotation2CnaoSpec(hc.Annotations)
 
 	if np := hc.Spec.Deployment.NodePlacements; np != nil {

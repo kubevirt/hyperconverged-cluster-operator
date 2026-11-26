@@ -2481,6 +2481,19 @@ spec:
                   kubeSecondaryDNSNameServerIP:
                     description: 'Deprecated: This field is ignored.'
                     type: string
+                  linuxBridgeConfig:
+                    description: LinuxBridgeConfig holds the configuration for the
+                      Linux bridge network plugin.
+                    properties:
+                      bridgeMarkerHealthProberPort:
+                        description: |-
+                          BridgeMarkerHealthProberPort is the port on which the bridge-marker liveness/readiness
+                          probe HTTP server listens. When unset, the default port defined by CNAO (8081) is used.
+                        format: int32
+                        maximum: 65535
+                        minimum: 1024
+                        type: integer
+                    type: object
                   networkBinding:
                     additionalProperties:
                       properties:

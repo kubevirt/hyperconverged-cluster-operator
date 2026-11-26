@@ -940,6 +940,32 @@ var _ = Describe("CNA Operand", func() {
 
 		})
 
+		Context("LinuxBridgeConfig", func() {
+			DescribeTable("should not set the bridge-marker health port when it is not configured", func(networking *hcov1.NetworkingConfig) {
+				hco.Spec.Networking = networking
+
+				expectedResource, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(expectedResource.Spec.LinuxBridge).ToNot(BeNil())
+				Expect(expectedResource.Spec.LinuxBridge.BridgeMarkerHealthPort).To(BeNil())
+			},
+				Entry("when Networking is nil", nil),
+				Entry("when LinuxBridgeConfig is nil", &hcov1.NetworkingConfig{}),
+				Entry("when BridgeMarkerHealthProberPort is nil", &hcov1.NetworkingConfig{LinuxBridgeConfig: &hcov1.LinuxBridgeConfig{}}),
+			)
+
+			It("should propagate BridgeMarkerHealthProberPort to the LinuxBridge when set", func() {
+				hco.Spec.Networking = &hcov1.NetworkingConfig{
+					LinuxBridgeConfig: &hcov1.LinuxBridgeConfig{BridgeMarkerHealthProberPort: new(int32(9090))},
+				}
+
+				expectedResource, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(expectedResource.Spec.LinuxBridge).ToNot(BeNil())
+				Expect(expectedResource.Spec.LinuxBridge.BridgeMarkerHealthPort).To(HaveValue(Equal(int32(9090))))
+			})
+		})
+
 		Context("Cache", func() {
 			It("should create new cache if it empty", func() {
 				hook := &cnaHooks{}
