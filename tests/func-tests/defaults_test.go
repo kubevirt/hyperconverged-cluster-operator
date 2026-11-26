@@ -231,7 +231,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 	Context("HigherWorkloadDensity defaults", func() {
 		defaultHigherWorkloadDensity := &hcov1.HigherWorkloadDensityConfiguration{
-			MemoryOvercommitPercentage: 100,
+			MemoryOvercommitPercentage: 110,
 		}
 
 		DescribeTable("Check that HigherWorkloadDensity defaults are behaving as expected", func(ctx context.Context, path string) {

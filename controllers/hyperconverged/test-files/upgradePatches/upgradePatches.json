@@ -29,6 +29,21 @@
           "value": 20
         }
       ]
+    },
+    {
+      "semverRange": "<1.20.0",
+      "jsonPatch": [
+        {
+          "op": "test",
+          "path": "/spec/virtualization/higherWorkloadDensity/memoryOvercommitPercentage",
+          "value": 100
+        },
+        {
+          "op": "replace",
+          "path": "/spec/virtualization/higherWorkloadDensity/memoryOvercommitPercentage",
+          "value": 110
+        }
+      ]
     }
   ],
   "objectsToBeRemoved": [

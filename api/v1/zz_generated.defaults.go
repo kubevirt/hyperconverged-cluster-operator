@@ -98,13 +98,13 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		}
 	}
 	if in.Spec.Virtualization.HigherWorkloadDensity == nil {
-		if err := json.Unmarshal([]byte(`{"memoryOvercommitPercentage": 100}`), &in.Spec.Virtualization.HigherWorkloadDensity); err != nil {
+		if err := json.Unmarshal([]byte(`{"memoryOvercommitPercentage": 110}`), &in.Spec.Virtualization.HigherWorkloadDensity); err != nil {
 			panic(err)
 		}
 	}
 	if in.Spec.Virtualization.HigherWorkloadDensity != nil {
 		if in.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage == 0 {
-			in.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage = 100
+			in.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage = 110
 		}
 	}
 	if in.Spec.Virtualization.VmiCPUAllocationRatio == nil {

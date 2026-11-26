@@ -360,8 +360,8 @@ type VirtualizationConfig struct {
 	VirtualMachineOptions *VirtualMachineOptions `json:"virtualMachineOptions,omitempty"`
 
 	// HigherWorkloadDensity holds configuration aimed to increase virtual machine density
-	// +kubebuilder:default={"memoryOvercommitPercentage": 100}
-	// +default={"memoryOvercommitPercentage": 100}
+	// +kubebuilder:default={"memoryOvercommitPercentage": 110}
+	// +default={"memoryOvercommitPercentage": 110}
 	// +optional
 	HigherWorkloadDensity *HigherWorkloadDensityConfiguration `json:"higherWorkloadDensity,omitempty"`
 
@@ -1095,8 +1095,8 @@ type HigherWorkloadDensityConfiguration struct {
 	// "see" 2% more memory than its parent pod. Values under 100 are effectively "undercommits".
 	// Overcommits can lead to memory exhaustion, which in turn can lead to crashes. Use carefully.
 	// +kubebuilder:validation:Minimum=10
-	// +kubebuilder:default=100
-	// +default=100
+	// +kubebuilder:default=110
+	// +default=110
 	MemoryOvercommitPercentage int `json:"memoryOvercommitPercentage,omitempty"`
 }
 

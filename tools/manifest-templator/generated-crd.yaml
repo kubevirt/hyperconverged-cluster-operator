@@ -3211,12 +3211,12 @@ spec:
                     type: string
                   higherWorkloadDensity:
                     default:
-                      memoryOvercommitPercentage: 100
+                      memoryOvercommitPercentage: 110
                     description: HigherWorkloadDensity holds configuration aimed to
                       increase virtual machine density
                     properties:
                       memoryOvercommitPercentage:
-                        default: 100
+                        default: 110
                         description: |-
                           MemoryOvercommitPercentage is the percentage of memory we want to give VMIs compared to the amount
                           given to its parent pod (virt-launcher). For example, a value of 102 means the VMI will
@@ -7059,7 +7059,7 @@ spec:
                   virtual machine density
                 properties:
                   memoryOvercommitPercentage:
-                    default: 100
+                    default: 110
                     description: |-
                       MemoryOvercommitPercentage is the percentage of memory we want to give VMIs compared to the amount
                       given to its parent pod (virt-launcher). For example, a value of 102 means the VMI will
