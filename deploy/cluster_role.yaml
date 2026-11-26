@@ -881,23 +881,28 @@ rules:
   - ""
   resources:
   - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
   - secrets
   verbs:
   - create
+- apiGroups:
+  - ""
+  resourceNames:
+  - vm-file-restore-operator-ssh
+  resources:
+  - configmaps
+  verbs:
+  - delete
   - get
-  - list
-  - watch
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resourceNames:
+  - vm-file-restore-operator-ssh
+  resources:
+  - secrets
+  verbs:
+  - get
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -5149,23 +5154,12 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - filerestore.kubevirt.io
   resources:
   - filerestoreoperators/status
   verbs:
   - get
-  - update
-  - patch
-- apiGroups:
-  - filerestore.kubevirt.io
-  resources:
-  - filerestoreoperators/finalizers
-  verbs:
   - update
 - apiGroups:
   - filerestore.kubevirt.io
@@ -5175,24 +5169,15 @@ rules:
   - get
   - list
   - watch
-  - create
   - update
   - patch
-  - delete
 - apiGroups:
   - filerestore.kubevirt.io
   resources:
   - virtualmachinefilerestores/status
   verbs:
   - get
-  - update
   - patch
-- apiGroups:
-  - filerestore.kubevirt.io
-  resources:
-  - virtualmachinefilerestores/finalizers
-  verbs:
-  - update
 - apiGroups:
   - kubevirt.io
   resources:
@@ -5202,7 +5187,6 @@ rules:
   - list
   - watch
   - patch
-  - update
 - apiGroups:
   - kubevirt.io
   resources:
@@ -5219,7 +5203,6 @@ rules:
   - create
   - delete
   - get
-  - list
 - apiGroups:
   - snapshot.storage.k8s.io
   resources:
@@ -5229,6 +5212,24 @@ rules:
   - list
   - watch
 - apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents
+  verbs:
+  - get
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+- apiGroups:
   - ""
   resources:
   - persistentvolumeclaims
@@ -5236,21 +5237,10 @@ rules:
   - get
   - list
   - watch
-  - create
-  - delete
 - apiGroups:
   - ""
   resources:
   - pods
   verbs:
-  - get
   - list
   - watch
-  - create
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - pods/exec
-  verbs:
-  - create

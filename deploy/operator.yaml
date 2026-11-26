@@ -75,7 +75,7 @@ spec:
         - name: AUTOPILOT_VERSION
           value: v0.1.2
         - name: VM_FILE_RESTORE_OPERATOR_VERSION
-          value: v0.0.9
+          value: v0.0.10
         - name: INFLIGHT_OPERATIONS_VERSION
           value: v0.0.6
         - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -1271,6 +1271,7 @@ spec:
     spec:
       containers:
       - args:
+        - --metrics-bind-address=:8443
         - --leader-elect
         - --health-probe-bind-address=:8081
         command:
@@ -1281,10 +1282,10 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: OPERATOR_VERSION
-          value: v0.0.9
+          value: v0.0.10
         - name: VERBOSITY
           value: "1"
-        image: quay.io/kubevirt/vm-file-restore-operator@sha256:4abf260c7aa93554498060486f5b9e5c7deaaaf8a6806004d992958133303bee
+        image: quay.io/kubevirt/vm-file-restore-operator@sha256:650698495b8efa60d9a068b6cc23acebd9cc54c7299989a95d23e618bff9f249
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
