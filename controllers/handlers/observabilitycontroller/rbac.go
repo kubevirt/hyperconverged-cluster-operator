@@ -78,6 +78,11 @@ func newClusterRole() *rbacv1.ClusterRole {
 			Verbs:     []string{"get", "list", "watch"},
 		},
 		{
+			APIGroups: []string{"k8s.cni.cncf.io"},
+			Resources: []string{"network-attachment-definitions"},
+			Verbs:     []string{"get", "list", "watch"},
+		},
+		{
 			APIGroups: []string{""},
 			Resources: []string{"pods", "persistentvolumeclaims"},
 			Verbs:     []string{"get", "list", "watch"},

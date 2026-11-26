@@ -83,7 +83,7 @@ spec:
         - name: NETWORK_RESOURCES_INJECTOR_IMAGE
           value: ghcr.io/k8snetworkplumbingwg/network-resources-injector@sha256:737225a33c418899667707a6e79668bb1a64c6b993bf7486074c5b8085d4ab7d
         - name: OBSERVABILITY_CONTROLLER_IMAGE
-          value: quay.io/kubevirt/virt-observability-controller@sha256:df397e39415b42cd28c014c99299e040eec1cce94abca8a1fb355388b82f5d34
+          value: quay.io/kubevirt/virt-observability-controller@sha256:441ca8df3adca27295d3349a65cdc211432f0126eba49b3d677d0b7ac9ec1b9b
         - name: AIE_LAUNCHER_IMAGE
           value: quay.io/kubevirt/kubevirt-aie/virt-launcher@sha256:877f0661a4572e81d93c320751a4d2332e62163a2bc7467a1e91f9dc1a55a091
         image: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
