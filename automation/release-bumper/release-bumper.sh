@@ -276,8 +276,10 @@ function update_go_mod() {
     do
       (
         cd api
-        go mod edit -require="${MODULE_PATH}@${UPDATED_VERSION}"
-        GOWORK=off go mod tidy
+        if grep "${MODULE_PATH} " -q go.mod; then
+          go mod edit -require="${MODULE_PATH}@${UPDATED_VERSION}"
+          go mod tidy
+        fi
       )
 
       go mod edit -require="${MODULE_PATH}@${UPDATED_VERSION}"
