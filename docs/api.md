@@ -20,6 +20,7 @@ This Document documents the `v1` API version's types introduced by the hyperconv
 * [HyperConvergedStatus](#hyperconvergedstatus)
 * [HyperConvergedWorkloadUpdateStrategy](#hyperconvergedworkloadupdatestrategy)
 * [KubeMacPoolConfig](#kubemacpoolconfig)
+* [LinuxBridgeConfig](#linuxbridgeconfig)
 * [LiveMigrationConfigurations](#livemigrationconfigurations)
 * [LogVerbosityConfiguration](#logverbosityconfiguration)
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
@@ -234,6 +235,16 @@ KubeMacPoolConfig defines kubemacpool MAC address range configuration
 
 [Back to TOC](#table-of-contents)
 
+## LinuxBridgeConfig
+
+LinuxBridgeConfig holds configuration for the Linux bridge CNAO plugin.
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| bridgeMarkerHealthProberPort | BridgeMarkerHealthProberPort is the port on which the bridge-marker liveness/readiness probe HTTP server listens. When unset, the default port defined by CNAO (8081) is used. | *int32 |  | false |
+
+[Back to TOC](#table-of-contents)
+
 ## LiveMigrationConfigurations
 
 LiveMigrationConfigurations - Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster.
@@ -299,6 +310,7 @@ NetworkingConfig contains all the networking configurations
 | kubeSecondaryDNSNameServerIP | Deprecated: This field is ignored. | *string |  | false |
 | kubeMacPoolConfiguration | KubeMacPoolConfiguration holds kubemacpool MAC address range configuration. | *[KubeMacPoolConfig](#kubemacpoolconfig) |  | false |
 | networkBinding | NetworkBinding defines the network binding plugins. Those bindings can be used when defining virtual machine interfaces. | map[string]v1.InterfaceBindingPlugin |  | false |
+| linuxBridgeConfig | LinuxBridgeConfig holds the configuration for the Linux bridge network plugin. | *[LinuxBridgeConfig](#linuxbridgeconfig) |  | false |
 
 [Back to TOC](#table-of-contents)
 

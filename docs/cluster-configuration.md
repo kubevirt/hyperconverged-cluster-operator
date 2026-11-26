@@ -1730,6 +1730,28 @@ spec:
 **Note**: You must configure both `rangeStart` and `rangeEnd` together. Partial configuration (only one field) is not
 supported, and will be rejected.
 
+### Linux Bridge bridge-marker Health Probe Port
+The `bridge-marker` DaemonSet, deployed by cluster-network-addons-operator, exposes a health probe endpoint on port `8081`
+by default. Because it runs on the host network, this port may conflict with other workloads on the node, or may be
+blocked by network policies.
+
+To use a different port, set it on the HyperConverged CR under the
+`spec.networking.linuxBridgeConfig.bridgeMarkerHealthProberPort` field. The valid range is 1024-65535.
+
+Default: If not configured, the default port (`8081`) is used.
+
+#### Linux Bridge bridge-marker Health Probe Port example
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  networking:
+    linuxBridgeConfig:
+      bridgeMarkerHealthProberPort: 9090
+```
+
 ## Workload Sources Configurations
 The `spec.workloadSources` field contains all the configurations for workload sources.
 

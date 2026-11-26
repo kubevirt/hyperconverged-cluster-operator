@@ -499,6 +499,21 @@ type NetworkingConfig struct {
 	// Those bindings can be used when defining virtual machine interfaces.
 	// +optional
 	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
+
+	// LinuxBridgeConfig holds the configuration for the Linux bridge network plugin.
+	// +optional
+	// +k8s:conversion-gen=false
+	LinuxBridgeConfig *LinuxBridgeConfig `json:"linuxBridgeConfig,omitempty"`
+}
+
+// LinuxBridgeConfig holds configuration for the Linux bridge CNAO plugin.
+type LinuxBridgeConfig struct {
+	// BridgeMarkerHealthProberPort is the port on which the bridge-marker liveness/readiness
+	// probe HTTP server listens. When unset, the default port defined by CNAO (8081) is used.
+	// +optional
+	// +kubebuilder:validation:Minimum=1024
+	// +kubebuilder:validation:Maximum=65535
+	BridgeMarkerHealthProberPort *int32 `json:"bridgeMarkerHealthProberPort,omitempty"`
 }
 
 // WorkloadSourcesConfig contains all the configurations related to workloads resources
