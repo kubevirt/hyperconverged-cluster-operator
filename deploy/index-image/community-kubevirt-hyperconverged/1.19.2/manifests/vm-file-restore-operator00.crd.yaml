@@ -138,12 +138,6 @@ spec:
             description: VirtualMachineFileRestoreStatus defines the observed state
               of VirtualMachineFileRestore.
             properties:
-              attachmentRetries:
-                description: |-
-                  AttachmentRetries tracks the number of times we've waited for volume attachment.
-                  Used to implement timeout for stuck attachments.
-                format: int32
-                type: integer
               completionTime:
                 description: CompletionTime is the time when the restore operation
                   completed.
@@ -211,18 +205,6 @@ spec:
                 description: ErrorMessage provides details about any error that occurred
                   during restoration.
                 type: string
-              lastAttachmentCheckTime:
-                description: |-
-                  LastAttachmentCheckTime is the timestamp of the last attachment status check.
-                  Used for rate limiting to prevent rapid reconciliation loops.
-                format: date-time
-                type: string
-              lastSSHCheckTime:
-                description: |-
-                  LastSSHCheckTime is the timestamp of the last SSH connection attempt.
-                  Used for rate limiting to prevent rapid reconciliation loops.
-                format: date-time
-                type: string
               mountPath:
                 description: |-
                   MountPath is where the restore volume is mounted in the guest OS.
@@ -248,12 +230,6 @@ spec:
                   RestoredFilesCount is the number of files successfully restored.
                   Omitted when no automatic file transfer was performed (manual mode or not yet started);
                   0 means the transfer ran but no files were copied (e.g. files already up-to-date).
-                format: int32
-                type: integer
-              sshRetries:
-                description: |-
-                  SSHRetries tracks the number of SSH connection attempts.
-                  Used to implement retry logic for transient SSH failures.
                 format: int32
                 type: integer
               startTime:

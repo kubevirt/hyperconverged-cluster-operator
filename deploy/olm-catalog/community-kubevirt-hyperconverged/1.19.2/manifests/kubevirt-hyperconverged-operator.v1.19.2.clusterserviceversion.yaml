@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.2-unstable
-    createdAt: "2026-11-12 15:03:06"
+    createdAt: "2026-11-26 21:57:06"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4381,23 +4381,12 @@ spec:
           - get
           - list
           - watch
-          - create
-          - update
-          - patch
-          - delete
         - apiGroups:
           - filerestore.kubevirt.io
           resources:
           - filerestoreoperators/status
           verbs:
           - get
-          - update
-          - patch
-        - apiGroups:
-          - filerestore.kubevirt.io
-          resources:
-          - filerestoreoperators/finalizers
-          verbs:
           - update
         - apiGroups:
           - filerestore.kubevirt.io
@@ -4407,24 +4396,15 @@ spec:
           - get
           - list
           - watch
-          - create
           - update
           - patch
-          - delete
         - apiGroups:
           - filerestore.kubevirt.io
           resources:
           - virtualmachinefilerestores/status
           verbs:
           - get
-          - update
           - patch
-        - apiGroups:
-          - filerestore.kubevirt.io
-          resources:
-          - virtualmachinefilerestores/finalizers
-          verbs:
-          - update
         - apiGroups:
           - kubevirt.io
           resources:
@@ -4434,7 +4414,6 @@ spec:
           - list
           - watch
           - patch
-          - update
         - apiGroups:
           - kubevirt.io
           resources:
@@ -4451,7 +4430,6 @@ spec:
           - create
           - delete
           - get
-          - list
         - apiGroups:
           - snapshot.storage.k8s.io
           resources:
@@ -4461,6 +4439,24 @@ spec:
           - list
           - watch
         - apiGroups:
+          - snapshot.storage.k8s.io
+          resources:
+          - volumesnapshotcontents
+          verbs:
+          - get
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        - apiGroups:
           - ""
           resources:
           - persistentvolumeclaims
@@ -4468,24 +4464,13 @@ spec:
           - get
           - list
           - watch
-          - create
-          - delete
         - apiGroups:
           - ""
           resources:
           - pods
           verbs:
-          - get
           - list
           - watch
-          - create
-          - delete
-        - apiGroups:
-          - ""
-          resources:
-          - pods/exec
-          verbs:
-          - create
         serviceAccountName: vm-file-restore-operator-controller-manager
       deployments:
       - label:
@@ -4563,7 +4548,7 @@ spec:
                 - name: AUTOPILOT_VERSION
                   value: v0.1.2
                 - name: VM_FILE_RESTORE_OPERATOR_VERSION
-                  value: v0.0.9
+                  value: v0.0.10
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5708,6 +5693,7 @@ spec:
             spec:
               containers:
               - args:
+                - --metrics-bind-address=:8443
                 - --leader-elect
                 - --health-probe-bind-address=:8081
                 command:
@@ -5718,10 +5704,10 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
                 - name: OPERATOR_VERSION
-                  value: v0.0.9
+                  value: v0.0.10
                 - name: VERBOSITY
                   value: "1"
-                image: quay.io/kubevirt/vm-file-restore-operator@sha256:4abf260c7aa93554498060486f5b9e5c7deaaaf8a6806004d992958133303bee
+                image: quay.io/kubevirt/vm-file-restore-operator@sha256:650698495b8efa60d9a068b6cc23acebd9cc54c7299989a95d23e618bff9f249
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6580,23 +6566,28 @@ spec:
           - ""
           resources:
           - configmaps
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
-        - apiGroups:
-          - ""
-          resources:
           - secrets
           verbs:
           - create
+        - apiGroups:
+          - ""
+          resourceNames:
+          - vm-file-restore-operator-ssh
+          resources:
+          - configmaps
+          verbs:
+          - delete
           - get
-          - list
-          - watch
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resourceNames:
+          - vm-file-restore-operator-ssh
+          resources:
+          - secrets
+          verbs:
+          - get
         - apiGroups:
           - coordination.k8s.io
           resources:
@@ -6762,7 +6753,7 @@ spec:
     name: virt-template-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838
     name: virtio-container-disk
-  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:4abf260c7aa93554498060486f5b9e5c7deaaaf8a6806004d992958133303bee
+  - image: quay.io/kubevirt/vm-file-restore-operator@sha256:650698495b8efa60d9a068b6cc23acebd9cc54c7299989a95d23e618bff9f249
     name: vm-file-restore-operator
   replaces: kubevirt-hyperconverged-operator.v1.19.1
   selector:
