@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.20.0-unstable
-    createdAt: "2026-11-27 05:07:48"
+    createdAt: "2026-11-28 05:07:40"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4651,7 +4651,7 @@ spec:
                 - name: CDI_VERSION
                   value: v1.66.1
                 - name: NETWORK_ADDONS_VERSION
-                  value: v0.104.0-rc-1
+                  value: v0.104.0-rc-2
                 - name: SSP_VERSION
                   value: v0.27.0
                 - name: HPPO_VERSION
@@ -4945,17 +4945,17 @@ spec:
                 - name: OVS_CNI_IMAGE
                   value: ghcr.io/k8snetworkplumbingwg/ovs-cni-plugin@sha256:e59f7ed19d305e0d99db5eb58be52b49394164f3eea0c6db66e6083df5b7d8f2
                 - name: KUBEMACPOOL_IMAGE
-                  value: quay.io/kubevirt/kubemacpool@sha256:5f806ab6dccc023363c258c94355fd5dba1eeb0d11e17624a14d767b0d950d7b
+                  value: quay.io/kubevirt/kubemacpool@sha256:cf42500a12fbe3445e609ffe90b0467ea834bcdc31d89400bbc759bcf657833c
                 - name: MACVTAP_CNI_IMAGE
                   value: quay.io/kubevirt/macvtap-cni@sha256:aee6d9beb458fa76b0eab34335e2b528ad9eaff74b87be2fd62658ba77cbfa87
                 - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
                   value: ghcr.io/kubevirt/ipam-controller@sha256:1f0213ac44b517ec74600934b0b57f57f244d099e679580694675bf98592d704
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:379c7f33e74362bccd0c1ce39671b9b67e4ee2d1d64e2a118690184e7889e8d2
+                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:b0d4518758434f0fb97dd7745b3b93c9a5ad660ada590c5760049a4738e781db
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
-                  value: v0.104.0-rc-1
+                  value: v0.104.0-rc-2
                 - name: OPERATOR_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -4977,7 +4977,7 @@ spec:
                   value: https://kubevirt.io/monitoring/runbooks/%s
                 - name: CNAO_LOG_LEVEL
                   value: "0"
-                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:379c7f33e74362bccd0c1ce39671b9b67e4ee2d1d64e2a118690184e7889e8d2
+                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:b0d4518758434f0fb97dd7745b3b93c9a5ad660ada590c5760049a4738e781db
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6800,7 +6800,7 @@ spec:
     name: cdi-uploadproxy
   - image: quay.io/kubevirt/cdi-uploadserver@sha256:d3a6b735efcc914a0c9679fa8f64ab3dda764f7997d53bcafa6e2944f123420a
     name: cdi-uploadserver
-  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:379c7f33e74362bccd0c1ce39671b9b67e4ee2d1d64e2a118690184e7889e8d2
+  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:b0d4518758434f0fb97dd7745b3b93c9a5ad660ada590c5760049a4738e781db
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
     name: cni-default-plugins
@@ -6824,7 +6824,7 @@ spec:
     name: hyperconverged-cluster-webhook
   - image: ghcr.io/kubevirt/ipam-controller@sha256:1f0213ac44b517ec74600934b0b57f57f244d099e679580694675bf98592d704
     name: ipam-controller
-  - image: quay.io/kubevirt/kubemacpool@sha256:5f806ab6dccc023363c258c94355fd5dba1eeb0d11e17624a14d767b0d950d7b
+  - image: quay.io/kubevirt/kubemacpool@sha256:cf42500a12fbe3445e609ffe90b0467ea834bcdc31d89400bbc759bcf657833c
     name: kubemacpool
   - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:34480ff54b63481bcd356cbf41854b84ed37489950a99d3857400c563af9658d
     name: kubevirt-apiserver-proxy

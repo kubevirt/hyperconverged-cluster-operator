@@ -13,7 +13,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/kubevirt/cluster-network-addons-operator v0.104.0-rc-1
+	github.com/kubevirt/cluster-network-addons-operator v0.104.0-rc-2
 	github.com/kubevirt/hyperconverged-cluster-operator/api v1.19.0
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20261105141639-5737f7804b0f
 	github.com/onsi/ginkgo/v2 v2.34.0
