@@ -65,6 +65,8 @@ var (
 	_                             = flag.String("aie-webhook-image-name", "", "ignored: the AIE webhook has been retired")
 	_                             = flag.String("iommufd-device-plugin-image-name", "", "ignored: not in use")
 	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
+	virtImportControllerImage     = flag.String("virt-import-controller-image-name", "", "virt-import controller image")
+	virtImportFetcherImage        = flag.String("virt-import-fetcher-image-name", "", "virt-import fetcher image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
 	machinetype                   = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
 	amd64MachineType              = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
@@ -454,6 +456,8 @@ func getOperatorParameters() *manifests.DeploymentOperatorParams {
 		VirtIOWinMountPath:            *kvVirtIOWinMountPath,
 		AIELauncherImage:              *aieLauncherImage,
 		ObservabilityControllerImage:  *observabilityControllerImage,
+		VirtImportControllerImage:     *virtImportControllerImage,
+		VirtImportFetcherImage:        *virtImportFetcherImage,
 		Smbios:                        *smbios,
 		Machinetype:                   *machinetype,
 		Amd64MachineType:              *amd64MachineType,

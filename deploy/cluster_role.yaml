@@ -1545,6 +1545,93 @@ rules:
   - update
   - delete
   - patch
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+  - deletecollection
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports/status
+  verbs:
+  - get
+  - patch
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - pods/log
+  verbs:
+  - get
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - cdiconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - datavolumes
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines
+  verbs:
+  - get
+  - create
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplates
+  verbs:
+  - get
+  - create
+- apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplates/finalizers
+  verbs:
+  - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

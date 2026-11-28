@@ -308,6 +308,8 @@ $keywords
 EOM
 
 cat "${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml" | "${TOOLS}/manifest-splitter" --operator-name="hco"
+# The virt-import CRD is pre-deployed like all other CRDs, HCO deploys the rest of the bundle at runtime.
+"${TOOLS}/manifest-splitter" --operator-name="virt-import" < "${PROJECT_ROOT}/pkg/virtimport/data/install-hco.yaml"
 
 popd
 
@@ -374,7 +376,9 @@ ${TOOLS}/manifest-templator \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --aie-launcher-image-name="${AIE_LAUNCHER_IMAGE}" \
-  --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}"
+  --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
+  --virt-import-controller-image-name="${VIRT_IMPORT_CONTROLLER_IMAGE}" \
+  --virt-import-fetcher-image-name="${VIRT_IMPORT_FETCHER_IMAGE}"
 
 if [[ "${UNIQUE}" == "true"  ]]; then
   CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
@@ -440,6 +444,8 @@ ${TOOLS}/csv-merger \
   --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --aie-launcher-image-name="${AIE_LAUNCHER_IMAGE}" \
   --observability-controller-image-name="${OBSERVABILITY_CONTROLLER_IMAGE}" \
+  --virt-import-controller-image-name="${VIRT_IMPORT_CONTROLLER_IMAGE}" \
+  --virt-import-fetcher-image-name="${VIRT_IMPORT_FETCHER_IMAGE}" \
   --dump-services \
   ${NETWORK_POLICIES_PARAMS} \
   > temp_manifests.yaml

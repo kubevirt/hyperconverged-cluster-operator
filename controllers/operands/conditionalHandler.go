@@ -68,13 +68,14 @@ func EnsureObjectDeleted(req *common.HcoRequest, cli client.Client, scheme *runt
 
 	// hcoutil.EnsureDeleted does check that the CR exists before removing it. But it also writes a log message each
 	// time it happens, i.e. for every reconcile loop. Assuming the client cache is up-to-date, we can safely get it here
-	// with no meaningful performance cost.
+	// with no meaningful performance cost. An object that is already being deleted, e.g. waiting for its finalizers,
+	// is not deleted again.
 	err := cli.Get(req.Ctx, client.ObjectKeyFromObject(cr), cr)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return res.Error(err)
 		}
-	} else {
+	} else if cr.GetDeletionTimestamp() == nil {
 		deleted, err := hcoutil.EnsureDeleted(req.Ctx, cli, cr, req.Instance.Name, req.Logger, false, false, true)
 		if err != nil {
 			return res.Error(err)

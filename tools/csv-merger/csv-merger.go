@@ -42,6 +42,9 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	virtimportapi "kubevirt.io/virt-import-api/core"
+	virtimportv1alpha1 "kubevirt.io/virt-import-api/core/v1alpha1"
+
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -109,6 +112,8 @@ var (
 	_                             = flag.String("aie-webhook-image-name", "", "ignored: the AIE webhook has been retired")
 	_                             = flag.String("iommufd-device-plugin-image-name", "", "ignored: not in use")
 	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
+	virtImportControllerImage     = flag.String("virt-import-controller-image-name", "", "virt-import controller image")
+	virtImportFetcherImage        = flag.String("virt-import-fetcher-image-name", "", "virt-import fetcher image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
 	smbiosFile                    = flag.String("smbios-file", "", "Custom SMBIOS file name, used by HCO to configure the SMBIOS in KubeVirt CR")
 	machinetype                   = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
@@ -606,6 +611,13 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 						},
 						StatusDescriptors: []csvv1alpha1.StatusDescriptor{},
 					},
+					{
+						Name:        virtimportapi.PluralResourceName + "." + virtimportapi.GroupName,
+						Version:     virtimportv1alpha1.GroupVersion.Version,
+						Kind:        "VirtualMachineImport",
+						DisplayName: "VirtualMachineImport",
+						Description: "Imports a VirtualMachine or VirtualMachineTemplate from an OCI artifact",
+					},
 				},
 				Required: []csvv1alpha1.CRDDescription{},
 			},
@@ -849,6 +861,8 @@ func getDeploymentParams() *manifests.DeploymentOperatorParams {
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		AIELauncherImage:              *aieLauncherImage,
 		ObservabilityControllerImage:  *observabilityControllerImage,
+		VirtImportControllerImage:     *virtImportControllerImage,
+		VirtImportFetcherImage:        *virtImportFetcherImage,
 		Env:                           envVars,
 		AddNetworkPolicyLabels:        *dumpNetworkPolicies,
 	}
