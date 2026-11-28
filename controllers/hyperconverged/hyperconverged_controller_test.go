@@ -2626,6 +2626,30 @@ var _ = Describe("HyperconvergedController", func() {
 
 				Expect(newHCO.Status.NodeInfo.DefaultWorkloadArchitecture).To(Equal(defaultArch))
 			})
+
+			It("should report CPU models in the status", func(ctx context.Context) {
+				models := []hcov1.CPUModelStatus{
+					{Name: "Skylake-Server"},
+					{Name: "Haswell-noTSX"},
+					{Name: "Penryn"},
+				}
+				origGetCPUModels := nodeinfo.GetCPUModels
+				DeferCleanup(func() {
+					nodeinfo.GetCPUModels = origGetCPUModels
+				})
+				nodeinfo.GetCPUModels = func() []hcov1.CPUModelStatus {
+					return models
+				}
+
+				hco := commontestutils.NewHco()
+				hco.Status.NodeInfo.CPU = &hcov1.NodeCPUStatus{Models: []hcov1.CPUModelStatus{{Name: "Penryn"}}}
+				cl := commontestutils.InitClient([]client.Object{hco})
+				r := initReconciler(cl, nil)
+
+				newHCO, _, _ := doReconcile(cl, hco, r)
+
+				Expect(newHCO.Status.NodeInfo.CPU).To(Equal(&hcov1.NodeCPUStatus{Models: models}))
+			})
 		})
 	})
 })

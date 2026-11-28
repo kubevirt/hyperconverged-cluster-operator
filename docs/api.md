@@ -6,6 +6,7 @@ This Document documents the `v1` API version's types introduced by the hyperconv
 
 ## Table of Contents
 * [ApplicationAwareConfigurations](#applicationawareconfigurations)
+* [CPUModelStatus](#cpumodelstatus)
 * [CertRotateConfigCA](#certrotateconfigca)
 * [CertRotateConfigServer](#certrotateconfigserver)
 * [DataImportCronStatus](#dataimportcronstatus)
@@ -26,6 +27,7 @@ This Document documents the `v1` API version's types introduced by the hyperconv
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
 * [MediatedHostDevice](#mediatedhostdevice)
 * [NetworkingConfig](#networkingconfig)
+* [NodeCPUStatus](#nodecpustatus)
 * [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
 * [NodePlacements](#nodeplacements)
@@ -57,6 +59,16 @@ ApplicationAwareConfigurations holds the AAQ configurations
 | vmiCalcConfigName | VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota. allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources | *aaqv1alpha1.VmiCalcConfigName | DedicatedVirtualResources | false |
 | namespaceSelector | NamespaceSelector determines in which namespaces scheduling gate will be added to pods.. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#labelselector-v1-meta) |  | false |
 | allowApplicationAwareClusterResourceQuota | AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota | bool | false | false |
+
+[Back to TOC](#table-of-contents)
+
+## CPUModelStatus
+
+CPUModelStatus is one libvirt CPU model from schedulable nodes.
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| name | Name is the cpu-model.node.kubevirt.io/ label suffix. | string |  | true |
 
 [Back to TOC](#table-of-contents)
 
@@ -314,6 +326,16 @@ NetworkingConfig contains all the networking configurations
 
 [Back to TOC](#table-of-contents)
 
+## NodeCPUStatus
+
+NodeCPUStatus holds CPU information from schedulable nodes.
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| models | Models lists libvirt CPU models advertised by at least one kubevirt.io/schedulable node, newest family first. | [][CPUModelStatus](#cpumodelstatus) |  | false |
+
+[Back to TOC](#table-of-contents)
+
 ## NodeInfoStatus
 
 NodeInfoStatus holds information about the cluster nodes
@@ -323,6 +345,7 @@ NodeInfoStatus holds information about the cluster nodes
 | workloadsArchitectures | WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster. | []string |  | false |
 | controlPlaneArchitectures | ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes. | []string |  | false |
 | defaultWorkloadArchitecture | DefaultWorkloadArchitecture is chosen automatically by HCO. This field reports the architecture selected by HCO. | string |  | false |
+| cpu | CPU holds CPU status from schedulable nodes. | *[NodeCPUStatus](#nodecpustatus) |  | false |
 
 [Back to TOC](#table-of-contents)
 

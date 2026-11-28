@@ -39,6 +39,7 @@ func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 
 	workloadArchMap := map[string]int{}
 	cpArches := sets.New[string]()
+	cpuModelNames := map[string]struct{}{}
 
 	isWorkloadNode := isWorkloadNodeFunc(hc)
 
@@ -62,6 +63,8 @@ func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 		if _, arbiterLabelExists := node.Labels[LabelNodeRoleArbiter]; arbiterLabelExists {
 			arbiterNodeCount++
 		}
+
+		addNodeCPUModels(node.Labels, cpuModelNames)
 	}
 
 	// remove empty architectures
@@ -81,6 +84,8 @@ func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 	changed = infrastructureHighlyAvailable.Swap(newValue) != newValue || changed
 
 	changed = architectures.set(workloadArchMap, cpArches) || changed
+
+	changed = setCPUModels(cpuModelNames) || changed
 
 	return changed
 }
