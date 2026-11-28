@@ -1,0 +1,932 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.22.0
+    import.kubevirt.io/virt-import-version: v0.1.1
+  name: virtualmachineimports.import.kubevirt.io
+spec:
+  group: import.kubevirt.io
+  names:
+    kind: VirtualMachineImport
+    listKind: VirtualMachineImportList
+    plural: virtualmachineimports
+    shortNames:
+    - vmimport
+    - vmimports
+    singular: virtualmachineimport
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.targetRef.name
+      name: Target
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Progressing')].status
+      name: Progressing
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Ready')].reason
+      name: Reason
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          VirtualMachineImport imports a VirtualMachine or VirtualMachineTemplate
+          from an OCI artifact in a container registry.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: |-
+              VirtualMachineImportSpec defines the desired import.
+              The spec is immutable after creation. To change import parameters,
+              delete the VirtualMachineImport and create a new one.
+            properties:
+              source:
+                description: Source specifies where to import from.
+                properties:
+                  registry:
+                    description: Registry specifies an OCI artifact in a container
+                      registry.
+                    properties:
+                      certConfigMap:
+                        description: CertConfigMap is the name of a ConfigMap containing
+                          registry CA certificates.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                        x-kubernetes-validations:
+                        - message: must be a valid DNS-1123 subdomain
+                          rule: '!format.dns1123Subdomain().validate(self).hasValue()'
+                      platform:
+                        description: Platform selects the architecture variant from
+                          a multi-arch artifact.
+                        properties:
+                          architecture:
+                            description: Architecture selects the platform variant
+                              (e.g. amd64, arm64).
+                            maxLength: 63
+                            minLength: 1
+                            type: string
+                        type: object
+                      secretRef:
+                        description: SecretRef is the name of a Secret containing
+                          registry credentials.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                        x-kubernetes-validations:
+                        - message: must be a valid DNS-1123 subdomain
+                          rule: '!format.dns1123Subdomain().validate(self).hasValue()'
+                      url:
+                        description: |-
+                          URL is the registry URL
+                          (e.g. docker://registry.example.com/vms/fedora:v1).
+                        type: string
+                        x-kubernetes-validations:
+                        - message: url must start with docker://
+                          rule: self.startsWith('docker://')
+                    required:
+                    - url
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: a registry source is required
+                  rule: has(self.registry)
+              storageClassName:
+                description: |-
+                  StorageClassName overrides the default storage class for all
+                  DataVolumes created during the import.
+                maxLength: 253
+                minLength: 1
+                type: string
+                x-kubernetes-validations:
+                - message: must be a valid DNS-1123 subdomain
+                  rule: '!format.dns1123Subdomain().validate(self).hasValue()'
+              targetName:
+                description: |-
+                  TargetName is the name for the created VirtualMachine or
+                  VirtualMachineTemplate. Defaults to the VirtualMachineImport name.
+                maxLength: 253
+                minLength: 1
+                type: string
+                x-kubernetes-validations:
+                - message: must be a valid DNS-1123 subdomain
+                  rule: '!format.dns1123Subdomain().validate(self).hasValue()'
+            required:
+            - source
+            type: object
+            x-kubernetes-validations:
+            - message: spec is immutable
+              rule: self == oldSelf
+          status:
+            description: VirtualMachineImportStatus reports the observed import state.
+            properties:
+              artifactInfo:
+                description: ArtifactInfo contains metadata read from the OCI artifact.
+                properties:
+                  architecture:
+                    description: Architecture is the resolved platform architecture.
+                    type: string
+                  artifactType:
+                    description: ArtifactType is the OCI artifactType from the manifest.
+                    type: string
+                  digest:
+                    description: |-
+                      Digest is the digest the disks are imported from: the image index
+                      digest for a multi-arch artifact, otherwise the manifest digest.
+                    type: string
+                required:
+                - architecture
+                - artifactType
+                - digest
+                type: object
+              conditions:
+                description: Conditions represent the latest observations of the import.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              diskImports:
+                description: DiskImports tracks the status of each disk being imported.
+                items:
+                  description: DiskImportStatus tracks the import of a single disk.
+                  properties:
+                    dataVolumeName:
+                      description: DataVolumeName is the name of the created DataVolume.
+                      type: string
+                    name:
+                      description: Name is the disk name, from the io.kubevirt.disk.name
+                        layer annotation.
+                      type: string
+                    phase:
+                      description: |-
+                        Phase mirrors cdiv1.DataVolumePhase values
+                        (e.g. "Succeeded", "ImportInProgress", "Failed").
+                      type: string
+                    progress:
+                      description: Progress mirrors the DataVolume progress (e.g.
+                        "45.3%").
+                      type: string
+                  required:
+                  - dataVolumeName
+                  - name
+                  - phase
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
+              fetchRestarts:
+                description: |-
+                  FetchRestarts counts how often fetching the artifact metadata started over
+                  because the result of a succeeded fetch was lost.
+                format: int32
+                type: integer
+              manifestConfigMapHash:
+                description: |-
+                  ManifestConfigMapHash is the sha256 hash of the data of the manifest ConfigMap
+                  the controller created. The import fails if the data no longer matches it.
+                type: string
+              targetRef:
+                description: |-
+                  TargetRef references the created VirtualMachine or VirtualMachineTemplate
+                  in the namespace of the VirtualMachineImport.
+                properties:
+                  apiGroup:
+                    description: |-
+                      APIGroup is the group for the resource being referenced.
+                      If APIGroup is not specified, the specified Kind must be in the core API group.
+                      For any other third-party types, APIGroup is required.
+                    type: string
+                  kind:
+                    description: Kind is the type of resource being referenced
+                    type: string
+                  name:
+                    description: Name is the name of resource being referenced
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+                x-kubernetes-map-type: atomic
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: v1
+automountServiceAccountToken: false
+kind: ServiceAccount
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-controller-manager
+  name: virt-import-controller-manager
+  namespace: kubevirt
+---
+apiVersion: v1
+automountServiceAccountToken: false
+kind: ServiceAccount
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-metrics-reader
+  name: virt-import-metrics-reader
+  namespace: kubevirt
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-leader-election-role
+  name: virt-import-leader-election-role
+  namespace: kubevirt
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  name: virt-import-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods/log
+  verbs:
+  - get
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - cdiconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - datavolumes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports
+  verbs:
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports/status
+  verbs:
+  - get
+  - patch
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines
+  verbs:
+  - create
+  - get
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplates
+  verbs:
+  - create
+  - get
+- apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplates/finalizers
+  verbs:
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-metrics-auth-role
+  name: virt-import-metrics-auth-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-metrics-reader
+  name: virt-import-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-virtualmachineimport-admin-role
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  name: virt-import-virtualmachineimport-admin-role
+rules:
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-virtualmachineimport-editor-role
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+  name: virt-import-virtualmachineimport-editor-role
+rules:
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-virtualmachineimport-viewer-role
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+  name: virt-import-virtualmachineimport-viewer-role
+rules:
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - import.kubevirt.io
+  resources:
+  - virtualmachineimports/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-leader-election-rolebinding
+  name: virt-import-leader-election-rolebinding
+  namespace: kubevirt
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: virt-import-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: virt-import-controller-manager
+  namespace: kubevirt
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-manager-rolebinding
+  name: virt-import-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: virt-import-manager-role
+subjects:
+- kind: ServiceAccount
+  name: virt-import-controller-manager
+  namespace: kubevirt
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-metrics-auth-rolebinding
+  name: virt-import-metrics-auth-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: virt-import-metrics-auth-role
+subjects:
+- kind: ServiceAccount
+  name: virt-import-controller-manager
+  namespace: kubevirt
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-metrics-reader-rolebinding
+  name: virt-import-metrics-reader-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: virt-import-metrics-reader
+subjects:
+- kind: ServiceAccount
+  name: virt-import-metrics-reader
+  namespace: kubevirt
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+    kubernetes.io/service-account.name: virt-import-metrics-reader
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-metrics-token
+  name: virt-import-metrics-token
+  namespace: kubevirt
+type: kubernetes.io/service-account-token
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    control-plane: controller-manager
+    kubevirt.io: virt-import-controller-manager-metrics-service
+  name: virt-import-controller-manager-metrics-service
+  namespace: kubevirt
+spec:
+  ipFamilyPolicy: PreferDualStack
+  ports:
+  - name: http-metrics
+    port: 8443
+    protocol: TCP
+    targetPort: http-metrics
+  selector:
+    app.kubernetes.io/name: virt-import
+    control-plane: controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    control-plane: controller-manager
+    kubevirt.io: virt-import-controller
+  name: virt-import-controller
+  namespace: kubevirt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: virt-import
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        import.kubevirt.io/virt-import-version: v0.1.1
+        kubectl.kubernetes.io/default-container: manager
+        openshift.io/required-scc: restricted-v2
+      labels:
+        app.kubernetes.io/name: virt-import
+        control-plane: controller-manager
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - arm64
+                - s390x
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+      automountServiceAccountToken: true
+      containers:
+      - args:
+        - --metrics-bind-address=:8443
+        - --leader-elect
+        - --health-probe-bind-address=:8081
+        - --metrics-cert-path=/tmp/k8s-metrics-server/metrics-certs
+        command:
+        - /manager
+        env:
+        - name: FETCHER_IMAGE
+          value: quay.io/kubevirt/virt-import-fetcher:v0.1.1
+        image: quay.io/kubevirt/virt-import-controller:v0.1.1
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          periodSeconds: 20
+        name: manager
+        ports:
+        - containerPort: 8443
+          name: http-metrics
+          protocol: TCP
+        - containerPort: 8081
+          name: http-healthz
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        startupProbe:
+          failureThreshold: 15
+          httpGet:
+            path: /healthz
+            port: 8081
+          periodSeconds: 5
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /tmp/k8s-metrics-server/metrics-certs
+          name: metrics-certs
+          readOnly: true
+      priorityClassName: kubevirt-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: virt-import-controller-manager
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: metrics-certs
+        secret:
+          items:
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.key
+          optional: false
+          secretName: virt-import-metrics-server-cert
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-vmimport-authz
+  name: virt-import-vmimport-authz
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - import.kubevirt.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      resources:
+      - virtualmachineimports
+  validations:
+  - expression: authorizer.group('cdi.kubevirt.io').resource('datavolumes').namespace(variables.targetNS).check('create').allowed()
+    messageExpression: '''User is not allowed to create DataVolumes in namespace ''
+      + variables.targetNS'
+    reason: Forbidden
+  - expression: authorizer.group('kubevirt.io').resource('virtualmachines').namespace(variables.targetNS).check('create').allowed()
+    messageExpression: '''User is not allowed to create VirtualMachines in namespace
+      '' + variables.targetNS'
+    reason: Forbidden
+  - expression: authorizer.group('template.kubevirt.io').resource('virtualmachinetemplates').namespace(variables.targetNS).check('create').allowed()
+    messageExpression: '''User is not allowed to create VirtualMachineTemplates in
+      namespace '' + variables.targetNS'
+    reason: Forbidden
+  variables:
+  - expression: object.metadata.namespace
+    name: targetNS
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-vmimport-authz
+  name: virt-import-vmimport-authz
+spec:
+  policyName: virt-import-vmimport-authz
+  validationActions:
+  - Deny
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    control-plane: controller-manager
+    kubevirt.io: virt-import-controller-manager-metrics-monitor
+  name: virt-import-controller-manager-metrics-monitor
+  namespace: kubevirt
+spec:
+  endpoints:
+  - path: /metrics
+    port: http-metrics
+    scheme: https
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: virt-import
+      control-plane: controller-manager
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  annotations:
+    import.kubevirt.io/virt-import-version: v0.1.1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: virt-import
+    kubevirt.io: virt-import-allow-metrics-traffic
+  name: virt-import-allow-metrics-traffic
+  namespace: kubevirt
+spec:
+  ingress:
+  - ports:
+    - port: 8443
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: virt-import
+      control-plane: controller-manager
+  policyTypes:
+  - Ingress

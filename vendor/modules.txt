@@ -1169,6 +1169,7 @@ k8s.io/code-generator/pkg/apidefinitions
 k8s.io/code-generator/pkg/util
 # k8s.io/component-helpers v0.37.2
 ## explicit; go 1.26.0
+k8s.io/component-helpers/auth/rbac/validation
 k8s.io/component-helpers/scheduling/corev1/nodeaffinity
 # k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3
 ## explicit; go 1.24.0
@@ -1253,6 +1254,10 @@ kubevirt.io/kubevirt-migration-operator/api/v1alpha1
 # kubevirt.io/ssp-operator/api v0.27.0
 ## explicit; go 1.26.0
 kubevirt.io/ssp-operator/api/v1beta3
+# kubevirt.io/virt-import-api v0.1.1
+## explicit; go 1.26.0
+kubevirt.io/virt-import-api/core
+kubevirt.io/virt-import-api/core/v1alpha1
 # kubevirt.io/vm-file-restore-operator v0.0.9
 ## explicit; go 1.26
 kubevirt.io/vm-file-restore-operator/api/v1alpha1

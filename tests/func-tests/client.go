@@ -25,6 +25,7 @@ import (
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
+	virtimportv1alpha1 "kubevirt.io/virt-import-api/core/v1alpha1"
 
 	hcoapi "github.com/kubevirt/hyperconverged-cluster-operator/api"
 )
@@ -88,6 +89,7 @@ func setScheme(cli client.Client) {
 			apiextensionsv1.AddToScheme,
 			persesv1alpha1.AddToScheme,
 			openshiftroutev1.Install,
+			virtimportv1alpha1.AddToScheme,
 		}
 
 		for _, f := range funcs {

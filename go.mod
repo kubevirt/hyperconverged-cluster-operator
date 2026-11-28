@@ -6,6 +6,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/blang/semver/v4 v4.0.0
 	github.com/containers/image/v5 v5.36.2
+	github.com/distribution/reference v0.6.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -50,6 +51,7 @@ require (
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/kubevirt-migration-operator v0.4.0-rc.0
 	kubevirt.io/ssp-operator/api v0.27.0
+	kubevirt.io/virt-import-api v0.1.1
 	kubevirt.io/vm-file-restore-operator v0.0.9
 	sigs.k8s.io/controller-runtime v0.25.2
 	sigs.k8s.io/controller-tools v0.23.0
@@ -70,7 +72,6 @@ require (
 	github.com/containers/ocicrypt v1.3.2 // indirect
 	github.com/containers/storage v1.59.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect

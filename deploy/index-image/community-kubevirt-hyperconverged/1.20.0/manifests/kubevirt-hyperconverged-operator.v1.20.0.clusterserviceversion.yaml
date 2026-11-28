@@ -42,7 +42,7 @@ metadata:
       }
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
     operators.openshift.io/must-gather-image: quay.io/kubevirt/must-gather
-    operators.operatorframework.io/internal-objects: '["networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io","kubevirts.kubevirt.io","ssps.ssp.kubevirt.io","ssps.ssp.kubevirt.io","cdis.cdi.kubevirt.io","aaqs.aaq.kubevirt.io","migcontrollers.migrations.kubevirt.io","inflightoperations.ifo.kubevirt.io","operationrulesets.ifo.kubevirt.io","filerestoreoperators.filerestore.kubevirt.io","virtualmachinefilerestores.filerestore.kubevirt.io"]'
+    operators.operatorframework.io/internal-objects: '["virtualmachineimports.import.kubevirt.io","networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io","kubevirts.kubevirt.io","ssps.ssp.kubevirt.io","ssps.ssp.kubevirt.io","cdis.cdi.kubevirt.io","aaqs.aaq.kubevirt.io","migcontrollers.migrations.kubevirt.io","inflightoperations.ifo.kubevirt.io","operationrulesets.ifo.kubevirt.io","filerestoreoperators.filerestore.kubevirt.io","virtualmachinefilerestores.filerestore.kubevirt.io"]'
     repository: https://github.com/kubevirt/hyperconverged-cluster-operator
     support: "false"
   labels:
@@ -103,6 +103,12 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
       version: v1
+    - description: Imports a VirtualMachine or VirtualMachineTemplate from an OCI
+        artifact
+      displayName: VirtualMachineImport
+      kind: VirtualMachineImport
+      name: virtualmachineimports.import.kubevirt.io
+      version: v1alpha1
     - description: Cluster Network Addons
       displayName: Cluster Network Addons
       kind: NetworkAddonsConfig
@@ -850,6 +856,93 @@ spec:
           - update
           - delete
           - patch
+        - apiGroups:
+          - import.kubevirt.io
+          resources:
+          - virtualmachineimports
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+          - deletecollection
+        - apiGroups:
+          - import.kubevirt.io
+          resources:
+          - virtualmachineimports/status
+          verbs:
+          - get
+          - patch
+        - apiGroups:
+          - import.kubevirt.io
+          resources:
+          - virtualmachineimports/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - pods/log
+          verbs:
+          - get
+        - apiGroups:
+          - batch
+          resources:
+          - jobs
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - cdiconfigs
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - datavolumes
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - patch
+          - delete
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachines
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachines/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - template.kubevirt.io
+          resources:
+          - virtualmachinetemplates
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - template.kubevirt.io
+          resources:
+          - virtualmachinetemplates/finalizers
+          verbs:
+          - update
         serviceAccountName: hyperconverged-cluster-operator
       - rules: []
         serviceAccountName: hyperconverged-cluster-cli-download
@@ -4674,6 +4767,10 @@ spec:
                   value: ghcr.io/k8snetworkplumbingwg/network-resources-injector@sha256:737225a33c418899667707a6e79668bb1a64c6b993bf7486074c5b8085d4ab7d
                 - name: OBSERVABILITY_CONTROLLER_IMAGE
                   value: quay.io/kubevirt/virt-observability-controller@sha256:441ca8df3adca27295d3349a65cdc211432f0126eba49b3d677d0b7ac9ec1b9b
+                - name: VIRT_IMPORT_CONTROLLER_IMAGE
+                  value: quay.io/kubevirt/virt-import-controller@sha256:87e2f0738a2c651161707b796d8d05ab567b9db3c414e3c9ab0b6f36517ef325
+                - name: VIRT_IMPORT_FETCHER_IMAGE
+                  value: quay.io/kubevirt/virt-import-fetcher@sha256:046cb931dc4402c939e4d4e16946d98851c6717263dc22ee123f8b631410c13b
                 - name: AIE_LAUNCHER_IMAGE
                   value: quay.io/kubevirt/kubevirt-aie/virt-launcher@sha256:877f0661a4572e81d93c320751a4d2332e62163a2bc7467a1e91f9dc1a55a091
                 image: +IMAGE_TO_REPLACE+
@@ -6872,6 +6969,10 @@ spec:
     name: virt-exportserver
   - image: quay.io/kubevirt/virt-handler@sha256:1cc169b352ea09ad25824f633b955b2692a5a284c15e9689bf393992b1c6d199
     name: virt-handler
+  - image: quay.io/kubevirt/virt-import-controller@sha256:87e2f0738a2c651161707b796d8d05ab567b9db3c414e3c9ab0b6f36517ef325
+    name: virt-import-controller
+  - image: quay.io/kubevirt/virt-import-fetcher@sha256:046cb931dc4402c939e4d4e16946d98851c6717263dc22ee123f8b631410c13b
+    name: virt-import-fetcher
   - image: quay.io/kubevirt/virt-launcher@sha256:e8ac130526a7ca76c93127cbe005e0c9d155361dfe3a16eaf8d3bb6fc8d659d1
     name: virt-launcher
   - image: quay.io/kubevirt/virt-observability-controller@sha256:441ca8df3adca27295d3349a65cdc211432f0126eba49b3d677d0b7ac9ec1b9b

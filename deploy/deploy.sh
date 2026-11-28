@@ -39,6 +39,7 @@ kubectl apply --server-side --force-conflicts ${LABEL_SELECTOR_ARG} -f https://r
 kubectl apply --server-side --force-conflicts ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/crds/kubevirt00.crd.yaml
 kubectl apply --server-side --force-conflicts ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/crds/migration-operator00.crd.yaml
 kubectl apply --server-side --force-conflicts ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/crds/scheduling-scale-performance00.crd.yaml
+kubectl apply --server-side --force-conflicts ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/crds/virt-import00.crd.yaml
 kubectl apply --server-side --force-conflicts ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/crds/vm-file-restore-operator00.crd.yaml
 kubectl apply --server-side --force-conflicts ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/crds/vm-file-restore-operator01.crd.yaml
 

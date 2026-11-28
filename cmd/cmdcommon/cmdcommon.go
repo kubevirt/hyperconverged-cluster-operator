@@ -210,10 +210,6 @@ func ClusterInitializations(ctx context.Context, cl client.Client, scheme *apiru
 	return ownresources.Init(ctx, cl, scheme, logger)
 }
 
-// PrometheusK8sCN is the Common Name of the client certificate presented by
-// the in-cluster Prometheus (prometheus-k8s) when it scrapes metrics.
-const prometheusK8sCN = "system:serviceaccount:openshift-monitoring:prometheus-k8s"
-
 // FilterHTTPWithCert only from the in-cluster Prometheus service account, identified by its
 // client-certificate CN. The certificate itself is already cryptographically
 // verified by RequireAndVerifyClientCert; this adds application-layer authz so
@@ -226,7 +222,7 @@ func FilterHTTPWithCert(_ *rest.Config, _ *http.Client) (server.Filter, error) {
 				http.Error(w, "client certificate required", http.StatusUnauthorized)
 				return
 			}
-			if cn := req.TLS.PeerCertificates[0].Subject.CommonName; cn != prometheusK8sCN {
+			if cn := req.TLS.PeerCertificates[0].Subject.CommonName; cn != hcoutil.PrometheusK8sCN {
 				logger.Error(nil, "unexpected common name", "CommonName", cn)
 				http.Error(w, "forbidden", http.StatusForbidden)
 				return
